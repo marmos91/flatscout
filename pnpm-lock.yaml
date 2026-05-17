@@ -24,6 +24,28 @@ importers:
         specifier: ^2.1.1
         version: 2.1.9(@types/node@22.19.19)
 
+  packages/core:
+    dependencies:
+      jsonata:
+        specifier: ^2.0.5
+        version: 2.2.0
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+      zod-to-json-schema:
+        specifier: ^3.23.5
+        version: 3.25.2(zod@3.25.76)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.7.4
+        version: 22.19.19
+      typescript:
+        specifier: ^5.6.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.1
+        version: 2.1.9(@types/node@22.19.19)
+
 packages:
 
   '@biomejs/biome@1.9.4':
@@ -462,6 +484,10 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
+  jsonata@2.2.0:
+    resolution: {integrity: sha512-rAsmwxKHDKQIQ8qJBDErhd34BpNHses6QtiEOJVzJwJSY48LRx0S/tb7cJ9EtgfoIyiVx72Lzi88+HYxwnUybw==}
+    engines: {node: '>= 8'}
+
   loupe@3.2.1:
     resolution: {integrity: sha512-CdzqowRJCeLU72bHvWqwRBBlLcMEtIvGrlvef74kMnV2AolS9Y8xUv1I0U/MNAWMhBlKIoyuEgoJ0t/bbwHbLQ==}
 
@@ -603,6 +629,14 @@ packages:
     resolution: {integrity: sha512-hUrmaWBdVDcxvYqnyh09zunKzROWjbZTiNy8dBEjkS7ehEDQibXJ7XvlmtbwuTclUiIyN+CyXQD4Vmko8fNm8w==}
     engines: {node: '>=8'}
     hasBin: true
+
+  zod-to-json-schema@3.25.2:
+    resolution: {integrity: sha512-O/PgfnpT1xKSDeQYSCfRI5Gy3hPf91mKVDuYLUHZJMiDFptvP41MSnWofm8dnCm0256ZNfZIM7DSzuSMAFnjHA==}
+    peerDependencies:
+      zod: ^3.25.28 || ^4
+
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
 snapshots:
 
@@ -910,6 +944,8 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
+  jsonata@2.2.0: {}
+
   loupe@3.2.1: {}
 
   magic-string@0.30.21:
@@ -1060,3 +1096,9 @@ snapshots:
     dependencies:
       siginfo: 2.0.0
       stackback: 0.0.2
+
+  zod-to-json-schema@3.25.2(zod@3.25.76):
+    dependencies:
+      zod: 3.25.76
+
+  zod@3.25.76: {}
