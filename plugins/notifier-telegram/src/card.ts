@@ -19,6 +19,17 @@ function renderShortTermLine(listing: Listing): string | null {
   return listing.lease_until ? `🗓 short-term · until ${formatDmy(listing.lease_until)}` : '🗓 short-term';
 }
 
+/** Strips the conventional `source-` prefix from plugin names for compact display. */
+function shortSourceName(name: string): string {
+  return name.startsWith('source-') ? name.slice('source-'.length) : name;
+}
+
+/** Returns the `Also on:` line when at least one other source is listed; null otherwise. */
+function renderAlsoOnLine(alsoSeenOn: string[] | undefined): string | null {
+  if (!alsoSeenOn || alsoSeenOn.length === 0) return null;
+  return `🔁 Also on: ${alsoSeenOn.map(shortSourceName).join(', ')}`;
+}
+
 /**
  * Renders a scored listing event into a Telegram message body plus inline
  * keyboard buttons.
@@ -40,6 +51,7 @@ export function renderCard(event: ListingEvent, now: Date = new Date()): Rendere
     renderShortTermLine(listing),
     `⭐ Fit ${score.final}/100`,
     listing.agency ? `🏢 ${listing.agency} · listed ${minutesAgo} min ago` : `listed ${minutesAgo} min ago`,
+    renderAlsoOnLine(event.also_seen_on),
   ].filter((l): l is string => l !== null);
   const buttons: Array<{ text: string; url: string }> = [];
   if (listing.photos[0]) buttons.push({ text: '📷 Photos', url: listing.photos[0] });

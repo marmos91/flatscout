@@ -101,4 +101,24 @@ describe('renderCard', () => {
       }).text,
     ).not.toContain('short-term');
   });
+
+  it('renders "Also on:" footer when also_seen_on is non-empty', () => {
+    const r = renderCard(
+      {
+        listing: baseListing,
+        score: { final: 80, breakdown: {} },
+        also_seen_on: ['source-homegate', 'source-realadvisor'],
+      },
+      new Date('2026-05-17T10:14:00Z'),
+    );
+    expect(r.text).toContain('Also on: homegate, realadvisor');
+  });
+
+  it('omits "Also on:" line when also_seen_on is absent or empty', () => {
+    const r = renderCard(
+      { listing: baseListing, score: { final: 80, breakdown: {} }, also_seen_on: [] },
+      new Date('2026-05-17T10:14:00Z'),
+    );
+    expect(r.text).not.toContain('Also on:');
+  });
 });
