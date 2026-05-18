@@ -121,4 +121,15 @@ describe('renderCard', () => {
     );
     expect(r.text).not.toContain('Also on:');
   });
+
+  it('disablePreview=true for DataDome-walled sources (IS24 sitemap)', () => {
+    const l: Listing = { ...baseListing, source: 'source-immoscout24-sitemap' };
+    const r = renderCard({ listing: l, score: { final: 80, breakdown: {} } });
+    expect(r.disablePreview).toBe(true);
+  });
+
+  it('disablePreview=false for normal sources (flatfox)', () => {
+    const r = renderCard({ listing: baseListing, score: { final: 80, breakdown: {} } });
+    expect(r.disablePreview).toBe(false);
+  });
 });

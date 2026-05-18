@@ -4,7 +4,16 @@ import type { ListingEvent } from '@wabe/plugin-sdk';
 export interface RenderedCard {
   text: string;
   buttons: Array<{ text: string; url: string }>;
+  /** When true, the notifier should disable Telegram's link-preview unfurl — set for sources whose detail URLs return 403 to bots (DataDome/Cloudflare). */
+  disablePreview: boolean;
 }
+
+/** Sources whose detail URLs are DataDome-walled — Telegram's bot UA will get 403 trying to unfurl, so suppress the preview. */
+const PREVIEW_SUPPRESS_SOURCES = new Set([
+  'source-immoscout24-sitemap',
+  'source-homegate',
+  'source-comparis',
+]);
 
 /** Formats a date as DD.MM.YYYY in UTC (matches the lexicon's parse format). */
 function formatDmy(d: Date): string {
@@ -56,5 +65,9 @@ export function renderCard(event: ListingEvent, now: Date = new Date()): Rendere
   const buttons: Array<{ text: string; url: string }> = [];
   if (listing.photos[0]) buttons.push({ text: '📷 Photos', url: listing.photos[0] });
   buttons.push({ text: '🔗 Open listing', url: listing.url });
-  return { text: lines.join('\n'), buttons };
+  return {
+    text: lines.join('\n'),
+    buttons,
+    disablePreview: PREVIEW_SUPPRESS_SOURCES.has(listing.source),
+  };
 }
