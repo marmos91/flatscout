@@ -6,6 +6,15 @@ export interface ScheduleHandle {
   stop(): void;
 }
 
+/**
+ * Schedules each source for periodic execution under node-cron.
+ *
+ * Reads the cron expression from each source's config `schedule` field
+ * (defaulting to `*\/5 * * * *`); invalid expressions are logged and skipped.
+ * Returns a handle whose `stop()` halts every scheduled task. The orchestrator
+ * is responsible for actually running the source via the provided `runOne`
+ * callback — this function only handles scheduling and error logging.
+ */
 export function scheduleSources(
   sources: LoadedPlugin<'source'>[],
   logger: Logger,

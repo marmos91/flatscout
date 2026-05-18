@@ -20,6 +20,20 @@ export interface FlatfoxPage {
   next: string | null;
 }
 
+/**
+ * Fetches one page of the Flatfox public listing API.
+ *
+ * Builds the URL via `buildQuery(search, limit, offset)`; either routes through
+ * `opts.pool` (when supplied for testing/connection-pool tuning) or through
+ * `undici.request` which honours `setGlobalDispatcher` (the path used by E2E
+ * tests with `MockAgent`). On status codes listed in `opts.backoff.on`, retries
+ * up to `opts.backoff.retries` times with exponential backoff (`base_ms * 2^n`)
+ * before throwing.
+ *
+ * @returns parsed page with `results` (possibly empty array) and `next` cursor.
+ * @throws FlatfoxHttpError on a non-2xx status that is not retryable, or after
+ *         the retry budget is exhausted.
+ */
 export async function fetchPage(
   search: SearchConfig,
   limit: number,
@@ -53,6 +67,7 @@ export async function fetchPage(
   throw new FlatfoxHttpError(0, url, 'unreachable');
 }
 
+/** Promise-based sleep that rejects with `Error('aborted')` when `signal` aborts before the timeout. */
 export function sleep(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     const t = setTimeout(resolve, ms);

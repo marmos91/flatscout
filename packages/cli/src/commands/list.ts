@@ -11,6 +11,7 @@ interface Row {
   final: number | null;
 }
 
+/** Registers the `wabe list` subcommand: tabulates persisted listings joined with their most-recent score. */
 export function registerList(prog: Command): void {
   prog
     .command('list')

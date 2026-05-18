@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+/** Homegate search criteria; serialised as the JSON request body in `buildBody`. */
 export const SearchConfig = z.object({
   location: z.object({
     lat: z.number(),
@@ -24,6 +25,7 @@ export const SearchConfig = z.object({
 });
 export type SearchConfig = z.infer<typeof SearchConfig>;
 
+/** Builds the JSON POST body for `/search/listings`, renaming `radius_m` → `radius` to match the mobile API. */
 export function buildBody(cfg: SearchConfig, page_size: number, offset: number): unknown {
   return {
     location: {

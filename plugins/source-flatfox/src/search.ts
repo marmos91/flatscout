@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { FlatfoxApiResult } from './map.js';
 
+/** User-facing Flatfox search criteria. Only `status`, `limit`, `offset` are sent to the API — the rest are applied client-side. */
 export const SearchConfig = z.object({
   status: z.string().default('act'),
   cities: z.array(z.string()).default([]),
@@ -14,6 +15,7 @@ export const SearchConfig = z.object({
 });
 export type SearchConfig = z.infer<typeof SearchConfig>;
 
+/** Builds the URL query string for the Flatfox listing endpoint (status + pagination only). */
 export function buildQuery(cfg: SearchConfig, limit: number, offset: number): string {
   const p = new URLSearchParams();
   p.set('status', cfg.status);
@@ -22,6 +24,12 @@ export function buildQuery(cfg: SearchConfig, limit: number, offset: number): st
   return p.toString();
 }
 
+/**
+ * Applies the user's search criteria client-side, since the public Flatfox API
+ * does not expose price/rooms/area parameters. Items missing a comparable
+ * field are conservatively rejected (e.g. items without `price_display` fail
+ * `price_max`).
+ */
 export function applyClientFilters(items: FlatfoxApiResult[], cfg: SearchConfig): FlatfoxApiResult[] {
   return items.filter((r) => {
     if (cfg.cities.length > 0 && r.city && !cfg.cities.includes(r.city)) return false;

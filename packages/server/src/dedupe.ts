@@ -7,6 +7,16 @@ export interface UpsertResult {
   fingerprint: string;
 }
 
+/**
+ * Inserts a listing or updates the existing row if its serialised payload has
+ * changed.
+ *
+ * The current slice keys deduplication on `listing.id` (source-scoped); a
+ * cross-source fingerprint is planned but out of scope. Returns `isNew=true`
+ * for inserts, `changed=true` if either inserted or the payload differed from
+ * what was stored. On unchanged payload we still bump `last_seen_at` to
+ * reflect that the source still advertises this listing.
+ */
 export function upsertListing(db: WabeDb, listing: Listing): UpsertResult {
   const now = Date.now();
   const fingerprint = listing.id; // slice: source-id only; cross-source dedupe later

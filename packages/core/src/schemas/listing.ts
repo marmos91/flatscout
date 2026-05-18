@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+/**
+ * Canonical normalised listing record passed between pipeline stages and
+ * persisted as the JSON `payload` column.
+ */
 export const Listing = z.object({
   id: z.string(),
   source: z.string(),
@@ -45,6 +49,10 @@ export const Listing = z.object({
 });
 export type Listing = z.infer<typeof Listing>;
 
+/**
+ * Listing shape emitted by source plugins before the orchestrator stamps
+ * `id`/`first_seen_at`/`last_seen_at`. Sources MUST set `source` and `url`.
+ */
 export const RawListing = Listing.partial({
   id: true,
   first_seen_at: true,

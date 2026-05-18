@@ -22,6 +22,14 @@ export interface HomegateListing {
   link?: string;
 }
 
+/**
+ * Maps a Homegate API result into the canonical `RawListing` shape.
+ *
+ * Stamps a stable `homegate:${id}` id, prefers `item.link` for the canonical
+ * URL (falling back to the public `/rent/{id}` slug), and flattens image
+ * entries into URL strings. Pricing fields fan out into `rent_net`/`extras`/
+ * `total` as Homegate exposes the breakdown directly.
+ */
 export function mapHomegateListing(item: HomegateListing): RawListing {
   const photos = Array.isArray(item.images)
     ? item.images.map((i) => (typeof i === 'string' ? i : (i.url ?? ''))).filter((u) => u.length > 0)

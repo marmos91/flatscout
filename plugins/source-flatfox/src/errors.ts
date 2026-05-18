@@ -1,3 +1,4 @@
+/** Thrown when the Flatfox API returns a non-2xx status that can't be retried. */
 export class FlatfoxHttpError extends Error {
   constructor(
     public status: number,
@@ -8,4 +9,5 @@ export class FlatfoxHttpError extends Error {
   }
 }
 
+/** Thrown when the Flatfox API response cannot be parsed into the expected shape. */
 export class FlatfoxParseError extends Error {}

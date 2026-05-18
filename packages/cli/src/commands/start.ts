@@ -11,6 +11,13 @@ import {
 import { migrate, openDb } from '@wabe/db';
 import { resolvePaths } from '../paths.js';
 
+/**
+ * Registers the `wabe start` subcommand: long-running daemon mode.
+ *
+ * Each source is scheduled independently per its `schedule` cron expression;
+ * SIGINT/SIGTERM trigger a graceful shutdown that stops the scheduler, aborts
+ * in-flight work, and exits after a short drain delay.
+ */
 export function registerStart(prog: Command): void {
   prog
     .command('start')

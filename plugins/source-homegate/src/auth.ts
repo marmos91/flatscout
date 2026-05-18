@@ -27,6 +27,7 @@ export interface AuthCfg {
   user_agent: string;
 }
 
+/** Builds the standard HTTP Basic `Authorization` header from `basic_user:basic_pass`. */
 export function basicAuthHeader(cfg: AuthCfg): string {
   return `Basic ${Buffer.from(`${cfg.basic_user}:${cfg.basic_pass}`).toString('base64')}`;
 }

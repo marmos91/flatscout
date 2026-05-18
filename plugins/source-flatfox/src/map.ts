@@ -24,6 +24,14 @@ export interface FlatfoxApiResult {
   images?: Array<{ original_url?: string } | string> | null;
 }
 
+/**
+ * Maps a Flatfox API result into the canonical `RawListing` shape.
+ *
+ * Builds a stable `flatfox:${pk}` id, derives the canonical listing URL,
+ * coerces the string-or-number `number_of_rooms` to a numeric value (or null),
+ * and flattens the image list into URL strings. Fields not present in the
+ * Flatfox response (floor, built year, contact, etc.) are set to null/empty.
+ */
 export function mapFlatfoxListing(r: FlatfoxApiResult): RawListing {
   const url = `https://flatfox.ch/en/flat/${r.pk}${r.slug ? `/${r.slug}` : ''}`;
   const rooms =

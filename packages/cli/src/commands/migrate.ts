@@ -2,6 +2,7 @@ import type { Command } from 'commander';
 import { migrate, openDb } from '@wabe/db';
 import { resolvePaths } from '../paths.js';
 
+/** Registers the `wabe migrate` subcommand: applies any pending SQL migrations to the configured DB. */
 export function registerMigrate(prog: Command): void {
   prog
     .command('migrate')

@@ -13,6 +13,7 @@ export interface ApplicationResult {
   delivery_id?: string;
 }
 
+/** An applicator plugin submits a tenancy application (Anschreiben + dossier) to the landlord. */
 export interface Applicator {
   name: string;
   configSchema: z.ZodTypeAny;

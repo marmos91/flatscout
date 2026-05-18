@@ -24,6 +24,12 @@ const ConfigSchema = z.object({
 });
 type Config = z.infer<typeof ConfigSchema>;
 
+/**
+ * Flatfox source plugin: paginates the public listing API up to
+ * `fetch.max_pages` times, applies client-side filters from `search`, and
+ * yields each surviving raw listing. Honours abort signals between pages and
+ * sleeps `fetch.pace_ms` between page requests to stay polite.
+ */
 const plugin: Source = {
   name: 'source-flatfox',
   configSchema: ConfigSchema,

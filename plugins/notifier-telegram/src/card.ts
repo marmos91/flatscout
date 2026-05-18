@@ -5,6 +5,18 @@ export interface RenderedCard {
   buttons: Array<{ text: string; url: string }>;
 }
 
+/**
+ * Renders a scored listing event into a Telegram message body plus inline
+ * keyboard buttons.
+ *
+ * The text is a fixed four-line layout (location · rooms · price · area, then
+ * optional address, fit score, and agency-or-listed-time). Each line falls
+ * back to `?` / `Unknown` when the underlying field is null so the layout is
+ * preserved. Buttons are: a `📷 Photos` link when at least one photo is
+ * present (pointing at the first image), and always an `🔗 Open listing`
+ * link to the canonical URL. The `now` parameter is injectable for
+ * deterministic testing of the "listed N min ago" string.
+ */
 export function renderCard(event: ListingEvent, now: Date = new Date()): RenderedCard {
   const { listing, score } = event;
   const minutesAgo = Math.max(0, Math.round((now.getTime() - listing.first_seen_at.getTime()) / 60000));

@@ -13,6 +13,7 @@ export interface NotifierResponse {
   message_id?: string;
 }
 
+/** A notifier plugin delivers a scored listing event to an external channel (Telegram, email, ...). */
 export interface Notifier {
   name: string;
   configSchema: z.ZodTypeAny;

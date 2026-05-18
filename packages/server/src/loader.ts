@@ -9,6 +9,18 @@ export interface LoadedPlugin<K extends PluginKind = PluginKind> {
   config: unknown;
 }
 
+/**
+ * Resolves and validates every plugin declared in `cfg.top.enabled.*`.
+ *
+ * For each declared entry: dynamically `import()`s the plugin's package,
+ * checks its default export is a `PluginExport` of the expected kind
+ * (mismatch throws), and validates its per-plugin YAML config through the
+ * plugin-provided Zod schema. Returns the plugins bucketed by kind so the
+ * pipeline can dispatch each stage without re-discriminating.
+ *
+ * @throws if any plugin package fails to import, lacks a default export,
+ *         declares the wrong `kind`, or has an invalid config.
+ */
 export async function loadPlugins(cfg: LoadedConfig): Promise<{
   sources: LoadedPlugin<'source'>[];
   notifiers: LoadedPlugin<'notifier'>[];

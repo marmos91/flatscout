@@ -7,6 +7,7 @@ export interface ScoreResult {
   breakdown: Record<string, number>;
 }
 
+/** Plugin-shaped scorer (alternative to the built-in DSL-driven scoring). */
 export interface Scorer {
   name: string;
   configSchema: z.ZodTypeAny;

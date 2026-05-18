@@ -42,6 +42,12 @@ const ConfigSchema = z.object({
 });
 type Config = z.infer<typeof ConfigSchema>;
 
+/**
+ * Homegate source plugin: paginates the mobile-app API up to `fetch.max_pages`
+ * times using a dedicated undici Pool, yielding mapped listings. The Pool is
+ * always closed in a `finally` so the iterator cleans up after early
+ * termination or abort.
+ */
 const plugin: Source = {
   name: 'source-homegate',
   configSchema: ConfigSchema,

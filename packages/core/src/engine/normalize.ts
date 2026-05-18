@@ -7,6 +7,24 @@ function clamp01(x: number): number {
   return x;
 }
 
+/**
+ * Maps a raw metric value into the unit interval `[0, 1]` using one of four
+ * primitive normalisations.
+ *
+ * - `linear`: `(raw - worst) / (best - worst)`, clamped to `[0, 1]`. The
+ *   `invert` flag is documentation-only — direction is fully determined by
+ *   which of `best`/`worst` is larger. Non-numeric input yields 0; `best ===
+ *   worst` is a degenerate spec that also yields 0.
+ * - `step`: scans `bands` in order; returns the first band whose constraints
+ *   match (`eq`, `gte`/`lt` range, or `else` catch-all). Band `score` is on a
+ *   `[0, 10]` scale and is divided by 10 here.
+ * - `sigmoid`: logistic on `(raw - midpoint) * steepness`; `invert` flips it.
+ *   Non-numeric input yields 0.
+ * - `categorical`: looks up `String(raw)` in `map`, falling back to `default`;
+ *   value is on a `[0, 10]` scale and divided by 10.
+ *
+ * All branches return a number in `[0, 1]`.
+ */
 export function normalize(spec: Normalize, raw: unknown): number {
   switch (spec.type) {
     case 'linear': {

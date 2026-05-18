@@ -3,6 +3,12 @@ import { CircuitBreaker, Quota, createLogger, loadConfig, loadPlugins, runOnce }
 import { migrate, openDb } from '@wabe/db';
 import { resolvePaths } from '../paths.js';
 
+/**
+ * Registers the `wabe scan` subcommand: runs the pipeline once and exits.
+ *
+ * Supports `--source` to restrict to specific source names and `--dry-run` to
+ * disable notifier dispatch (everything else still runs and persists).
+ */
 export function registerScan(prog: Command): void {
   prog
     .command('scan')

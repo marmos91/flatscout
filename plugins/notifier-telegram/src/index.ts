@@ -10,6 +10,12 @@ const ConfigSchema = z.object({
 });
 type Config = z.infer<typeof ConfigSchema>;
 
+/**
+ * Telegram notifier plugin: renders a card via `renderCard` and posts it to
+ * `chat_id` using grammY. Hard-fails fast if the bot token or chat id are
+ * unresolved (`${env.*}` placeholder still present) so misconfiguration
+ * surfaces immediately rather than as a confusing Telegram API error.
+ */
 const plugin: Notifier = {
   name: 'notifier-telegram',
   configSchema: ConfigSchema,

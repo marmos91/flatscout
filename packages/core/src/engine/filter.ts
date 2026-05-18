@@ -4,6 +4,17 @@ import { resolvePath } from './path.js';
 
 export type FilterResult = { passed: true } | { passed: false; reason: string };
 
+/**
+ * Evaluates filter rules against a listing in declaration order, short-circuiting
+ * on the first rejection.
+ *
+ * Each rule is either a `field` rule (resolve `field` via dotted path, then
+ * apply `op` against `value`) or an `expr` rule (evaluate a JSONata expression
+ * to a truthy/falsy value). Missing field values OR `undefined`-resolving expr
+ * results route through `on_missing`: `fail` rejects, `pass`/`skip` treat the
+ * rule as a pass and move on. Returns the first failure reason, or
+ * `{ passed: true }` if every rule passes.
+ */
 export async function evaluateFilters(rules: FilterRule[], listing: unknown): Promise<FilterResult> {
   for (const rule of rules) {
     const ok = await evaluateOne(rule, listing);

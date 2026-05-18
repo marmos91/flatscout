@@ -4,6 +4,14 @@ import * as schema from './schema.js';
 
 export type WabeDb = BetterSQLite3Database<typeof schema> & { _raw: Database.Database };
 
+/**
+ * Opens (creating if needed) a SQLite database file and returns a Drizzle
+ * wrapper.
+ *
+ * Enables WAL journal mode and foreign-key enforcement. The returned handle
+ * also exposes the underlying better-sqlite3 connection as `_raw` for
+ * prepared-statement code paths that bypass Drizzle.
+ */
 export function openDb(filename: string): WabeDb {
   const sqlite = new Database(filename);
   sqlite.pragma('journal_mode = WAL');

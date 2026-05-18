@@ -21,6 +21,22 @@ export interface HomegatePage {
   total: number;
 }
 
+/**
+ * Fetches one page of the Homegate mobile API.
+ *
+ * Posts the JSON body produced by `buildBody(search, page_size, offset)` to
+ * `/search/listings` with the auth headers required by the mobile app
+ * (`Authorization: Basic`, `X-App-Id` HOTP token, `X-App-Version`,
+ * `User-Agent`). The `X-App-Id` token is rotated on every attempt since it is
+ * minute-bucketed (see `appIdHeader`).
+ *
+ * Auth-rejected responses (401/403) throw `HomegateAuthError` immediately —
+ * those are non-retryable. 429 retries up to `backoff.retries` times then
+ * throws `HomegateRateLimit`. Other statuses in `backoff.on` are retried with
+ * exponential backoff; statuses not in that list throw `HomegateBadResponse`.
+ *
+ * @throws HomegateAuthError | HomegateRateLimit | HomegateBadResponse
+ */
 export async function fetchPage(
   search: SearchConfig,
   page_size: number,
@@ -64,6 +80,7 @@ export async function fetchPage(
   throw new HomegateBadResponse('unreachable');
 }
 
+/** Promise-based sleep that rejects with `Error('aborted')` when `signal` aborts before the timeout. */
 export function sleep(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     const t = setTimeout(resolve, ms);

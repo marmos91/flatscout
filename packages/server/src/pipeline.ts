@@ -18,10 +18,28 @@ export interface RunOptions {
   quota: Quota;
 }
 
+/**
+ * Runs every enabled source through the pipeline once, concurrently.
+ *
+ * Sources are isolated from each other — a thrown exception in one source's
+ * `runSource()` is caught there, recorded as a failure, and does NOT abort the
+ * sibling sources. Awaits all sources before returning.
+ */
 export async function runOnce(opts: RunOptions): Promise<void> {
   await Promise.all(opts.sources.map((s) => runSource(s, opts)));
 }
 
+/**
+ * Drives a single source end-to-end: fetch → upsert → filter → score → notify.
+ *
+ * If the source has an open circuit breaker we skip it. Otherwise we iterate
+ * the source's async generator; each emitted RawListing is normalised through
+ * `Listing.parse`, upserted (unchanged rows are skipped), filtered, scored,
+ * and persisted. Listings at or above `notify.threshold` consume one quota
+ * slot and are then dispatched to every notifier via `notifySafely`. A thrown
+ * error anywhere in the source path records a failure row, ticks the circuit
+ * breaker, and returns — sibling sources are unaffected.
+ */
 async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise<void> {
   const log = opts.logger.child({ source: src.name, plugin: src.plugin.name });
   const breaker = opts.breakers.get(src.name);
@@ -77,6 +95,14 @@ async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise
   }
 }
 
+/**
+ * Dispatches one notifier with full error isolation.
+ *
+ * Wraps the notifier call so a throwing notifier is logged and recorded into
+ * the `failures` table without aborting the surrounding loop — a misbehaving
+ * Telegram bot, say, must not block an email notifier on the same event.
+ * Successful deliveries are recorded in the `notifications` table.
+ */
 async function notifySafely(
   n: LoadedPlugin<'notifier'>,
   event: { listing: Listing; score: { final: number; breakdown: Record<string, number> } },

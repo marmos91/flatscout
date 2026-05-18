@@ -4,6 +4,7 @@ import { loadConfig, loadPlugins } from '@wabe/server';
 import { openDb } from '@wabe/db';
 import { resolvePaths } from '../paths.js';
 
+/** Registers the `wabe doctor` subcommand: probes config, DB, plugin loading, and external APIs. */
 export function registerDoctor(prog: Command): void {
   prog
     .command('doctor')

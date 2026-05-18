@@ -92,6 +92,13 @@ chat_id:   '\${env.TELEGRAM_CHAT_ID}'
 format: compact
 `;
 
+/**
+ * Registers the `wabe init` subcommand: interactively prompts the user for
+ * Telegram credentials and search parameters, then writes a starter set of
+ * config files, a `.env`, and runs initial DB migrations.
+ *
+ * Existing files are never overwritten — re-running is safe.
+ */
 export function registerInit(prog: Command): void {
   prog
     .command('init')

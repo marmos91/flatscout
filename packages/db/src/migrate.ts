@@ -5,6 +5,14 @@ import type { WabeDb } from './client.js';
 
 const MIGRATIONS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'migrations');
 
+/**
+ * Applies any `.sql` migration files in `dir` that have not already been
+ * recorded in the `_migrations` table.
+ *
+ * Files are applied in filename sort order, each inside a transaction; the
+ * filename is recorded with `applied_at` on success. Returns the filenames
+ * applied during this call (empty array if already up to date).
+ */
 export function migrate(db: WabeDb, dir = MIGRATIONS_DIR): { applied: string[] } {
   const raw = db._raw;
   raw.exec(

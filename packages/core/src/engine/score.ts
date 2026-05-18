@@ -3,11 +3,30 @@ import { evalJsonata } from './jsonata.js';
 import { normalize } from './normalize.js';
 import { resolvePath } from './path.js';
 
+/** Thrown when a scoring dimension's metric is missing and `on_missing: 'fail'`. */
 export class ScoringFailure extends Error {}
+/** Thrown when a `type: 'llm'` scoring dimension is encountered; LLM scoring is out-of-slice. */
 export class NotImplementedError extends Error {}
 
 export type ScoreResult = { final: number; breakdown: Record<string, number> };
 
+/**
+ * Computes a weighted score for a listing across a set of scoring dimensions.
+ *
+ * For each `rule` dim: resolves `metric` (a dotted path, or a JSONata expression
+ * if prefixed with `=`), normalises the raw value via `normalize()`, and adds
+ * `normalized * weight` to the running sum. Missing metrics route through
+ * `on_missing`: `'zero'` contributes 0 with full weight (lowers final score),
+ * `'skip_dim'` drops the dim entirely (does not affect the weighted average),
+ * `'fail'` throws `ScoringFailure`.
+ *
+ * The final score is `round((sum / total_weight) * 100)`, in `[0, 100]`. Empty
+ * or all-skipped weights yield 0. The `breakdown` map records each contributing
+ * dim's normalised `[0, 1]` value for explainability.
+ *
+ * @throws ScoringFailure when a required metric is missing.
+ * @throws NotImplementedError when a `type: 'llm'` dim is supplied.
+ */
 export async function scoreListing(dims: ScoringDim[], listing: unknown): Promise<ScoreResult> {
   let sum = 0;
   let weight = 0;
