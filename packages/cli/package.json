@@ -1,0 +1,29 @@
+{
+  "name": "@wabe/cli",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": { "wabe": "./dist/index.js" },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.7.0",
+    "@wabe/core": "workspace:*",
+    "@wabe/db": "workspace:*",
+    "@wabe/plugin-sdk": "workspace:*",
+    "@wabe/server": "workspace:*",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
+    "pino": "^9.4.0",
+    "undici": "^6.19.8",
+    "yaml": "^2.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.1"
+  }
+}
