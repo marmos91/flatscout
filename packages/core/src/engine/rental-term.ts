@@ -30,10 +30,11 @@ export interface ClassifyResult {
 export function parseDateStrict(raw: string): Date | null {
   const m = raw.match(/^(\d{1,2})[./](\d{1,2})[./](\d{2}|\d{4})$/);
   if (!m) return null;
-  const day = Number.parseInt(m[1], 10);
-  const month = Number.parseInt(m[2], 10);
-  let year = Number.parseInt(m[3], 10);
-  if (m[3].length === 2) year += year >= 70 ? 1900 : 2000;
+  const [, dayStr, monthStr, yearStr] = m as [string, string, string, string];
+  const day = Number.parseInt(dayStr, 10);
+  const month = Number.parseInt(monthStr, 10);
+  let year = Number.parseInt(yearStr, 10);
+  if (yearStr.length === 2) year += year >= 70 ? 1900 : 2000;
   if (month < 1 || month > 12 || day < 1 || day > 31) return null;
   const d = new Date(Date.UTC(year, month - 1, day));
   // Round-trip guard: rejects e.g. 31.02.2025 (would otherwise land in March).

@@ -53,4 +53,29 @@ describe('mapFlatfoxListing', () => {
   it('falls back to pk-only path when API url missing', () => {
     expect(mapFlatfoxListing({ pk: 99 }).url).toBe('https://flatfox.ch/en/flat/99/');
   });
+
+  it('FURNISHED_FLAT object_type → rental_term=short, no lease_until', () => {
+    const r = mapFlatfoxListing({ pk: 2, object_type: 'FURNISHED_FLAT' });
+    expect(r.rental_term).toBe('short');
+    expect(r.lease_until).toBeNull();
+  });
+
+  it('description with BEFRISTET BIS date → short with parsed lease_until', () => {
+    const r = mapFlatfoxListing({
+      pk: 3,
+      description: 'BEFRISTET BIS 31.05.2025 zu vermieten im Kreis 7',
+    });
+    expect(r.rental_term).toBe('short');
+    expect(r.lease_until?.toISOString()).toBe('2025-05-31T00:00:00.000Z');
+  });
+
+  it('plain unfurnished listing → rental_term=unknown by default', () => {
+    const r = mapFlatfoxListing({
+      pk: 4,
+      description: 'Schöne 4-Zimmer Wohnung mit Balkon',
+      object_type: 'APARTMENT',
+    });
+    expect(r.rental_term).toBe('unknown');
+    expect(r.lease_until).toBeNull();
+  });
 });

@@ -1,4 +1,4 @@
-import type { RawListing } from '@wabe/core';
+import { classifyRentalTerm, type RawListing } from '@wabe/core';
 
 export interface FlatfoxApiResult {
   pk: number;
@@ -18,6 +18,8 @@ export interface FlatfoxApiResult {
   moving_date?: string | null;
   offer_type?: string | null;
   object_category?: string | null;
+  /** Flatfox sub-category. Value `FURNISHED_FLAT` is the structured short-term signal. */
+  object_type?: string | null;
   status?: string | null;
   published?: string | null;
   agency?: { name?: string | null } | null;
@@ -48,6 +50,13 @@ export function mapFlatfoxListing(r: FlatfoxApiResult): RawListing {
         .map((img) => (typeof img === 'string' ? img : (img.original_url ?? '')))
         .filter((u) => u.length > 0)
     : [];
+  const description = r.description ?? r.public_title ?? r.short_title ?? null;
+  const classified = classifyRentalTerm({
+    description,
+    is_furnished: r.object_type === 'FURNISHED_FLAT',
+    lease_until: null,
+    min_stay_days: null,
+  });
   // NOTE: deviated from plan — RawListing requires features/contact/enriched/extra (defaulted but
   // non-optional in the inferred TS type); explicitly include them to satisfy strict typecheck.
   return {
@@ -76,9 +85,11 @@ export function mapFlatfoxListing(r: FlatfoxApiResult): RawListing {
       country: 'CH',
       neighborhood: null,
     },
-    description: r.description ?? r.public_title ?? r.short_title ?? null,
+    description,
     photos,
     available_from: r.moving_date ? new Date(r.moving_date) : null,
+    lease_until: classified.lease_until,
+    rental_term: classified.rental_term,
     agency: r.agency?.name ?? null,
     features: {},
     contact: {},
