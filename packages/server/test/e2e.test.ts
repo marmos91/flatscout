@@ -105,7 +105,7 @@ describe('E2E pipeline with real plugins', () => {
       .reply(200, { ok: true, result: { message_id: 7 } })
       .persist();
 
-    const cfg = loadConfig(dir);
+    const cfg = await loadConfig(dir);
     const loaded = await loadPlugins(cfg);
     const breakers = new Map(
       loaded.sources.map((s) => [s.name, new CircuitBreaker({ failuresBeforeOpen: 3, cooldownMs: 10_000 })]),

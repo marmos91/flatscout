@@ -30,7 +30,7 @@ export function registerDoctor(prog: Command): void {
         if (!pass) ok = false;
       };
       try {
-        const cfg = loadConfig(paths.configDir);
+        const cfg = await loadConfig(paths.configDir);
         result('config files parse', true, `config dir: ${paths.configDir}`);
         const rentalDetail =
           cfg.rentalTerm.mode === 'short'

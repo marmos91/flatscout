@@ -18,7 +18,7 @@ export function registerScan(prog: Command): void {
     .action(async (opts: { source?: string; dryRun?: boolean }) => {
       const globalOpts = prog.opts<{ config?: string; dataDir?: string }>();
       const paths = resolvePaths({ config: globalOpts.config, dataDir: globalOpts.dataDir });
-      const cfg = loadConfig(paths.configDir);
+      const cfg = await loadConfig(paths.configDir);
       const logger = createLogger(cfg.top.log.level, process.stdout.isTTY);
       const db = openDb(paths.dbFile);
       migrate(db);
