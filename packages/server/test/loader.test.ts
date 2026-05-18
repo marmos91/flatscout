@@ -11,7 +11,7 @@ beforeEach(() => {
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
 describe('config loader', () => {
-  it('parses a minimal valid config tree', () => {
+  it('parses a minimal valid config tree', async () => {
     writeFileSync(
       join(dir, 'config.yaml'),
       `enabled:
@@ -31,7 +31,7 @@ notify:
   daily_quota: 5
 `,
     );
-    const cfg = loadConfig(dir);
+    const cfg = await loadConfig(dir);
     expect(cfg.top.enabled.sources).toEqual([]);
     expect(cfg.filters.filters).toEqual([]);
     expect(cfg.scoring.notify.threshold).toBe(75);

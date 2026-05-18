@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@noble/ed25519": "^2.1.0",
     "@wabe/core": "workspace:*",
     "@wabe/db": "workspace:*",
     "@wabe/notifier-telegram": "workspace:*",
@@ -20,9 +21,11 @@
     "@wabe/source-immobilier-ch": "workspace:*",
     "@wabe/source-immoscout24-sitemap": "workspace:*",
     "@wabe/source-realadvisor": "workspace:*",
+    "@wabe/source-schemaorg": "workspace:*",
     "node-cron": "^3.0.3",
     "pino": "^9.4.0",
     "pino-pretty": "^11.2.2",
+    "undici": "^6.19.8",
     "yaml": "^2.5.1",
     "zod": "^3.23.8"
   },
@@ -30,7 +33,6 @@
     "@types/node": "^22.7.4",
     "@types/node-cron": "^3.0.11",
     "typescript": "^5.6.2",
-    "undici": "^6.19.8",
     "vitest": "^2.1.1"
   }
 }

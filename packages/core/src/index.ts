@@ -12,3 +12,4 @@ export {
   DEFAULT_SOURCE_PRIORITY,
   type CanonicalKeyInput,
 } from './canonical-key.js';
+export { AgencyEntry, AgencyRegistry } from './schemas/agency-registry.js';

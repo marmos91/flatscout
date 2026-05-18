@@ -72,7 +72,16 @@ async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise
         price_total: raw.price?.total ?? null,
         url: raw.url,
       });
-      const priority = SOURCE_PRIORITY_DEFAULTS[src.plugin.name] ?? DEFAULT_SOURCE_PRIORITY;
+      // NOTE: deviated from plan — pipeline now prefers an explicit `priority` field
+      // on the source config (set by expand.ts from registry rows or by user yaml)
+      // over the per-plugin default. Synthetic agency sources (`agency:schemaorg:*`)
+      // wouldn't otherwise pick up the registry priority because the lookup keys on
+      // `src.plugin.name === 'source-schemaorg'`, which has its own default tier.
+      const cfgPriority = (src.config as { priority?: unknown } | undefined)?.priority;
+      const priority =
+        typeof cfgPriority === 'number'
+          ? cfgPriority
+          : (SOURCE_PRIORITY_DEFAULTS[src.plugin.name] ?? DEFAULT_SOURCE_PRIORITY);
       const enriched: Listing = Listing.parse({
         ...raw,
         id: raw.id ?? `${raw.source}:unknown:${Date.now()}`,

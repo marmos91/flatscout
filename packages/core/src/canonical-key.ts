@@ -55,6 +55,7 @@ export const SOURCE_PRIORITY_DEFAULTS: Record<string, number> = {
   'source-homegate': 70,
   'source-immoscout24-sitemap': 70,
   'source-immobilier-ch': 70,
+  'source-schemaorg': 70,
   'source-realadvisor': 50,
   'source-engelvoelkers': 30,
   'source-housinganywhere': 30,
