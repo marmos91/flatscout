@@ -1,0 +1,12 @@
+schedule: '*/5 * * * *'
+search:
+  cities: [Zürich]
+  price_max: 5000
+  rooms_min: 3
+  surface_min: 60
+  offer_type: RENT
+  category: FLAT
+fetch:
+  page_size: 100
+  max_pages: 3
+  pace_ms: 2000

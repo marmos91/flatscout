@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=../../examples/schema/scoring.schema.json
+scoring:
+  - type: rule
+    name: rent_value
+    weight: 50
+    metric: price.total
+    on_missing: zero
+    normalize: {type: linear, best: 2000, worst: 4000, invert: true}
+  - type: rule
+    name: size
+    weight: 30
+    metric: area_m2
+    on_missing: zero
+    normalize: {type: linear, best: 120, worst: 60, invert: false}
+  - type: rule
+    name: rooms_score
+    weight: 20
+    metric: rooms
+    on_missing: zero
+    normalize: {type: linear, best: 4.5, worst: 2.5, invert: false}
+notify:
+  threshold: 70
+  daily_quota: 5

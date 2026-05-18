@@ -1,0 +1,5 @@
+# yaml-language-server: $schema=../../examples/schema/filters.schema.json
+filters:
+  - {kind: field, field: rooms,                 op: ">=", value: 3,    on_missing: skip}
+  - {kind: field, field: price.total,           op: "<=", value: 5000, on_missing: skip}
+  - {kind: field, field: location.country,      op: "==", value: CH}
