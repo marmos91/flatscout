@@ -1,0 +1,41 @@
+{
+  "id": "4003300002",
+  "listingType": "STANDARD",
+  "listing": {
+    "id": "4003300002",
+    "offerType": "RENT",
+    "categories": ["APARTMENT"],
+    "platforms": ["homegate"],
+    "address": {
+      "geoCoordinates": { "accuracy": "HIGH", "latitude": 47.369, "longitude": 8.538 },
+      "locality": "Zürich",
+      "postalCode": "8005",
+      "street": "Beispielstrasse 3"
+    },
+    "prices": {
+      "rent": { "interval": "MONTH", "area": "ALL", "net": 2800, "extra": 200, "gross": 3000 },
+      "currency": "CHF"
+    },
+    "characteristics": {
+      "numberOfRooms": 3.5,
+      "livingSpace": 78,
+      "hasParking": false
+    },
+    "localization": {
+      "primary": "de",
+      "de": {
+        "text": {
+          "title": "Befristete 3.5-Zimmer-Wohnung im Kreis 5",
+          "description": "Diese 3.5-Zimmer-Wohnung wird befristet bis 31.12.2027 vermietet. Lage im beliebten Kreis 5."
+        },
+        "attachments": [
+          {
+            "type": "IMAGE",
+            "url": "https://media2.homegate.ch/listings/v2/nol/4003300002/image/00112233445566778899aabbccddeeff.jpg"
+          }
+        ],
+        "isMachineTranslated": false
+      }
+    }
+  }
+}

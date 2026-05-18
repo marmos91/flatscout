@@ -1,0 +1,53 @@
+{
+  "id": "4003127729",
+  "listingType": "STANDARD",
+  "listing": {
+    "id": "4003127729",
+    "offerType": "RENT",
+    "categories": ["APARTMENT", "FLAT"],
+    "platforms": ["homegate"],
+    "address": {
+      "geoCoordinates": { "accuracy": "HIGH", "latitude": 47.36023, "longitude": 8.58447 },
+      "locality": "Zürich",
+      "postalCode": "8053",
+      "street": "Beispielstrasse 1"
+    },
+    "prices": {
+      "rent": { "interval": "MONTH", "area": "ALL", "net": 3714, "extra": 276, "gross": 3990 },
+      "currency": "CHF"
+    },
+    "characteristics": {
+      "numberOfRooms": 4.5,
+      "livingSpace": 110,
+      "floor": 3,
+      "yearBuilt": 1998,
+      "yearLastRenovated": 2019,
+      "hasParking": true,
+      "hasGarage": false,
+      "arePetsAllowed": true
+    },
+    "localization": {
+      "primary": "de",
+      "de": {
+        "text": {
+          "title": "Helle 4.5-Zimmer-Wohnung im Kreis 11",
+          "description": "Schöne 4.5-Zimmer-Wohnung mit Balkon und Lift im Zürcher Kreis 11."
+        },
+        "attachments": [
+          {
+            "type": "IMAGE",
+            "file": "893384145d.jpg",
+            "url": "https://media2.homegate.ch/listings/v2/nol/4003127729/image/9c04d2191ff23c8d684e5ccc7d57edf6.jpg"
+          },
+          {
+            "type": "IMAGE",
+            "file": "893384146d.jpg",
+            "url": "https://media2.homegate.ch/listings/v2/nol/4003127729/image/abcdef0123456789abcdef0123456789.jpg"
+          }
+        ],
+        "isMachineTranslated": false
+      }
+    },
+    "meta": { "createdAt": "2026-05-17T08:30:00Z" }
+  }
+}

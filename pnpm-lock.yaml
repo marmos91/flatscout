@@ -205,6 +205,9 @@ importers:
       '@wabe/source-flatfox':
         specifier: workspace:*
         version: link:../../plugins/source-flatfox
+      '@wabe/source-homegate':
+        specifier: workspace:*
+        version: link:../../plugins/source-homegate
       node-cron:
         specifier: ^3.0.3
         version: 3.0.3
@@ -270,6 +273,37 @@ importers:
       '@wabe/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
+      undici:
+        specifier: ^6.19.8
+        version: 6.25.0
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.7.4
+        version: 22.19.19
+      typescript:
+        specifier: ^5.6.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.1
+        version: 2.1.9(@types/node@22.19.19)
+
+  plugins/source-homegate:
+    dependencies:
+      '@wabe/browser-runtime':
+        specifier: workspace:*
+        version: link:../../packages/browser-runtime
+      '@wabe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@wabe/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../packages/plugin-sdk
+      pino:
+        specifier: ^9.4.0
+        version: 9.14.0
       undici:
         specifier: ^6.19.8
         version: 6.25.0

@@ -1,0 +1,40 @@
+{
+  "id": "4003200001",
+  "listingType": "STANDARD",
+  "listing": {
+    "id": "4003200001",
+    "offerType": "RENT",
+    "categories": ["APARTMENT"],
+    "platforms": ["homegate"],
+    "address": {
+      "geoCoordinates": { "accuracy": "HIGH", "latitude": 47.3782, "longitude": 8.5404 },
+      "locality": "Zürich",
+      "postalCode": "8001",
+      "street": "Beispielstrasse 2"
+    },
+    "prices": {
+      "rent": { "interval": "MONTH", "area": "ALL", "net": 3200, "extra": 300, "gross": 3500 },
+      "currency": "CHF"
+    },
+    "characteristics": {
+      "numberOfRooms": 4.5,
+      "livingSpace": 95
+    },
+    "localization": {
+      "primary": "en",
+      "en": {
+        "text": {
+          "title": "Furnished 4.5-room apartment in Zürich",
+          "description": "Furnished 4.5-room apartment for sublet from jul/aug — temporary sublet or temporary stay in Zürich."
+        },
+        "attachments": [
+          {
+            "type": "IMAGE",
+            "url": "https://media2.homegate.ch/listings/v2/nol/4003200001/image/aabbccddeeff00112233445566778899.jpg"
+          }
+        ],
+        "isMachineTranslated": false
+      }
+    }
+  }
+}
