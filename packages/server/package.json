@@ -16,7 +16,6 @@
     "@wabe/notifier-telegram": "workspace:*",
     "@wabe/plugin-sdk": "workspace:*",
     "@wabe/source-flatfox": "workspace:*",
-    "@wabe/source-homegate": "workspace:*",
     "node-cron": "^3.0.3",
     "pino": "^9.4.0",
     "pino-pretty": "^11.2.2",

@@ -4,7 +4,7 @@
 
 **Wabe** (German for *honeycomb cell*) is a self-hosted apartment hunting agent. It continuously polls listing sources, normalizes every listing into a canonical schema, scores each one against a user-defined fit profile, and pings you on Telegram when something matches.
 
-This repo implements **Phase 1 + 2** — the skeleton plus a minimal vertical slice with two real Swiss portal sources (Flatfox + Homegate) and a Telegram notifier. Subsequent phases add LLM scoring, enrichers (geocoding, commute), a dossier vault, application drafting, and agency-portal applicators.
+This repo implements **Phase 1 + 2** — the skeleton plus a minimal vertical slice with one real Swiss portal source (Flatfox) and a Telegram notifier. A Homegate source plugin was scoped originally but is deferred to its own future spec — Homegate's API moved to Auth0 + Google SSO behind a DataDome/Cloudflare anti-bot stack, which is out of scope for this slice. See `docs/research/2026-05-18-homegate-investigation.md`. Subsequent phases add LLM scoring, enrichers (geocoding, commute), a dossier vault, application drafting, and agency-portal applicators.
 
 ## The problem
 
@@ -79,7 +79,7 @@ pnpm wabe doctor     # diagnose config / DB / plugin health
 
 ```
 config.yaml  →  loader  →  pipeline                            
-                              ├─ Source (flatfox, homegate)    
+                              ├─ Source (flatfox)              
                               ├─ Filter (hard, AND-combined)   
                               ├─ Scorer (rule DSL, 0..100)     
                               ├─ Quota gate (daily UTC)        

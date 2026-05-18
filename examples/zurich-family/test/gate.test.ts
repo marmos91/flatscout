@@ -5,7 +5,6 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { FiltersFile, ScoringFile } from '@wabe/core';
 import { mapFlatfoxListing, type FlatfoxApiResult } from '@wabe/source-flatfox/dist/map.js';
-import { mapHomegateListing, type HomegateListing } from '@wabe/source-homegate/dist/map.js';
 
 // NOTE: deviated from plan — use import.meta.url instead of __dirname since the
 // test runs as an ESM module (project-wide "type": "module").
@@ -59,29 +58,15 @@ const flatfoxSample: FlatfoxApiResult = {
   object_category: 'FLAT',
   agency: { name: 'A' },
 };
-const homegateSample: HomegateListing = {
-  id: 'h1',
-  address: { locality: 'Zürich', postal_code: '8000', street: 'S' },
-  characteristics: { number_of_rooms: 4, living_space: 100 },
-  prices: { rent: { gross: 3000 } },
-  coordinates: { latitude: 47.37, longitude: 8.54 },
-  realtor: { name: 'R' },
-};
 
 describe('example-config gate', () => {
-  it('every field referenced by filters/scoring is populated by BOTH shipping sources', () => {
+  it('every field referenced by filters/scoring is populated by the shipping source', () => {
     const referenced = new Set([...fieldsReferencedByFilters(), ...fieldsReferencedByScoring()]);
     const flatfoxFields = new Set(flatPaths(mapFlatfoxListing(flatfoxSample)));
-    const homegateFields = new Set(flatPaths(mapHomegateListing(homegateSample)));
     const missingFromFlatfox: string[] = [];
-    const missingFromHomegate: string[] = [];
     for (const f of referenced) {
       if (!flatfoxFields.has(f)) missingFromFlatfox.push(f);
-      if (!homegateFields.has(f)) missingFromHomegate.push(f);
     }
-    expect({ missingFromFlatfox, missingFromHomegate }).toEqual({
-      missingFromFlatfox: [],
-      missingFromHomegate: [],
-    });
+    expect({ missingFromFlatfox }).toEqual({ missingFromFlatfox: [] });
   });
 });

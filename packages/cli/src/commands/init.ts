@@ -10,7 +10,6 @@ const SAMPLE_CONFIG_YAML = `\
 enabled:
   sources:
     - {name: flatfox-zurich,   plugin: source-flatfox,    config: plugins/source-flatfox.yaml}
-    - {name: homegate-witikon, plugin: source-homegate,   config: plugins/source-homegate.yaml}
   notifiers:
     - {name: telegram, plugin: notifier-telegram, config: plugins/notifier-telegram.yaml}
 log:
@@ -48,7 +47,7 @@ notify:
   daily_quota: 5
 `;
 
-function flatfoxSample(lat: number, lon: number, priceMax: number, roomsMin: number) {
+function flatfoxSample(priceMax: number, roomsMin: number) {
   return `\
 schedule: '*/5 * * * *'
 search:
@@ -65,27 +64,6 @@ fetch:
 `;
 }
 
-function homegateSample(lat: number, lon: number, priceMax: number, roomsMin: number) {
-  return `\
-schedule: '*/5 * * * *'
-auth:
-  basic_user: '\${env.HOMEGATE_BASIC_USER}'
-  basic_pass: '\${env.HOMEGATE_BASIC_PASS}'
-  app_secret: '\${env.HOMEGATE_APP_SECRET}'
-search:
-  location: {lat: ${lat}, lon: ${lon}, radius_m: 2000}
-  monthly_rent: {from: 1500, to: ${priceMax}}
-  number_of_rooms: {from: ${roomsMin}, to: 6}
-  living_space: {from: 60}
-  categories: [APARTMENT]
-  offer_type: RENT
-fetch:
-  page_size: 50
-  max_pages: 2
-  pace_ms: 5000
-`;
-}
-
 const telegramSample = `\
 bot_token: '\${env.TELEGRAM_BOT_TOKEN}'
 chat_id:   '\${env.TELEGRAM_CHAT_ID}'
@@ -95,9 +73,6 @@ format: compact
 const ENV_SKELETON = `\
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
-# HOMEGATE_BASIC_USER=
-# HOMEGATE_BASIC_PASS=
-# HOMEGATE_APP_SECRET=
 `;
 
 /**
@@ -147,16 +122,6 @@ export function registerInit(prog: Command): void {
       if (p.isCancel(tgToken)) return p.cancel('aborted');
       const tgChat = await p.text({ message: 'Telegram chat id (numeric, e.g. 123456789):' });
       if (p.isCancel(tgChat)) return p.cancel('aborted');
-      const lat = await p.text({
-        message: 'Search center latitude (default: 47.3553 = Witikon)',
-        placeholder: '47.3553',
-      });
-      if (p.isCancel(lat)) return p.cancel('aborted');
-      const lon = await p.text({
-        message: 'Search center longitude (default: 8.5839)',
-        placeholder: '8.5839',
-      });
-      if (p.isCancel(lon)) return p.cancel('aborted');
       const priceMax = await p.text({ message: 'Max monthly rent CHF', placeholder: '4000' });
       if (p.isCancel(priceMax)) return p.cancel('aborted');
       const roomsMin = await p.text({ message: 'Min rooms', placeholder: '3.5' });
@@ -168,18 +133,13 @@ export function registerInit(prog: Command): void {
       mkdirSync(join(paths.configDir, 'plugins'), { recursive: true });
       writeIfMissing(
         join(paths.configDir, 'plugins', 'source-flatfox.yaml'),
-        flatfoxSample(Number(lat), Number(lon), Number(priceMax), Number(roomsMin)),
-        force,
-      );
-      writeIfMissing(
-        join(paths.configDir, 'plugins', 'source-homegate.yaml'),
-        homegateSample(Number(lat), Number(lon), Number(priceMax), Number(roomsMin)),
+        flatfoxSample(Number(priceMax), Number(roomsMin)),
         force,
       );
       writeIfMissing(join(paths.configDir, 'plugins', 'notifier-telegram.yaml'), telegramSample, force);
       writeIfMissing(
         join(process.cwd(), '.env'),
-        `TELEGRAM_BOT_TOKEN=${tgToken}\nTELEGRAM_CHAT_ID=${tgChat}\n# HOMEGATE_BASIC_USER=...\n# HOMEGATE_BASIC_PASS=...\n# HOMEGATE_APP_SECRET=...\n`,
+        `TELEGRAM_BOT_TOKEN=${tgToken}\nTELEGRAM_CHAT_ID=${tgChat}\n`,
         force,
       );
       const db = openDb(paths.dbFile);

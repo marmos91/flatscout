@@ -1,12 +1,12 @@
 # Zurich Family — reference Wabe config
 
 A worked example targeting 3+ room rentals in Zürich under CHF 5000/month, scored
-on rent-value, size, and rooms. Uses both shipping source plugins
-(`source-flatfox`, `source-homegate`) and the `notifier-telegram` sink.
+on rent-value, size, and rooms. Uses the `source-flatfox` shipping source plugin
+and the `notifier-telegram` sink.
 
 ## What this config does
 
-- **Sources:** Flatfox (public REST, no auth) and Homegate (mobile API, HMAC).
+- **Sources:** Flatfox (public REST, no auth).
 - **Filters:** rooms ≥ 3, total price ≤ 5000 CHF, country = CH.
 - **Scoring:** rent-value (50 %, lower better), size (30 %, bigger better),
   rooms (20 %, more better). Notifies when final score ≥ 70.
@@ -27,11 +27,6 @@ on rent-value, size, and rooms. Uses both shipping source plugins
    ```env
    TELEGRAM_BOT_TOKEN=<your-token>
    TELEGRAM_CHAT_ID=<your-chat-id>
-
-   # Optional — only needed if you enable the homegate source
-   HOMEGATE_BASIC_USER=…
-   HOMEGATE_BASIC_PASS=…
-   HOMEGATE_APP_SECRET=…
    ```
 
    See the **Telegram setup** section of the [root README](../../README.md#telegram-setup)
@@ -60,6 +55,6 @@ on rent-value, size, and rooms. Uses both shipping source plugins
   `config.yaml` — no code changes needed.
 - Adjust thresholds in `scoring.yaml` (`notify.threshold`, `notify.daily_quota`).
 - Tighten filters by editing `filters.yaml`. Any field referenced must be
-  populated by every enabled source mapper — the gate test in
+  populated by the enabled source mapper — the gate test in
   `examples/zurich-family/test/gate.test.ts` enforces this for the shipping
   config.

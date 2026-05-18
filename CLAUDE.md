@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Repository overview
 
-Wabe is a self-hosted, AGPL-3.0 apartment-hunting agent for the Swiss market. This is the **Phase 1 + 2 vertical slice** — a monorepo containing the core engine, plugin SDK, two source plugins (Flatfox public REST, Homegate mobile API), one Telegram notifier, persistence (SQLite + Drizzle), and a CLI.
+Wabe is a self-hosted, AGPL-3.0 apartment-hunting agent for the Swiss market. This is the **Phase 1 + 2 vertical slice** — a monorepo containing the core engine, plugin SDK, one source plugin (Flatfox public REST), one Telegram notifier, persistence (SQLite + Drizzle), and a CLI. A Homegate source was originally scoped but is deferred to its own future spec; see `docs/research/2026-05-18-homegate-investigation.md` for findings (Auth0 + DataDome + Cloudflare).
 
 ## Key commands
 
@@ -28,7 +28,6 @@ pnpm wabe <command>        # run the CLI from built output
 - `packages/server` — orchestrator: plugin loader (dynamic `import` by name + Zod validation), pipeline, node-cron scheduler, daily quota gate, per-source circuit-breaker.
 - `packages/cli` — commander-based `wabe` binary: `init` / `scan` / `start` / `list` / `migrate` / `doctor`.
 - `plugins/source-flatfox` — pure-TS client for Flatfox's public `/api/v1/public-listing/` (no auth).
-- `plugins/source-homegate` — pure-TS client for `api.homegate.ch` (Basic Auth + HMAC `X-App-Id`). Wire-protocol facts translated from MIT-licensed [denysvitali/homegate-rs](https://github.com/denysvitali/homegate-rs). No Rust runtime dep.
 - `plugins/notifier-telegram` — grammY send-only (URL buttons; no callback handling).
 
 ## Where to add things
@@ -48,7 +47,7 @@ pnpm wabe <command>        # run the CLI from built output
 - **NEVER auto-submit applications.** Final send is always a human tap. (This is enforced in the spec; do not weaken it.)
 - Commit messages are concise. No mention of Claude / AI / co-authored-by tags.
 - Sign commits when possible (`git commit -S`).
-- Slice-only: `@wabe/server`'s `dependencies` lists the three shipping plugins (`source-flatfox`, `source-homegate`, `notifier-telegram`) so the loader's dynamic `import()` resolves them at runtime from `packages/server/node_modules/` out-of-the-box.
+- Slice-only: `@wabe/server`'s `dependencies` lists the shipping plugins (`source-flatfox`, `notifier-telegram`) so the loader's dynamic `import()` resolves them at runtime from `packages/server/node_modules/` out-of-the-box.
 - Published-package distribution (users `npm install @wabe/<plugin>` separately) is deferred to a later spec.
 
 ## License compliance
@@ -62,6 +61,6 @@ AGPL-3.0. New dependencies must be AGPL-compatible (MIT/BSD/Apache-2/ISC/MPL all
 - Integration test in `@wabe/server` uses an in-test stub source + stub notifier + in-memory SQLite — verifies the full pipeline.
 - Gate test in `examples/zurich-family/` enforces that example configs only reference fields the shipping sources actually populate.
 
-## Attribution
+## Deferred sources
 
-The `@wabe/source-homegate` plugin re-implements wire-protocol facts from the MIT-licensed reference project [denysvitali/homegate-rs](https://github.com/denysvitali/homegate-rs) (HMAC algorithm + embedded app credentials). The plugin's README documents the provenance and the procedure for the user to capture fresh credentials via mitmproxy on their own phone if Homegate ever rotates them.
+A Homegate source plugin (`@wabe/source-homegate`) was originally scoped in this slice and was modeled on the MIT-licensed [denysvitali/homegate-rs](https://github.com/denysvitali/homegate-rs) reference. The Homegate API has since moved to Auth0 OAuth2 (Google SSO) with a DataDome + Cloudflare anti-bot stack on the public search endpoint, which is out of scope for this slice. See `docs/research/2026-05-18-homegate-investigation.md` for the captured findings and the candidate re-implementation paths.

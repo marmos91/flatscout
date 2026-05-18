@@ -1,7 +1,6 @@
 enabled:
   sources:
     - {name: flatfox-zurich,   plugin: source-flatfox,    config: plugins/source-flatfox.yaml}
-    - {name: homegate-witikon, plugin: source-homegate,   config: plugins/source-homegate.yaml}
   notifiers:
     - {name: telegram, plugin: notifier-telegram, config: plugins/notifier-telegram.yaml}
 log:
