@@ -1,23 +1,39 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import webExtension from 'vite-plugin-web-extension';
-import { resolve } from 'node:path';
 
 /**
  * Bundles the Wabe Bridge extension as manifest-v3 for Chrome + Firefox.
  *
  * Output: `dist/`. Load that directory unpacked via `chrome://extensions`
  * (Developer mode → Load unpacked) or `about:debugging` → Load Temporary Add-on.
+ *
+ * Firefox MV3 still ships with `background.service_worker` disabled — we have
+ * to advertise the same entry point as `background.scripts` instead. Chrome
+ * MV3 requires `service_worker`. We compute the right shape at build time
+ * based on `WABE_EXT_BROWSER`.
  */
-export default defineConfig({
-  plugins: [
-    webExtension({
-      manifest: resolve(__dirname, 'manifest.json'),
-      additionalInputs: ['src/popup.html'],
-      browser: process.env.WABE_EXT_BROWSER ?? 'chrome',
-    }),
-  ],
-  build: {
-    outDir: 'dist',
-    emptyOutDir: true,
-  },
+export default defineConfig(() => {
+  const browser = process.env.WABE_EXT_BROWSER ?? 'chrome';
+  const baseManifest = JSON.parse(
+    readFileSync(resolve(__dirname, 'manifest.json'), 'utf8'),
+  ) as Record<string, unknown>;
+  const manifest = { ...baseManifest } as Record<string, unknown>;
+  if (browser === 'firefox') {
+    manifest.background = { scripts: ['src/background.ts'] };
+  }
+  return {
+    plugins: [
+      webExtension({
+        manifest: () => manifest,
+        additionalInputs: ['src/popup.html'],
+        browser,
+      }),
+    ],
+    build: {
+      outDir: 'dist',
+      emptyOutDir: true,
+    },
+  };
 });

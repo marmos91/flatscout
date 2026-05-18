@@ -11,11 +11,13 @@ pnpm --filter @wabe/extension-wabe build
 
 Output: `apps/extension-wabe/dist/`.
 
-By default the build targets Chrome. Build for Firefox by setting the env var:
+By default the build targets Chrome (`background.service_worker`). Build for Firefox (which still ships MV3 with service workers disabled and requires `background.scripts`) by setting the env var:
 
 ```
 WABE_EXT_BROWSER=firefox pnpm --filter @wabe/extension-wabe build
 ```
+
+The two builds overwrite the same `dist/` — rebuild before loading into the other browser.
 
 ## Install (Chrome)
 
