@@ -1,0 +1,17 @@
+version: 1
+source: example-2026-05-18
+fetched_at: '2026-05-18T00:00:00Z'
+agencies:
+  # Two illustrative entries. Replace with your real curated list.
+  - id: example-walde
+    name: Walde Immobilien (example)
+    website: https://walde.ch
+    canton: ZH
+    platform: schemaorg
+    enabled: false  # example registry — flip to true after verifying the site emits JSON-LD
+  - id: example-nobilis
+    name: Nobilis (example)
+    website: https://nobilis.ch
+    canton: ZH
+    platform: schemaorg
+    enabled: false

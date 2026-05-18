@@ -251,6 +251,9 @@ importers:
       '@wabe/source-realadvisor':
         specifier: workspace:*
         version: link:../../plugins/source-realadvisor
+      '@wabe/source-schemaorg':
+        specifier: workspace:*
+        version: link:../../plugins/source-schemaorg
       node-cron:
         specifier: ^3.0.3
         version: 3.0.3

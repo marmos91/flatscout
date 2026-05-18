@@ -5,6 +5,7 @@ enabled:
     - {name: realadvisor-zurich,  plugin: source-realadvisor,          config: plugins/source-realadvisor.yaml}
     - {name: immoscout24-sitemap, plugin: source-immoscout24-sitemap,  config: plugins/source-immoscout24-sitemap.yaml}
     - {name: immobilier-zurich,   plugin: source-immobilier-ch,        config: plugins/source-immobilier-ch.yaml}
+    - {name: agencies-zurich,     plugin: agencies,                    config: plugins/agencies.yaml}
   notifiers:
     - {name: telegram, plugin: notifier-telegram, config: plugins/notifier-telegram.yaml}
 log:

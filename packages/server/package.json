@@ -21,6 +21,7 @@
     "@wabe/source-immobilier-ch": "workspace:*",
     "@wabe/source-immoscout24-sitemap": "workspace:*",
     "@wabe/source-realadvisor": "workspace:*",
+    "@wabe/source-schemaorg": "workspace:*",
     "node-cron": "^3.0.3",
     "pino": "^9.4.0",
     "pino-pretty": "^11.2.2",
