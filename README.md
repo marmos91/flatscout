@@ -1,4 +1,9 @@
-# Wabe
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/wabe-dark.svg">
+    <img alt="Wabe — finding home in Switzerland" src="assets/wabe-light.svg" width="480">
+  </picture>
+</p>
 
 > Open-source, customizable apartment scout for the Swiss market.
 
