@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { Command } from 'commander';
+import type { Command } from 'commander';
 import * as p from '@clack/prompts';
 import { resolvePaths } from '../paths.js';
 import { openDb } from '@wabe/db';

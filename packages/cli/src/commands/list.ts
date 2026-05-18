@@ -1,4 +1,4 @@
-import { Command } from 'commander';
+import type { Command } from 'commander';
 import { openDb } from '@wabe/db';
 import { resolvePaths } from '../paths.js';
 

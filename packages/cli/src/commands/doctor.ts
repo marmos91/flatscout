@@ -1,4 +1,4 @@
-import { Command } from 'commander';
+import type { Command } from 'commander';
 import { request } from 'undici';
 import { loadConfig, loadPlugins } from '@wabe/server';
 import { openDb } from '@wabe/db';
