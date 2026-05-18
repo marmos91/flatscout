@@ -11,9 +11,14 @@ export interface SitemapEntry {
 
 const xml = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@_' });
 
+// DataDome blocks undici's default user-agent. Use a real browser UA — the
+// sitemap is public per robots.txt, this just gets past the bot filter.
+const UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
 /** Fetch + gunzip + parse a single sitemap leaf (e.g. pdp-1-sitemap-RENT-de.xml.gz). */
 export async function fetchSitemapLeaf(url: string, signal: AbortSignal): Promise<SitemapEntry[]> {
-  const res = await request(url, { signal, method: 'GET' });
+  const res = await request(url, { signal, method: 'GET', headers: { 'user-agent': UA } });
   if (res.statusCode !== 200) throw new Error(`sitemap leaf ${url} responded ${res.statusCode}`);
   const buf = Buffer.from(await res.body.arrayBuffer());
   const xmlText = url.endsWith('.gz') ? gunzipSync(buf).toString('utf8') : buf.toString('utf8');
@@ -42,7 +47,7 @@ export function parseUrlset(xmlText: string): SitemapEntry[] {
 
 /** Fetch the sitemap index and return absolute URLs of every rent-language leaf. */
 export async function discoverRentLeaves(rootUrl: string, signal: AbortSignal): Promise<string[]> {
-  const res = await request(rootUrl, { signal, method: 'GET' });
+  const res = await request(rootUrl, { signal, method: 'GET', headers: { 'user-agent': UA } });
   if (res.statusCode !== 200) throw new Error(`sitemap index responded ${res.statusCode}`);
   const text = await res.body.text();
   const parsed = xml.parse(text) as { sitemapindex?: { sitemap?: unknown } };

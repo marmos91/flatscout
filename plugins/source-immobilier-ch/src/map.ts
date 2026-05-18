@@ -1,5 +1,5 @@
 import type { RawListing } from '@wabe/core';
-import type { DetailPayload } from './detail.js';
+import { flattenImages, type DetailPayload } from './detail.js';
 
 function toNum(v: unknown): number | null {
   if (v === null || v === undefined) return null;
@@ -41,7 +41,7 @@ export function mapDetail(url: string, payload: DetailPayload): RawListing | nul
     },
     features: {},
     description: product.description ?? null,
-    photos: Array.isArray(product.image) ? product.image : product.image ? [product.image] : [],
+    photos: flattenImages(product.image),
     available_from: null,
     lease_until: null,
     rental_term: 'unknown',

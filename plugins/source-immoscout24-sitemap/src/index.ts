@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { PluginExport, Source, Context } from '@wabe/plugin-sdk';
 import type { WabeDb } from '@wabe/db';
-import { discoverRentLeaves, fetchSitemapLeaf } from './sitemap.js';
+import { discoverRentLeaves, fetchSitemapLeaf, type SitemapEntry } from './sitemap.js';
 import { loadSeenUrls, saveSeenUrls } from './state.js';
 import { mapEntry } from './map.js';
 
@@ -29,7 +29,16 @@ const plugin: Source = {
     const newSeen = new Set(seen ?? []);
     for (const leafUrl of filtered) {
       if (ctx.signal.aborted) return;
-      const entries = await fetchSitemapLeaf(leafUrl, ctx.signal);
+      let entries: SitemapEntry[];
+      try {
+        entries = await fetchSitemapLeaf(leafUrl, ctx.signal);
+      } catch (err) {
+        // Sitemap index sometimes lists leaves that 404 transiently. Skip and
+        // continue rather than failing the whole scan — other leaves still
+        // produce useful diffs.
+        ctx.logger.warn({ leafUrl, err: (err as Error).message }, 'sitemap leaf failed; skipping');
+        continue;
+      }
       for (const e of entries) {
         if (!e.loc) continue;
         const isNew = !newSeen.has(e.loc);

@@ -1,11 +1,26 @@
 import { request } from 'undici';
 
+/** JSON-LD `image` can be a bare URL string, an ImageObject `{url}`, or arrays of either. */
+export type JsonLdImage = string | { url?: string; contentUrl?: string };
+
 export interface JsonLdProduct {
   '@type': 'Product';
   name?: string;
   description?: string;
   offers?: { price?: number | string; priceCurrency?: string };
-  image?: string | string[];
+  image?: JsonLdImage | JsonLdImage[];
+}
+
+/** Returns absolute http(s) URLs from any supported `image` value; relative paths and non-URL strings are dropped. */
+export function flattenImages(image: JsonLdImage | JsonLdImage[] | undefined): string[] {
+  if (!image) return [];
+  const arr = Array.isArray(image) ? image : [image];
+  const out: string[] = [];
+  for (const item of arr) {
+    const url = typeof item === 'string' ? item : (item.url ?? item.contentUrl);
+    if (typeof url === 'string' && /^https?:\/\//i.test(url)) out.push(url);
+  }
+  return out;
 }
 
 export interface JsonLdResidence {

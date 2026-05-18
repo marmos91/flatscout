@@ -27,4 +27,15 @@ describe('mapDetail', () => {
   it('returns null when Product is absent', () => {
     expect(mapDetail('https://x/abc-1', { product: null, residence: null })).toBeNull();
   });
+  it('extracts photo URLs from ImageObject + mixed shapes', () => {
+    const out = mapDetail('https://x/y-9', {
+      product: {
+        '@type': 'Product',
+        offers: { price: '1', priceCurrency: 'CHF' },
+        image: [{ url: 'https://x/a.jpg' }, 'https://x/b.jpg', { contentUrl: 'https://x/c.jpg' }],
+      },
+      residence: null,
+    });
+    expect(out?.photos).toEqual(['https://x/a.jpg', 'https://x/b.jpg', 'https://x/c.jpg']);
+  });
 });
