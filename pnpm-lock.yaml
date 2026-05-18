@@ -81,6 +81,9 @@ importers:
       '@clack/prompts':
         specifier: ^0.7.0
         version: 0.7.0
+      '@wabe/browser-runtime':
+        specifier: workspace:*
+        version: link:../browser-runtime
       '@wabe/core':
         specifier: workspace:*
         version: link:../core

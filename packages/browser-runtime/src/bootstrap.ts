@@ -25,12 +25,27 @@ export interface BootstrapResult {
 export interface BootstrapOptions {
   /** Absolute URL of the page to load. */
   target: string;
-  /** Optional CSS selector to wait for in addition to `networkidle`. */
+  /** Optional CSS selector to wait for in addition to the load event. */
   waitFor?: string;
+  /**
+   * Load event to wait for. `networkidle` is brittle on pages that poll
+   * (anti-bot challenges, telemetry). For interactive flows where a human
+   * solves a CAPTCHA, prefer `domcontentloaded` so navigation resolves as
+   * soon as the DOM is parseable and the `waitForUser` hook takes over.
+   * Default: `networkidle`.
+   */
+  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
   /** Navigation / selector timeout in milliseconds. Defaults to 30_000. */
   timeoutMs?: number;
   /** Run Chromium headless. Defaults to `true`. */
   headless?: boolean;
+  /**
+   * Optional async hook invoked after navigation settles but before cookies
+   * are harvested. Use this for interactive flows where a human must clear
+   * a challenge (CAPTCHA, click-to-continue) before the cookie set is
+   * trustworthy. Resolve to proceed; reject to abort the bootstrap.
+   */
+  waitForUser?: () => Promise<void>;
   /** Optional pino logger. */
   logger?: Logger;
 }
@@ -81,9 +96,15 @@ export async function bootstrapSite(opts: BootstrapOptions): Promise<BootstrapRe
     const page: Page = await context.newPage();
 
     try {
-      await page.goto(opts.target, { waitUntil: 'networkidle', timeout: timeoutMs });
+      await page.goto(opts.target, {
+        waitUntil: opts.waitUntil ?? 'networkidle',
+        timeout: timeoutMs,
+      });
       if (opts.waitFor) {
         await page.waitForSelector(opts.waitFor, { timeout: timeoutMs });
+      }
+      if (opts.waitForUser) {
+        await opts.waitForUser();
       }
     } catch (cause) {
       if (cause instanceof playwrightErrors.TimeoutError) {

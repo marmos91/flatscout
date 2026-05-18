@@ -102,15 +102,15 @@ The plugin also persists a per-install identity at
 `${dataDir}/homegate-install.json` — a stable UUID kept for future endpoint
 paths that bind to a per-client identity.
 
-> **⚠️ Known DataDome wall (open).** Live smoke testing (2026-05-18) shows
-> `api.homegate.ch` rejects requests with `HomegateAntiBotError` even with
-> correctly-issued DataDome cookies and matching Chrome UA. DataDome appears
-> to bind cookies to TLS fingerprint (JA3), and undici's Node TLS handshake
-> differs from Chromium's. Plumbing is correct — cookies harvest, retry runs
-> once, error surfaces cleanly — but the iOS-app API endpoint is unreachable
-> from a non-Chromium TLS client. Follow-up spec: replay search via
-> Playwright XHR interception against `www.homegate.ch`'s SPA backend
-> (different endpoint, same TLS stack as cookie issuer).
+> **⚠️ DataDome CAPTCHA — manual bootstrap required.** Live testing
+> (2026-05-18) confirms `api.homegate.ch` requires a high-friction
+> DataDome cookie that only the deep search URL issues, and only after
+> a CAPTCHA solve. Pure-headless automation cannot pass the challenge.
+>
+> **Use `wabe homegate-bootstrap`** to launch a visible browser, manually
+> solve the CAPTCHA once, and harvest the cookie. Subsequent `wabe scan`
+> runs reuse the cached cookie for ~12h. See findings:
+> `docs/research/2026-05-18-homegate-web-xhr-probe.md`.
 
 ## Authentication (optional)
 

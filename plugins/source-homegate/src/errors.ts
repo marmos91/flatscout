@@ -10,14 +10,16 @@ export class HomegateHttpError extends Error {
 }
 
 /**
- * Thrown after a 403 + re-bootstrap retry has also returned 403. Signals that
- * DataDome is actively blocking the current install / IP fingerprint and a
- * fresh stealth handshake did not restore access.
+ * Thrown after a 403 + re-bootstrap retry has also returned 403. The
+ * auto-headless bootstrap produces low-friction DataDome cookies that do
+ * NOT clear `api.homegate.ch` — see
+ * `docs/research/2026-05-18-homegate-web-xhr-probe.md`. Recover by running
+ * `wabe homegate-bootstrap` to manually solve the CAPTCHA once.
  */
 export class HomegateAntiBotError extends HomegateHttpError {
   constructor(url: string, body?: string) {
     super(403, url, body);
-    this.message = `homegate anti-bot block (403) persisted after re-bootstrap for ${url}`;
+    this.message = `homegate DataDome 403 persisted after auto-bootstrap for ${url} — run \`wabe homegate-bootstrap\` to harvest a CAPTCHA-solved cookie`;
   }
 }
 

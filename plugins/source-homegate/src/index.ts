@@ -94,6 +94,8 @@ const plugin: Source = {
  * import these instead of duplicating the literals.
  */
 export { AUDIENCE, AUTH_BASE, CLIENT_ID, REDIRECT_URI, SCOPE } from './constants.js';
+export { resolveDataDir };
+export { saveCookies, loadCookies, isCookieFresh } from './cookies.js';
 
 const exp: PluginExport = { kind: 'source', plugin };
 export default exp;
