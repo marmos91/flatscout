@@ -11,6 +11,7 @@ import { registerPurge } from './commands/purge.js';
 import { registerLogin } from './commands/login.js';
 import { registerLogout } from './commands/logout.js';
 import { registerHomegateBootstrap } from './commands/homegate-bootstrap.js';
+import { splash } from './splash.js';
 
 const program = new Command();
 program
@@ -18,7 +19,15 @@ program
   .description('Wabe — Swiss apartment hunting agent')
   .version('0.0.0')
   .option('-c, --config <dir>', 'config directory (overrides XDG)')
-  .option('-d, --data-dir <dir>', 'data directory (overrides XDG)');
+  .option('-d, --data-dir <dir>', 'data directory (overrides XDG)')
+  .addHelpText('beforeAll', `${splash()}\n`);
+
+program
+  .command('splash')
+  .description('print the Wabe splash banner')
+  .action(() => {
+    console.log(splash());
+  });
 
 registerInit(program);
 registerScan(program);
