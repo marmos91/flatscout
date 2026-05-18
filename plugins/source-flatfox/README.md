@@ -47,6 +47,9 @@ sources:
 | `search.surface_min` | int | — | Min living surface in m². |
 | `search.offer_type` | string | `"RENT"` | Flatfox offer type. |
 | `search.category` | string | `"APARTMENT"` | Flatfox `object_category`. Observed live enum: `APARTMENT`, `PARK`, `INDUSTRY`, `SECONDARY`, `SHARED` (the API catalog skews heavily toward parking spots, so this filter is essential). |
+| `search.near.lat` | number | — | Latitude of the anchor for the radius filter (decimal degrees). |
+| `search.near.lon` | number | — | Longitude of the anchor for the radius filter (decimal degrees). |
+| `search.near.radius_m` | int | — | Radius in meters. Listings without coordinates (`latitude`/`longitude`) are excluded when `near` is set. |
 | `fetch.page_size` | int | `100` | Page size sent to the API. |
 | `fetch.max_pages` | int | `5` | Stop after this many pages per scan. |
 | `fetch.pace_ms` | int | `2000` | Sleep between page requests. |
@@ -105,6 +108,26 @@ sources:
         rooms_min: 2.5
         surface_min: 60
 ```
+
+Walking distance to a specific address (1 km radius around Zürich HB):
+
+```yaml
+sources:
+  - name: source-flatfox
+    enabled: true
+    config:
+      search:
+        cities: ["Zürich"]
+        price_max: 4500
+        rooms_min: 3
+        near:
+          lat: 47.3782
+          lon: 8.5404
+          radius_m: 1000
+```
+
+Distance is computed client-side via the haversine formula; listings whose
+API response omits coordinates are excluded.
 
 Aggressive scan (one minute cadence, smaller pages, more retries):
 

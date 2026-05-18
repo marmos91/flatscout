@@ -6,6 +6,13 @@ search:
   surface_min: 60
   offer_type: RENT
   category: APARTMENT
+  # Optional: restrict to listings within `radius_m` meters of a lat/lon anchor.
+  # Computed client-side via haversine; listings without coordinates are excluded.
+  # Example below would centre the search on Zürich HB at 1.5km.
+  # near:
+  #   lat: 47.3782
+  #   lon: 8.5404
+  #   radius_m: 1500
 fetch:
   page_size: 100
   max_pages: 3
