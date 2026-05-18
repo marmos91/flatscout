@@ -6,29 +6,27 @@ Manifest v3 WebExtension that pairs with a local Wabe agent. The extension's ser
 
 ```
 pnpm install
-pnpm --filter @wabe/extension-wabe build
+pnpm --filter @wabe/extension-wabe build          # builds both targets
+# or one at a time:
+pnpm --filter @wabe/extension-wabe build:chrome   # → dist/chrome/
+pnpm --filter @wabe/extension-wabe build:firefox  # → dist/firefox/
 ```
 
-Output: `apps/extension-wabe/dist/`.
-
-By default the build targets Chrome (`background.service_worker`). Build for Firefox (which still ships MV3 with service workers disabled and requires `background.scripts`) by setting the env var:
-
-```
-WABE_EXT_BROWSER=firefox pnpm --filter @wabe/extension-wabe build
-```
-
-The two builds overwrite the same `dist/` — rebuild before loading into the other browser.
+The two builds emit different `background.*` keys: Chrome MV3 requires
+`service_worker`, Firefox MV3 still ships with service workers disabled and
+requires `background.scripts`. The Chrome and Firefox outputs are kept in
+separate subdirectories so they don't shadow each other.
 
 ## Install (Chrome)
 
 1. Visit `chrome://extensions`.
 2. Toggle "Developer mode" on (top-right).
-3. Click "Load unpacked" and pick `apps/extension-wabe/dist/`.
+3. Click "Load unpacked" and pick `apps/extension-wabe/dist/chrome/`.
 
 ## Install (Firefox)
 
 1. Visit `about:debugging` → "This Firefox" → "Load Temporary Add-on".
-2. Pick `apps/extension-wabe/dist/manifest.json`.
+2. Pick `apps/extension-wabe/dist/firefox/manifest.json`.
 
 (Firefox temporary add-ons unload on browser restart — re-load each session until the extension is signed.)
 

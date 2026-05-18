@@ -4,10 +4,11 @@ import { defineConfig } from 'vite';
 import webExtension from 'vite-plugin-web-extension';
 
 /**
- * Bundles the Wabe Bridge extension as manifest-v3 for Chrome + Firefox.
+ * Bundles the Wabe Bridge extension as manifest-v3.
  *
- * Output: `dist/`. Load that directory unpacked via `chrome://extensions`
- * (Developer mode → Load unpacked) or `about:debugging` → Load Temporary Add-on.
+ * Output: `dist/<browser>/` (e.g. `dist/chrome/`, `dist/firefox/`). Load that
+ * directory unpacked via `chrome://extensions` (Developer mode → Load unpacked)
+ * or `about:debugging` → Load Temporary Add-on.
  *
  * Firefox MV3 still ships with `background.service_worker` disabled — we have
  * to advertise the same entry point as `background.scripts` instead. Chrome
@@ -32,7 +33,7 @@ export default defineConfig(() => {
       }),
     ],
     build: {
-      outDir: 'dist',
+      outDir: `dist/${browser}`,
       emptyOutDir: true,
     },
   };

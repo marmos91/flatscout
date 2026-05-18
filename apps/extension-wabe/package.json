@@ -4,7 +4,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "vite build",
+    "build": "pnpm build:chrome && pnpm build:firefox",
+    "build:chrome": "WABE_EXT_BROWSER=chrome vite build",
+    "build:firefox": "WABE_EXT_BROWSER=firefox vite build",
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"

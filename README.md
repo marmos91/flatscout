@@ -167,9 +167,9 @@ Setup:
 #      port: 8431
 #      host: 127.0.0.1
 
-# 2. Build the extension
+# 2. Build the extension (both Chrome + Firefox dists)
 pnpm --filter @wabe/extension-wabe build
-# (For Firefox: WABE_EXT_BROWSER=firefox pnpm --filter @wabe/extension-wabe build)
+# Output: apps/extension-wabe/dist/chrome/ and dist/firefox/
 
 # 3. Start the daemon (this also starts the bridge)
 pnpm wabe start
@@ -178,8 +178,8 @@ pnpm wabe start
 pnpm wabe bridge pair
 
 # 5. Load the extension
-#    Chrome:  chrome://extensions → Developer mode → Load unpacked → apps/extension-wabe/dist/
-#    Firefox: about:debugging → This Firefox → Load Temporary Add-on → manifest.json
+#    Chrome:  chrome://extensions → Developer mode → Load unpacked → apps/extension-wabe/dist/chrome/
+#    Firefox: about:debugging → This Firefox → Load Temporary Add-on → apps/extension-wabe/dist/firefox/manifest.json
 # 6. Open the extension popup, paste URL + token, click Save & connect.
 
 # 7. Verify
