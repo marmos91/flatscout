@@ -26,9 +26,7 @@ describe('migrations + schema', () => {
   it('creates listings table with expected columns', () => {
     const db = openDb(dbPath);
     migrate(db);
-    const cols = db._raw
-      .prepare(`PRAGMA table_info(listings)`)
-      .all() as Array<{ name: string }>;
+    const cols = db._raw.prepare('PRAGMA table_info(listings)').all() as Array<{ name: string }>;
     const names = cols.map((c) => c.name).sort();
     expect(names).toEqual(
       [
@@ -51,10 +49,19 @@ describe('migrations + schema', () => {
     const now = Date.now();
     db._raw
       .prepare(
-        `INSERT INTO listings (id,source,url,fingerprint,payload,first_seen_at,last_seen_at,status) VALUES (?,?,?,?,?,?,?,?)`,
+        'INSERT INTO listings (id,source,url,fingerprint,payload,first_seen_at,last_seen_at,status) VALUES (?,?,?,?,?,?,?,?)',
       )
-      .run('flatfox:1', 'flatfox', 'https://x.example/1', 'flatfox:1', JSON.stringify({ a: 1 }), now, now, 'new');
-    const row = db._raw.prepare<[], { id: string }>(`SELECT id FROM listings`).get();
+      .run(
+        'flatfox:1',
+        'flatfox',
+        'https://x.example/1',
+        'flatfox:1',
+        JSON.stringify({ a: 1 }),
+        now,
+        now,
+        'new',
+      );
+    const row = db._raw.prepare<[], { id: string }>('SELECT id FROM listings').get();
     expect(row?.id).toBe('flatfox:1');
   });
 

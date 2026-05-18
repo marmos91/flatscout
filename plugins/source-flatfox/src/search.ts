@@ -28,7 +28,8 @@ export function applyClientFilters(items: FlatfoxApiResult[], cfg: SearchConfig)
     const price = r.price_display ?? Number.POSITIVE_INFINITY;
     if (cfg.price_max != null && price > cfg.price_max) return false;
     if (cfg.price_min != null && price < cfg.price_min) return false;
-    const rooms = typeof r.number_of_rooms === 'string' ? Number.parseFloat(r.number_of_rooms) : r.number_of_rooms ?? 0;
+    const rooms =
+      typeof r.number_of_rooms === 'string' ? Number.parseFloat(r.number_of_rooms) : (r.number_of_rooms ?? 0);
     if (cfg.rooms_min != null && rooms < cfg.rooms_min) return false;
     if (cfg.rooms_max != null && rooms > cfg.rooms_max) return false;
     if (cfg.surface_min != null && (r.surface_living ?? 0) < cfg.surface_min) return false;

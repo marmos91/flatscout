@@ -27,7 +27,10 @@ async function evaluateOne(rule: FilterRule, listing: unknown): Promise<FilterRe
   if (value === undefined) return onMissing(rule.on_missing, `missing field: ${rule.field}`);
   return compareOp(rule.op, value, rule.value)
     ? { passed: true }
-    : { passed: false, reason: `${rule.field} ${rule.op} ${JSON.stringify(rule.value)} → got ${JSON.stringify(value)}` };
+    : {
+        passed: false,
+        reason: `${rule.field} ${rule.op} ${JSON.stringify(rule.value)} → got ${JSON.stringify(value)}`,
+      };
 }
 
 function onMissing(mode: 'fail' | 'pass' | 'skip', reason: string): FilterResult {

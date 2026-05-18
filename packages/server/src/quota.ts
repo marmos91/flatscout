@@ -5,11 +5,16 @@ function utcDay(d: Date = new Date()): string {
 }
 
 export class Quota {
-  constructor(private db: WabeDb, private dailyMax: number) {}
+  constructor(
+    private db: WabeDb,
+    private dailyMax: number,
+  ) {}
 
   remaining(today: Date = new Date()): number {
     const day = utcDay(today);
-    const row = this.db._raw.prepare<[string], { sent_count: number }>(`SELECT sent_count FROM quota_log WHERE day = ?`).get(day);
+    const row = this.db._raw
+      .prepare<[string], { sent_count: number }>('SELECT sent_count FROM quota_log WHERE day = ?')
+      .get(day);
     const used = row?.sent_count ?? 0;
     return Math.max(0, this.dailyMax - used);
   }

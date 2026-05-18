@@ -4,14 +4,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MockAgent, setGlobalDispatcher } from 'undici';
 import { migrate, openDb, type WabeDb } from '@wabe/db';
-import {
-  CircuitBreaker,
-  Quota,
-  createLogger,
-  loadConfig,
-  loadPlugins,
-  runOnce,
-} from '../src/index.js';
+import { CircuitBreaker, Quota, createLogger, loadConfig, loadPlugins, runOnce } from '../src/index.js';
 
 let dir: string;
 let db: WabeDb;
@@ -42,7 +35,7 @@ function writeConfig(): void {
 log: {level: silent}
 `,
   );
-  writeFileSync(join(dir, 'filters.yaml'), `filters: []\n`);
+  writeFileSync(join(dir, 'filters.yaml'), 'filters: []\n');
   writeFileSync(
     join(dir, 'scoring.yaml'),
     `scoring:
@@ -115,10 +108,7 @@ describe('E2E pipeline with real plugins', () => {
     const cfg = loadConfig(dir);
     const loaded = await loadPlugins(cfg);
     const breakers = new Map(
-      loaded.sources.map((s) => [
-        s.name,
-        new CircuitBreaker({ failuresBeforeOpen: 3, cooldownMs: 10_000 }),
-      ]),
+      loaded.sources.map((s) => [s.name, new CircuitBreaker({ failuresBeforeOpen: 3, cooldownMs: 10_000 })]),
     );
     const quota = new Quota(db, cfg.scoring.notify.daily_quota);
 
@@ -133,16 +123,16 @@ describe('E2E pipeline with real plugins', () => {
       quota,
     });
 
-    const listings = db._raw.prepare(`SELECT id FROM listings ORDER BY id`).all() as Array<{
+    const listings = db._raw.prepare('SELECT id FROM listings ORDER BY id').all() as Array<{
       id: string;
     }>;
     expect(listings.map((l) => l.id).sort()).toEqual(['flatfox:100', 'flatfox:101']);
-    const scores = db._raw.prepare(`SELECT listing_id, final FROM scores`).all() as Array<{
+    const scores = db._raw.prepare('SELECT listing_id, final FROM scores').all() as Array<{
       listing_id: string;
       final: number;
     }>;
     expect(scores.length).toBe(2);
-    const notifs = db._raw.prepare(`SELECT listing_id FROM notifications`).all() as Array<{
+    const notifs = db._raw.prepare('SELECT listing_id FROM notifications').all() as Array<{
       listing_id: string;
     }>;
     expect(notifs.length).toBe(2);

@@ -15,8 +15,7 @@ const CONFIG_DIR = join(__dirname, '..', 'config');
 function flatPaths(obj: unknown, prefix = ''): string[] {
   if (obj === null || obj === undefined) return prefix ? [prefix] : [];
   if (typeof obj !== 'object') return prefix ? [prefix] : [];
-  if (Array.isArray(obj))
-    return obj.flatMap((v, i) => flatPaths(v, prefix ? `${prefix}.${i}` : String(i)));
+  if (Array.isArray(obj)) return obj.flatMap((v, i) => flatPaths(v, prefix ? `${prefix}.${i}` : String(i)));
   const out: string[] = [];
   for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
     const p = prefix ? `${prefix}.${k}` : k;

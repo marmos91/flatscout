@@ -55,9 +55,7 @@ describe('fetchPage', () => {
   it('retries on 500 then succeeds', async () => {
     const { agent, pool } = mocked();
     pool.intercept({ method: 'POST', path: '/search/listings' }).reply(500, 'boom').times(1);
-    pool
-      .intercept({ method: 'POST', path: '/search/listings' })
-      .reply(200, { results: [], total: 0 });
+    pool.intercept({ method: 'POST', path: '/search/listings' }).reply(200, { results: [], total: 0 });
     const r = await fetchPage(search, 10, 0, {
       pool,
       auth,

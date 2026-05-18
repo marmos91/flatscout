@@ -12,9 +12,7 @@ export const SearchConfig = z.object({
       to: z.number().int().positive().optional(),
     })
     .default({}),
-  number_of_rooms: z
-    .object({ from: z.number().optional(), to: z.number().optional() })
-    .default({}),
+  number_of_rooms: z.object({ from: z.number().optional(), to: z.number().optional() }).default({}),
   living_space: z
     .object({
       from: z.number().int().nonnegative().optional(),

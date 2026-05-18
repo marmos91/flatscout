@@ -6,7 +6,9 @@ import { openDb, migrate } from '@wabe/db';
 import { Quota } from '../src/quota.js';
 
 let dir: string;
-beforeEach(() => (dir = mkdtempSync(join(tmpdir(), 'wabe-q-'))));
+beforeEach(() => {
+  dir = mkdtempSync(join(tmpdir(), 'wabe-q-'));
+});
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
 describe('Quota', () => {

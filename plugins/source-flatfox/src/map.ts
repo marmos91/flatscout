@@ -26,10 +26,13 @@ export interface FlatfoxApiResult {
 
 export function mapFlatfoxListing(r: FlatfoxApiResult): RawListing {
   const url = `https://flatfox.ch/en/flat/${r.pk}${r.slug ? `/${r.slug}` : ''}`;
-  const rooms = typeof r.number_of_rooms === 'string' ? Number.parseFloat(r.number_of_rooms) : r.number_of_rooms ?? null;
+  const rooms =
+    typeof r.number_of_rooms === 'string'
+      ? Number.parseFloat(r.number_of_rooms)
+      : (r.number_of_rooms ?? null);
   const photos = Array.isArray(r.images)
     ? r.images
-        .map((img) => (typeof img === 'string' ? img : img.original_url ?? ''))
+        .map((img) => (typeof img === 'string' ? img : (img.original_url ?? '')))
         .filter((u) => u.length > 0)
     : [];
   // NOTE: deviated from plan — RawListing requires features/contact/enriched/extra (defaulted but

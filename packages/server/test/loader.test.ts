@@ -5,7 +5,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.js';
 
 let dir: string;
-beforeEach(() => (dir = mkdtempSync(join(tmpdir(), 'wabe-load-'))));
+beforeEach(() => {
+  dir = mkdtempSync(join(tmpdir(), 'wabe-load-'));
+});
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
 describe('config loader', () => {
@@ -19,7 +21,7 @@ log:
   level: info
 `,
     );
-    writeFileSync(join(dir, 'filters.yaml'), `filters: []\n`);
+    writeFileSync(join(dir, 'filters.yaml'), 'filters: []\n');
     writeFileSync(
       join(dir, 'scoring.yaml'),
       `scoring:

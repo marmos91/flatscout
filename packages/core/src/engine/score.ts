@@ -20,7 +20,8 @@ export async function scoreListing(dims: ScoringDim[], listing: unknown): Promis
     }
     const raw = await resolveMetric(dim.metric, listing);
     if (raw === undefined) {
-      if (dim.on_missing === 'fail') throw new ScoringFailure(`missing metric ${dim.metric} for dim ${dim.name}`);
+      if (dim.on_missing === 'fail')
+        throw new ScoringFailure(`missing metric ${dim.metric} for dim ${dim.name}`);
       if (dim.on_missing === 'skip_dim') continue;
       // 'zero': contribute 0 with full weight
       breakdown[dim.name] = 0;

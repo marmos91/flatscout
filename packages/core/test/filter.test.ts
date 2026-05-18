@@ -21,9 +21,7 @@ describe('evaluateFilters', () => {
   });
 
   it('fails on first non-matching filter', async () => {
-    const filters: FilterRule[] = [
-      { kind: 'field', field: 'rooms', op: '>=', value: 5, on_missing: 'fail' },
-    ];
+    const filters: FilterRule[] = [{ kind: 'field', field: 'rooms', op: '>=', value: 5, on_missing: 'fail' }];
     const r = await evaluateFilters(filters, listing);
     expect(r.passed).toBe(false);
     if (!r.passed) expect(r.reason).toContain('rooms');
@@ -52,28 +50,34 @@ describe('evaluateFilters', () => {
 
   it('supports in and not_in ops', async () => {
     expect(
-      (await evaluateFilters(
-        [{ kind: 'field', field: 'rooms', op: 'not_in', value: [3, 4], on_missing: 'fail' }],
-        listing,
-      )).passed,
+      (
+        await evaluateFilters(
+          [{ kind: 'field', field: 'rooms', op: 'not_in', value: [3, 4], on_missing: 'fail' }],
+          listing,
+        )
+      ).passed,
     ).toBe(false);
   });
 
   it('supports contains for strings and arrays', async () => {
     expect(
-      (await evaluateFilters(
-        [{ kind: 'field', field: 'location.city', op: 'contains', value: 'üri', on_missing: 'fail' }],
-        listing,
-      )).passed,
+      (
+        await evaluateFilters(
+          [{ kind: 'field', field: 'location.city', op: 'contains', value: 'üri', on_missing: 'fail' }],
+          listing,
+        )
+      ).passed,
     ).toBe(true);
   });
 
   it('supports regex op', async () => {
     expect(
-      (await evaluateFilters(
-        [{ kind: 'field', field: 'location.city', op: 'regex', value: '^Z', on_missing: 'fail' }],
-        listing,
-      )).passed,
+      (
+        await evaluateFilters(
+          [{ kind: 'field', field: 'location.city', op: 'regex', value: '^Z', on_missing: 'fail' }],
+          listing,
+        )
+      ).passed,
     ).toBe(true);
   });
 });

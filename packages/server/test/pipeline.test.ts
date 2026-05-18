@@ -56,7 +56,15 @@ const baseRaw = (id: string, price: number, rooms: number): RawListing => ({
   total_floors: null,
   built_year: null,
   renovated_year: null,
-  location: { coords: null, address: null, postal_code: null, city: 'Zürich', region: null, country: 'CH', neighborhood: null },
+  location: {
+    coords: null,
+    address: null,
+    postal_code: null,
+    city: 'Zürich',
+    region: null,
+    country: 'CH',
+    neighborhood: null,
+  },
   description: null,
   photos: [],
   available_from: null,
@@ -65,20 +73,28 @@ const baseRaw = (id: string, price: number, rooms: number): RawListing => ({
 
 describe('runOnce pipeline', () => {
   it('routes 2 above-threshold listings to the notifier', async () => {
-    const items: RawListing[] = [
-      baseRaw('a', 2200, 4),
-      baseRaw('b', 3000, 3.5),
-      baseRaw('c', 2100, 4.5),
-    ];
+    const items: RawListing[] = [baseRaw('a', 2200, 4), baseRaw('b', 3000, 3.5), baseRaw('c', 2100, 4.5)];
     const src = makeStubSource('src-a', items);
     const { notifier, sent } = makeStubNotifier();
     await runOnce({
       cfg: {
         configDir: dir,
-        top: { enabled: { sources: [], scorers: [], notifiers: [], enrichers: [], applicators: [] }, log: { level: 'silent' } },
+        top: {
+          enabled: { sources: [], scorers: [], notifiers: [], enrichers: [], applicators: [] },
+          log: { level: 'silent' },
+        },
         filters: { filters: [{ kind: 'field', field: 'rooms', op: '>=', value: 3.5, on_missing: 'fail' }] },
         scoring: {
-          scoring: [{ type: 'rule', name: 'price', weight: 100, metric: 'price.total', on_missing: 'zero', normalize: { type: 'linear', best: 2000, worst: 4000, invert: true } }],
+          scoring: [
+            {
+              type: 'rule',
+              name: 'price',
+              weight: 100,
+              metric: 'price.total',
+              on_missing: 'zero',
+              normalize: { type: 'linear', best: 2000, worst: 4000, invert: true },
+            },
+          ],
           notify: { threshold: 60, daily_quota: 10 },
         },
       },
@@ -108,10 +124,22 @@ describe('runOnce pipeline', () => {
     await runOnce({
       cfg: {
         configDir: dir,
-        top: { enabled: { sources: [], scorers: [], notifiers: [], enrichers: [], applicators: [] }, log: { level: 'silent' } },
+        top: {
+          enabled: { sources: [], scorers: [], notifiers: [], enrichers: [], applicators: [] },
+          log: { level: 'silent' },
+        },
         filters: { filters: [] },
         scoring: {
-          scoring: [{ type: 'rule', name: 'p', weight: 1, metric: 'price.total', on_missing: 'zero', normalize: { type: 'linear', best: 2000, worst: 4000, invert: true } }],
+          scoring: [
+            {
+              type: 'rule',
+              name: 'p',
+              weight: 1,
+              metric: 'price.total',
+              on_missing: 'zero',
+              normalize: { type: 'linear', best: 2000, worst: 4000, invert: true },
+            },
+          ],
           notify: { threshold: 0, daily_quota: 10 },
         },
       },
@@ -127,7 +155,7 @@ describe('runOnce pipeline', () => {
       quota: new Quota(db, 10),
     });
     expect(sent.map((s) => s.id)).toEqual(['stub:z']);
-    const failures = db._raw.prepare(`SELECT plugin FROM failures`).all() as Array<{ plugin: string }>;
+    const failures = db._raw.prepare('SELECT plugin FROM failures').all() as Array<{ plugin: string }>;
     expect(failures.map((f) => f.plugin)).toContain('bad');
   });
 
@@ -140,9 +168,24 @@ describe('runOnce pipeline', () => {
       runOnce({
         cfg: {
           configDir: dir,
-          top: { enabled: { sources: [], scorers: [], notifiers: [], enrichers: [], applicators: [] }, log: { level: 'silent' } },
+          top: {
+            enabled: { sources: [], scorers: [], notifiers: [], enrichers: [], applicators: [] },
+            log: { level: 'silent' },
+          },
           filters: { filters: [] },
-          scoring: { scoring: [{ type: 'rule', name: 'p', weight: 1, metric: 'price.total', on_missing: 'zero', normalize: { type: 'linear', best: 1, worst: 2, invert: false } }], notify: { threshold: 0, daily_quota: 10 } },
+          scoring: {
+            scoring: [
+              {
+                type: 'rule',
+                name: 'p',
+                weight: 1,
+                metric: 'price.total',
+                on_missing: 'zero',
+                normalize: { type: 'linear', best: 1, worst: 2, invert: false },
+              },
+            ],
+            notify: { threshold: 0, daily_quota: 10 },
+          },
         },
         db,
         logger: createLogger('silent'),
@@ -157,7 +200,7 @@ describe('runOnce pipeline', () => {
     await baseRun();
     expect(breaker.state()).toBe('open');
     await baseRun(); // breaker open, source skipped → no new failure
-    const fails = db._raw.prepare(`SELECT COUNT(*) AS c FROM failures`).get() as { c: number };
+    const fails = db._raw.prepare('SELECT COUNT(*) AS c FROM failures').get() as { c: number };
     expect(fails.c).toBe(3);
   });
 });

@@ -48,7 +48,10 @@ describe('fetchPage', () => {
 
   it('throws after retries exhausted', async () => {
     const { pool, agent } = mockedPool();
-    pool.intercept({ method: 'GET', path: /public-listing/ }).reply(500, 'boom').times(2);
+    pool
+      .intercept({ method: 'GET', path: /public-listing/ })
+      .reply(500, 'boom')
+      .times(2);
     await expect(
       fetchPage(SearchConfig.parse({}), 10, 0, {
         pool,

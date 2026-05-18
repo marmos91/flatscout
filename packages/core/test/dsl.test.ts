@@ -39,16 +39,22 @@ describe('ScoringDim', () => {
       name: 'year',
       weight: 5,
       metric: 'built_year',
-      normalize: { type: 'step', bands: [{ gte: 2015, score: 10 }, { else: true, score: 4 }] },
+      normalize: {
+        type: 'step',
+        bands: [
+          { gte: 2015, score: 10 },
+          { else: true, score: 4 },
+        ],
+      },
     });
     if (dim.type !== 'rule') throw new Error('expected rule');
     if (dim.normalize.type !== 'step') throw new Error('expected step');
     expect(dim.normalize.bands).toHaveLength(2);
   });
   it('accepts an llm dim with prompt_file', () => {
-    expect(
-      ScoringDim.parse({ type: 'llm', name: 'vibe', weight: 30, prompt_file: 'p.md' }),
-    ).toMatchObject({ type: 'llm' });
+    expect(ScoringDim.parse({ type: 'llm', name: 'vibe', weight: 30, prompt_file: 'p.md' })).toMatchObject({
+      type: 'llm',
+    });
   });
   it('rejects an llm dim with both prompt and prompt_file', () => {
     expect(() =>

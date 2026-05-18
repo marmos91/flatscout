@@ -53,7 +53,11 @@ describe('renderCard', () => {
   });
 
   it('handles missing photos and missing neighborhood gracefully', () => {
-    const l: Listing = { ...baseListing, photos: [], location: { ...baseListing.location, neighborhood: null } };
+    const l: Listing = {
+      ...baseListing,
+      photos: [],
+      location: { ...baseListing.location, neighborhood: null },
+    };
     const r = renderCard({ listing: l, score: { final: 50, breakdown: {} } });
     expect(r.text).toContain('Zürich');
     expect(r.buttons).toHaveLength(1);

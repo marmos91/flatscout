@@ -24,9 +24,7 @@ export interface HomegateListing {
 
 export function mapHomegateListing(item: HomegateListing): RawListing {
   const photos = Array.isArray(item.images)
-    ? item.images
-        .map((i) => (typeof i === 'string' ? i : i.url ?? ''))
-        .filter((u) => u.length > 0)
+    ? item.images.map((i) => (typeof i === 'string' ? i : (i.url ?? ''))).filter((u) => u.length > 0)
     : [];
   const url = item.link ?? `https://www.homegate.ch/rent/${item.id}`;
   // NOTE: deviated from plan — same fix as source-flatfox. RawListing requires

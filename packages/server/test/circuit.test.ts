@@ -3,7 +3,7 @@ import { CircuitBreaker } from '../src/circuit.js';
 
 describe('CircuitBreaker', () => {
   it('opens after N consecutive failures', () => {
-    let now = 0;
+    const now = 0;
     const cb = new CircuitBreaker({ failuresBeforeOpen: 3, cooldownMs: 1000, now: () => now });
     cb.recordFailure();
     cb.recordFailure();
@@ -21,7 +21,7 @@ describe('CircuitBreaker', () => {
     expect(cb.allow()).toBe(true);
   });
   it('success resets failure count', () => {
-    let now = 0;
+    const now = 0;
     const cb = new CircuitBreaker({ failuresBeforeOpen: 3, cooldownMs: 1000, now: () => now });
     cb.recordFailure();
     cb.recordFailure();

@@ -37,23 +37,31 @@ describe('normalize', () => {
   });
   it('step supports lt and eq bands', () => {
     expect(
-      normalize({ type: 'step', bands: [{ lt: 0, score: 0 }, { eq: 0, score: 5 }, { else: true, score: 10 }] }, 0),
+      normalize(
+        {
+          type: 'step',
+          bands: [
+            { lt: 0, score: 0 },
+            { eq: 0, score: 5 },
+            { else: true, score: 10 },
+          ],
+        },
+        0,
+      ),
     ).toBeCloseTo(0.5);
   });
   it('sigmoid: midpoint → 0.5, large positive → near 1', () => {
     expect(normalize({ type: 'sigmoid', midpoint: 0, steepness: 1, invert: false }, 0)).toBeCloseTo(0.5);
-    expect(normalize({ type: 'sigmoid', midpoint: 0, steepness: 1, invert: false }, 10)).toBeGreaterThan(0.99);
+    expect(normalize({ type: 'sigmoid', midpoint: 0, steepness: 1, invert: false }, 10)).toBeGreaterThan(
+      0.99,
+    );
     expect(normalize({ type: 'sigmoid', midpoint: 0, steepness: 1, invert: false }, -10)).toBeLessThan(0.01);
   });
   it('sigmoid with invert flips', () => {
     expect(normalize({ type: 'sigmoid', midpoint: 0, steepness: 1, invert: true }, 10)).toBeLessThan(0.01);
   });
   it('categorical maps value via map, divides by 10', () => {
-    expect(
-      normalize({ type: 'categorical', map: { S: 10, N: 2 }, default: 4 }, 'S'),
-    ).toBeCloseTo(1);
-    expect(
-      normalize({ type: 'categorical', map: { S: 10, N: 2 }, default: 4 }, 'XX'),
-    ).toBeCloseTo(0.4);
+    expect(normalize({ type: 'categorical', map: { S: 10, N: 2 }, default: 4 }, 'S')).toBeCloseTo(1);
+    expect(normalize({ type: 'categorical', map: { S: 10, N: 2 }, default: 4 }, 'XX')).toBeCloseTo(0.4);
   });
 });

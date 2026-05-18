@@ -3,8 +3,8 @@ import { Listing, evaluateFilters, scoreListing } from '@wabe/core';
 import type { WabeDb } from '@wabe/db';
 import type { LoadedConfig } from './config.js';
 import type { LoadedPlugin } from './loader.js';
-import { CircuitBreaker } from './circuit.js';
-import { Quota } from './quota.js';
+import type { CircuitBreaker } from './circuit.js';
+import type { Quota } from './quota.js';
 import { upsertListing } from './dedupe.js';
 
 export interface RunOptions {
@@ -53,7 +53,7 @@ async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise
       }
       const score = await scoreListing(opts.cfg.scoring.scoring, enriched);
       opts.db._raw
-        .prepare(`INSERT INTO scores (listing_id, scored_at, final, breakdown) VALUES (?,?,?,?)`)
+        .prepare('INSERT INTO scores (listing_id, scored_at, final, breakdown) VALUES (?,?,?,?)')
         .run(enriched.id, Date.now(), score.final, JSON.stringify(score.breakdown));
       if (score.final < opts.cfg.scoring.notify.threshold) {
         log.debug({ listing_id: enriched.id, score: score.final }, 'below threshold');
@@ -72,7 +72,7 @@ async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise
     log.error({ err }, 'source pipeline failed');
     breaker?.recordFailure();
     opts.db._raw
-      .prepare(`INSERT INTO failures (plugin, occurred_at, message, stack) VALUES (?,?,?,?)`)
+      .prepare('INSERT INTO failures (plugin, occurred_at, message, stack) VALUES (?,?,?,?)')
       .run(src.name, Date.now(), (err as Error).message, (err as Error).stack ?? null);
   }
 }
@@ -87,12 +87,12 @@ async function notifySafely(
     const ctx = { logger: log, config: n.config, signal: opts.signal, db: opts.db };
     const res = await n.plugin.notify(event, ctx);
     opts.db._raw
-      .prepare(`INSERT INTO notifications (listing_id, notifier, sent_at, payload) VALUES (?,?,?,?)`)
+      .prepare('INSERT INTO notifications (listing_id, notifier, sent_at, payload) VALUES (?,?,?,?)')
       .run(event.listing.id, n.name, Date.now(), JSON.stringify({ ok: res.ok, message_id: res.message_id }));
   } catch (err) {
     log.error({ err }, 'notifier failed');
     opts.db._raw
-      .prepare(`INSERT INTO failures (plugin, listing_id, occurred_at, message, stack) VALUES (?,?,?,?,?)`)
+      .prepare('INSERT INTO failures (plugin, listing_id, occurred_at, message, stack) VALUES (?,?,?,?,?)')
       .run(n.name, event.listing.id, Date.now(), (err as Error).message, (err as Error).stack ?? null);
   }
 }
