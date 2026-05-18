@@ -1,0 +1,199 @@
+{
+  "$ref": "#/definitions/Listing",
+  "definitions": {
+    "Listing": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "first_seen_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_seen_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "price": {
+          "type": "object",
+          "properties": {
+            "rent_net": {
+              "type": ["number", "null"]
+            },
+            "extras": {
+              "type": ["number", "null"]
+            },
+            "total": {
+              "type": ["number", "null"]
+            },
+            "currency": {
+              "type": "string",
+              "default": "CHF"
+            },
+            "deposit_months": {
+              "type": ["number", "null"]
+            }
+          },
+          "required": ["rent_net", "extras", "total", "deposit_months"],
+          "additionalProperties": false
+        },
+        "rooms": {
+          "type": ["number", "null"]
+        },
+        "area_m2": {
+          "type": ["number", "null"]
+        },
+        "floor": {
+          "type": ["number", "null"]
+        },
+        "total_floors": {
+          "type": ["number", "null"]
+        },
+        "built_year": {
+          "type": ["number", "null"]
+        },
+        "renovated_year": {
+          "type": ["number", "null"]
+        },
+        "location": {
+          "type": "object",
+          "properties": {
+            "coords": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "address": {
+              "type": ["string", "null"]
+            },
+            "postal_code": {
+              "type": ["string", "null"]
+            },
+            "city": {
+              "type": ["string", "null"]
+            },
+            "region": {
+              "type": ["string", "null"]
+            },
+            "country": {
+              "type": "string",
+              "default": "CH"
+            },
+            "neighborhood": {
+              "type": ["string", "null"]
+            }
+          },
+          "required": ["coords", "address", "postal_code", "city", "region", "neighborhood"],
+          "additionalProperties": false
+        },
+        "features": {
+          "type": "object",
+          "additionalProperties": {},
+          "default": {}
+        },
+        "description": {
+          "type": ["string", "null"]
+        },
+        "photos": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          },
+          "default": []
+        },
+        "available_from": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "agency": {
+          "type": ["string", "null"]
+        },
+        "contact": {
+          "type": "object",
+          "properties": {
+            "email": {
+              "type": ["string", "null"]
+            },
+            "phone": {
+              "type": ["string", "null"]
+            },
+            "form_url": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uri"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        },
+        "enriched": {
+          "type": "object",
+          "additionalProperties": {},
+          "default": {}
+        },
+        "extra": {
+          "type": "object",
+          "additionalProperties": {},
+          "default": {}
+        }
+      },
+      "required": [
+        "id",
+        "source",
+        "url",
+        "first_seen_at",
+        "last_seen_at",
+        "price",
+        "rooms",
+        "area_m2",
+        "floor",
+        "total_floors",
+        "built_year",
+        "renovated_year",
+        "location",
+        "description",
+        "available_from",
+        "agency"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

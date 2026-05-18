@@ -1,0 +1,199 @@
+{
+  "$ref": "#/definitions/ScoringFile",
+  "definitions": {
+    "ScoringFile": {
+      "type": "object",
+      "properties": {
+        "scoring": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "rule"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "weight": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "metric": {
+                    "type": "string"
+                  },
+                  "normalize": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "linear"
+                          },
+                          "best": {
+                            "type": "number"
+                          },
+                          "worst": {
+                            "type": "number"
+                          },
+                          "invert": {
+                            "type": "boolean",
+                            "default": false
+                          }
+                        },
+                        "required": ["type", "best", "worst"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "step"
+                          },
+                          "bands": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "gte": {
+                                  "type": "number"
+                                },
+                                "lt": {
+                                  "type": "number"
+                                },
+                                "eq": {
+                                  "type": ["string", "number"]
+                                },
+                                "else": {
+                                  "type": "boolean"
+                                },
+                                "score": {
+                                  "type": "number",
+                                  "minimum": 0,
+                                  "maximum": 10
+                                }
+                              },
+                              "required": ["score"],
+                              "additionalProperties": false
+                            },
+                            "minItems": 1
+                          }
+                        },
+                        "required": ["type", "bands"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "sigmoid"
+                          },
+                          "midpoint": {
+                            "type": "number"
+                          },
+                          "steepness": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "invert": {
+                            "type": "boolean",
+                            "default": false
+                          }
+                        },
+                        "required": ["type", "midpoint", "steepness"],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "categorical"
+                          },
+                          "map": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 10
+                            }
+                          },
+                          "default": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 10,
+                            "default": 0
+                          }
+                        },
+                        "required": ["type", "map"],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "on_missing": {
+                    "type": "string",
+                    "enum": ["zero", "skip_dim", "fail"],
+                    "default": "zero"
+                  }
+                },
+                "required": ["type", "name", "weight", "metric", "normalize"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "llm"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "weight": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "prompt": {
+                    "type": "string"
+                  },
+                  "prompt_file": {
+                    "type": "string"
+                  }
+                },
+                "required": ["type", "name", "weight"],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "minItems": 1
+        },
+        "notify": {
+          "type": "object",
+          "properties": {
+            "threshold": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "default": 75
+            },
+            "daily_quota": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 5
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["scoring", "notify"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

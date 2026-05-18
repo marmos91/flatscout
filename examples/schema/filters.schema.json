@@ -1,0 +1,61 @@
+{
+  "$ref": "#/definitions/FiltersFile",
+  "definitions": {
+    "FiltersFile": {
+      "type": "object",
+      "properties": {
+        "filters": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "field"
+                  },
+                  "field": {
+                    "type": "string"
+                  },
+                  "op": {
+                    "type": "string",
+                    "enum": ["==", "!=", ">", ">=", "<", "<=", "in", "not_in", "contains", "regex"]
+                  },
+                  "value": {},
+                  "on_missing": {
+                    "type": "string",
+                    "enum": ["fail", "pass", "skip"],
+                    "default": "fail"
+                  }
+                },
+                "required": ["kind", "field", "op"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "expr"
+                  },
+                  "expr": {
+                    "type": "string"
+                  },
+                  "on_missing": {
+                    "$ref": "#/definitions/FiltersFile/properties/filters/items/anyOf/0/properties/on_missing"
+                  }
+                },
+                "required": ["kind", "expr"],
+                "additionalProperties": false
+              }
+            ]
+          }
+        }
+      },
+      "required": ["filters"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
