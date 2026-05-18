@@ -2,7 +2,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Command } from 'commander';
 import { request } from 'undici';
-import { loadConfig, loadPlugins, loadSecrets } from '@wabe/server';
+import { loadConfig, loadPlugins, loadSecrets, readHeartbeat } from '@wabe/server';
 import { openDb } from '@wabe/db';
 import { resolvePaths } from '../paths.js';
 
@@ -29,8 +29,10 @@ export function registerDoctor(prog: Command): void {
         console.log(`[${tag}] ${label}${detail ? ` — ${detail}` : ''}`);
         if (!pass) ok = false;
       };
+      let loadedCfg: Awaited<ReturnType<typeof loadConfig>> | null = null;
       try {
         const cfg = await loadConfig(paths.configDir);
+        loadedCfg = cfg;
         result('config files parse', true, `config dir: ${paths.configDir}`);
         const rentalDetail =
           cfg.rentalTerm.mode === 'short'
@@ -106,6 +108,34 @@ export function registerDoctor(prog: Command): void {
         }
       } catch (e) {
         result('homegate user token', true, `(skipped: ${(e as Error).message})`);
+      }
+
+      // Browser bridge — only reported when enabled in config. Always informational
+      // (never fails overall exit) because a missing heartbeat may just mean the daemon
+      // isn't running right now.
+      if (loadedCfg?.top.bridge.enabled) {
+        const hb = readHeartbeat(paths.dataDir);
+        if (!hb) {
+          result('browser bridge', true, 'enabled but no heartbeat — is `wabe start` running?');
+        } else if (hb.age_ms > 15_000) {
+          result('browser bridge', true, `stale (heartbeat ${Math.round(hb.age_ms / 1000)}s old)`);
+        } else if (!hb.connected) {
+          result(
+            'browser bridge',
+            true,
+            `server up on port ${hb.port}, no extension paired`,
+          );
+        } else {
+          const lastSeen =
+            hb.last_seen_at === 0
+              ? 'unknown'
+              : `${Math.round((Date.now() - hb.last_seen_at) / 1000)}s ago`;
+          result(
+            'browser bridge',
+            true,
+            `connected on port ${hb.port}, extension last seen ${lastSeen}`,
+          );
+        }
       }
 
       process.exit(ok ? 0 : 1);
