@@ -136,10 +136,9 @@ export async function bootstrapSite(opts: BootstrapOptions): Promise<BootstrapRe
       } catch (cause) {
         if (!opts.waitForUser) {
           if (cause instanceof playwrightErrors.TimeoutError) {
-            throw new BootstrapTimeoutError(
-              `Timed out after ${timeoutMs}ms loading ${opts.target}`,
-              { cause },
-            );
+            throw new BootstrapTimeoutError(`Timed out after ${timeoutMs}ms loading ${opts.target}`, {
+              cause,
+            });
           }
           throw new BootstrapError(`Navigation failed for ${opts.target}`, { cause });
         }
