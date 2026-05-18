@@ -21,9 +21,16 @@ describe('mapHit', () => {
     expect(out?.location.postal_code).toBe('8008');
   });
 
-  it('builds the canonical listing URL from the hit id', () => {
-    const out = mapHit({ id: 987 });
-    expect(out?.url).toBe('https://realadvisor.ch/en/listing/987');
+  it('builds locality search URL from postcode + locality slug', () => {
+    const out = mapHit({ id: 987, postcode: '8195', locality: 'Wäldi-Berg' });
+    expect(out?.url).toBe('https://realadvisor.ch/en/rent/8195-waldi-berg/apartment');
+  });
+
+  it('falls back to canton-wide search URL when postcode or locality missing', () => {
+    expect(mapHit({ id: 987 })?.url).toBe('https://realadvisor.ch/en/rent/canton-zurich/apartment');
+    expect(mapHit({ id: 987, postcode: '8008' })?.url).toBe(
+      'https://realadvisor.ch/en/rent/canton-zurich/apartment',
+    );
   });
 
   it('returns null when id is missing', () => {

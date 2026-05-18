@@ -1,18 +1,40 @@
 import type { RawListing } from '@wabe/core';
 import type { RawHit } from './client.js';
 
+/** Slugify a locality (e.g. "Wäldi-Berg" → "waldi-berg") for realadvisor URL paths. */
+function slugify(s: string): string {
+  return s
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Build the most specific working realadvisor URL.
+ *
+ * realadvisor doesn't expose stable per-listing canonical URLs — their detail
+ * page is a client-rendered modal opened via an encrypted clickout token, and
+ * direct `/en/listing/<id>` paths 404. Their sitemap-listed search URLs use
+ * `/en/rent/<postcode>-<locality-slug>/apartment`, which is always valid and
+ * scopes the result set tightly enough for a user to spot the listing.
+ */
+function buildUrl(h: RawHit): string {
+  if (h.postcode && h.locality) {
+    return `https://realadvisor.ch/en/rent/${h.postcode}-${slugify(h.locality)}/apartment`;
+  }
+  return 'https://realadvisor.ch/en/rent/canton-zurich/apartment';
+}
+
 /**
  * Map a realadvisor `RawHit` to Wabe's `RawListing`. Returns null when the hit
  * is unusable (e.g. missing id).
- *
- * The realadvisor clickout URL is an encrypted token resolved server-side, so
- * we point Wabe at the canonical realadvisor detail page derived from the
- * listing id instead of carrying the opaque clickout payload.
  */
 export function mapHit(h: RawHit): RawListing | null {
   if (h.id === undefined || h.id === null || h.id === '') return null;
   const idStr = String(h.id);
-  const url = `https://realadvisor.ch/en/listing/${idStr}`;
+  const url = buildUrl(h);
   const total = h.gross_rent_monthly ?? h.sale_price ?? null;
   return {
     id: `realadvisor:${idStr}`,
