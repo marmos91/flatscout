@@ -50,6 +50,14 @@ export const Listing = z.object({
     .default({}),
   enriched: z.record(z.string(), z.unknown()).default({}),
   extra: z.record(z.string(), z.unknown()).default({}),
+  /** sha256 of bucketed dedup fields (or URL when any bucket field is missing). Stamped by the pipeline at upsert time. */
+  canonical_key: z.string().default(''),
+  /** 0-100; higher wins on cross-source dedup tie. Stamped by the pipeline from `SOURCE_PRIORITY_DEFAULTS` unless overridden in config. */
+  source_priority: z.number().int().min(0).max(100).default(50),
+  // NOTE: deviated from plan — Task 2 listed only canonical_key + source_priority, but Task 4 constructs
+  // `Listing` values with seen_on_sources, so the schema must include it. Empty default for tests.
+  /** Sorted unique source names that have reported listings sharing this canonical_key. Materialised at upsert time. */
+  seen_on_sources: z.array(z.string()).default([]),
 });
 export type Listing = z.infer<typeof Listing>;
 
