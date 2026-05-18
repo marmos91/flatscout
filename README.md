@@ -148,6 +148,47 @@ Five plugin interfaces (`Source`, `Enricher`, `Scorer`, `Notifier`, `Applicator`
 
 The slice ships `Source` and `Notifier` plugins; `Enricher`, `Scorer` (LLM), and `Applicator` are type contracts only — implementations land in later phases.
 
+## Browser bridge (optional)
+
+Some Swiss portals (Homegate, ImmoScout24) sit behind DataDome / Cloudflare anti-bot stacks that fingerprint TLS + HTTP/2 in addition to cookies. Wabe ships an opt-in **browser bridge** that turns the user's own Chrome or Firefox into the upstream HTTPS transport, so the request goes out as ordinary human browsing.
+
+Architecture:
+
+- `@wabe/browser-bridge` — a `127.0.0.1`-only WebSocket server inside `wabe start`. Pairs with one extension via a 64-hex shared secret.
+- `apps/extension-wabe` — manifest v3 WebExtension (Chrome + Firefox). Service worker holds the WS, performs `fetch()` with `credentials: 'include'` on receipt of a request message, ships the response back.
+- `source-homegate` and `source-immoscout24-sitemap` select their transport at runtime: **bridge** (if a paired extension is connected) → **playwright** (headless fallback) → **undici** (anonymous last resort). IS24 additionally promotes from URL-only sitemap entries to full-detail listings (rooms / price / photos / description) when the bridge is connected.
+
+Setup:
+
+```bash
+# 1. Enable the bridge in config.yaml
+#    bridge:
+#      enabled: true
+#      port: 8431
+#      host: 127.0.0.1
+
+# 2. Build the extension
+pnpm --filter @wabe/extension-wabe build
+# (For Firefox: WABE_EXT_BROWSER=firefox pnpm --filter @wabe/extension-wabe build)
+
+# 3. Start the daemon (this also starts the bridge)
+pnpm wabe start
+
+# 4. Get the pairing URL + token
+pnpm wabe bridge pair
+
+# 5. Load the extension
+#    Chrome:  chrome://extensions → Developer mode → Load unpacked → apps/extension-wabe/dist/
+#    Firefox: about:debugging → This Firefox → Load Temporary Add-on → manifest.json
+# 6. Open the extension popup, paste URL + token, click Save & connect.
+
+# 7. Verify
+pnpm wabe bridge status     # expect: connected on port 8431 …
+pnpm wabe doctor            # expect: [OK ] browser bridge — connected …
+```
+
+Headless deployments (no GUI) can leave `bridge.enabled` off — `source-homegate` falls back to the Playwright transport automatically. The extension is only useful where you'd otherwise be fighting DataDome from a server.
+
 ## Plugin authoring 101
 
 A plugin is an npm package that default-exports `{ kind, plugin }`:
