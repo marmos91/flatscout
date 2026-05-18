@@ -93,4 +93,7 @@ describe('SOURCE_PRIORITY_DEFAULTS', () => {
     expect(SOURCE_PRIORITY_DEFAULTS['source-immobilier-ch']).toBe(70);
     expect(SOURCE_PRIORITY_DEFAULTS['source-realadvisor']).toBe(50);
   });
+  it('source-schemaorg lands in portal tier (70)', () => {
+    expect(SOURCE_PRIORITY_DEFAULTS['source-schemaorg']).toBe(70);
+  });
 });
