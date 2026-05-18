@@ -36,6 +36,10 @@ export const Listing = z.object({
   description: z.string().nullable(),
   photos: z.array(z.string().url()).default([]),
   available_from: z.coerce.date().nullable(),
+  /** Earliest known end of the lease; `null` means "no end date detected" (not the same as "open-ended"). */
+  lease_until: z.coerce.date().nullable().default(null),
+  /** Rental term classification: explicit short-term/temporary, explicit long-term/permanent, or unknown. */
+  rental_term: z.enum(['long', 'short', 'unknown']).default('unknown'),
   agency: z.string().nullable(),
   contact: z
     .object({

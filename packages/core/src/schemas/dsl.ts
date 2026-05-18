@@ -100,3 +100,34 @@ export type NotifyConfig = z.infer<typeof NotifyConfig>;
 export const FiltersFile = z.object({ filters: z.array(FilterRule) });
 /** Schema for the `scoring.yaml` config file (scoring dims + notify policy). */
 export const ScoringFile = z.object({ scoring: z.array(ScoringDim).min(1), notify: NotifyConfig });
+
+/** Optional desired-stay constraints for short-term searches. Either bound may be omitted. */
+export const StayWindow = z.object({
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+  min_months: z.number().positive().optional(),
+  max_months: z.number().positive().optional(),
+});
+export type StayWindow = z.infer<typeof StayWindow>;
+
+/** Rental-term policy: long vs short, optionally narrowed by a desired stay window. */
+export const RentalTermPolicy = z.object({
+  mode: z.enum(['long', 'short']),
+  exclude_unknown: z.boolean().default(false),
+  stay: StayWindow.optional(),
+});
+export type RentalTermPolicy = z.infer<typeof RentalTermPolicy>;
+
+/** Schema for the `rental_term.yaml` config file. Validates mode/stay coupling. */
+export const RentalTermFile = z
+  .object({ rental_term: RentalTermPolicy })
+  .superRefine((data, ctx) => {
+    if (data.rental_term.mode === 'long' && data.rental_term.stay) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['rental_term', 'stay'],
+        message: 'stay.* is only valid when rental_term.mode === "short"',
+      });
+    }
+  });
+export type RentalTermFile = z.infer<typeof RentalTermFile>;
