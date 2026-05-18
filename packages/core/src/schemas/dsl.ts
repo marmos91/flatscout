@@ -119,15 +119,13 @@ export const RentalTermPolicy = z.object({
 export type RentalTermPolicy = z.infer<typeof RentalTermPolicy>;
 
 /** Schema for the `rental_term.yaml` config file. Validates mode/stay coupling. */
-export const RentalTermFile = z
-  .object({ rental_term: RentalTermPolicy })
-  .superRefine((data, ctx) => {
-    if (data.rental_term.mode === 'long' && data.rental_term.stay) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['rental_term', 'stay'],
-        message: 'stay.* is only valid when rental_term.mode === "short"',
-      });
-    }
-  });
+export const RentalTermFile = z.object({ rental_term: RentalTermPolicy }).superRefine((data, ctx) => {
+  if (data.rental_term.mode === 'long' && data.rental_term.stay) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['rental_term', 'stay'],
+      message: 'stay.* is only valid when rental_term.mode === "short"',
+    });
+  }
+});
 export type RentalTermFile = z.infer<typeof RentalTermFile>;
