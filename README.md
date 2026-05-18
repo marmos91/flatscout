@@ -71,20 +71,61 @@ bot token and a chat id before `wabe scan` will do anything useful.
 ```bash
 pnpm wabe scan       # one-shot scan; pings Telegram on matches
 pnpm wabe start      # daemon mode; runs cron-driven scans
-pnpm wabe list       # browse persisted listings
+pnpm wabe list       # browse persisted listings (TERM / UNTIL columns indicate rental-term classification)
 pnpm wabe doctor     # diagnose config / DB / plugin health
+pnpm wabe purge      # clear listings / scores / notifications / quota
 ```
+
+### Rental-term filtering
+
+Most Swiss portals freely mix permanent leases with furnished sublets,
+Zwischenmieten, and Blueground-style serviced flats. Wabe classifies every
+incoming listing as `long` / `short` / `unknown` using:
+
+1. **Structured signals** — e.g. Flatfox `object_type === 'FURNISHED_FLAT'`.
+2. **Multilingual description regex** (DE / FR / IT / EN) — `befristet`,
+   `möbliert`, `auf Zeit`, `meublé`, `temporaneo`, `furnished`, `short-term`,
+   `sublet`, etc. Patterns like `befristet bis 31.05.2025` also extract a
+   concrete lease end date.
+
+The orchestrator runs a pre-filter **rental-term gate** that always rejects
+listings whose detected lease end date is in the past, then applies your
+policy from `rental_term.yaml`:
+
+```yaml
+rental_term:
+  mode: long              # 'long' | 'short'
+  exclude_unknown: false  # when true, also drops unknown-term listings
+```
+
+For short-term searches, narrow the match with an optional stay window:
+
+```yaml
+rental_term:
+  mode: short
+  stay:
+    from: 2026-06-01      # listing must be available by this date
+    to:   2026-08-31      # listing must remain available through this date
+    min_months: 1
+    max_months: 6
+```
+
+If `rental_term.yaml` is absent the engine defaults to
+`mode: long, exclude_unknown: false` — which drops the obvious furnished
+or expired offers without forcing a config decision on first run. The
+`wabe init` flow prompts for these settings interactively.
 
 ## Architecture
 
 ```
-config.yaml  →  loader  →  pipeline                            
-                              ├─ Source (flatfox)              
-                              ├─ Filter (hard, AND-combined)   
-                              ├─ Scorer (rule DSL, 0..100)     
-                              ├─ Quota gate (daily UTC)        
-                              └─ Notifier (telegram)           
-                                                                
+config.yaml  →  loader  →  pipeline
+                              ├─ Source (flatfox)
+                              ├─ Rental-term gate (long/short, expiry)
+                              ├─ Filter (hard, AND-combined)
+                              ├─ Scorer (rule DSL, 0..100)
+                              ├─ Quota gate (daily UTC)
+                              └─ Notifier (telegram)
+
 SQLite (Drizzle, FTS5) ←──── persists listings + scores + sends
 ```
 
