@@ -7,6 +7,7 @@ import { registerStart } from './commands/start.js';
 import { registerList } from './commands/list.js';
 import { registerMigrate } from './commands/migrate.js';
 import { registerDoctor } from './commands/doctor.js';
+import { registerPurge } from './commands/purge.js';
 
 const program = new Command();
 program
@@ -22,6 +23,7 @@ registerStart(program);
 registerList(program);
 registerMigrate(program);
 registerDoctor(program);
+registerPurge(program);
 
 program.parseAsync().catch((err) => {
   console.error(err);
