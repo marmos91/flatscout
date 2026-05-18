@@ -3,11 +3,14 @@ import type { PluginExport, Source, Context } from '@wabe/plugin-sdk';
 import { SearchConfig, applyClientFilters } from './search.js';
 import { fetchPage, sleep } from './client.js';
 import { mapFlatfoxListing } from './map.js';
+import { fetchCoverPhoto } from './photos.js';
 
 const FetchConfig = z.object({
   page_size: z.number().int().positive().default(100),
   max_pages: z.number().int().positive().default(5),
   pace_ms: z.number().int().nonnegative().default(2000),
+  /** When true, fetch the detail HTML page per listing to extract the cover photo URL (og:image). Adds one HTTP request per surviving listing. */
+  enrich_photos: z.boolean().default(true),
   backoff: z
     .object({
       on: z.array(z.number()).default([429, 500, 502, 503, 504]),
@@ -48,7 +51,15 @@ const plugin: Source = {
         signal: ctx.signal,
       });
       const filtered = applyClientFilters(res.results, cfg.search);
-      for (const r of filtered) yield mapFlatfoxListing(r);
+      for (const r of filtered) {
+        const mapped = mapFlatfoxListing(r);
+        if (cfg.fetch.enrich_photos && mapped.photos.length === 0) {
+          const cover = await fetchCoverPhoto(mapped.url, { signal: ctx.signal });
+          if (cover) mapped.photos = [cover];
+          await sleep(cfg.fetch.pace_ms, ctx.signal);
+        }
+        yield mapped;
+      }
       if (!res.next || res.results.length < cfg.fetch.page_size) break;
       if (page + 1 < cfg.fetch.max_pages) await sleep(cfg.fetch.pace_ms, ctx.signal);
     }

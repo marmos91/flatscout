@@ -52,7 +52,8 @@ sources:
 | `search.near.radius_m` | int | — | Radius in meters. Listings without coordinates (`latitude`/`longitude`) are excluded when `near` is set. |
 | `fetch.page_size` | int | `100` | Page size sent to the API. |
 | `fetch.max_pages` | int | `5` | Stop after this many pages per scan. |
-| `fetch.pace_ms` | int | `2000` | Sleep between page requests. |
+| `fetch.pace_ms` | int | `2000` | Sleep between page requests, and between detail-page enrichment requests when `enrich_photos` is on. |
+| `fetch.enrich_photos` | bool | `true` | Fetch each surviving listing's detail HTML to extract the cover photo URL (Open Graph `og:image`). Adds one HTTP request per surviving listing. Disable to halve outbound traffic at the cost of photo-less Telegram cards. |
 | `fetch.backoff.on` | int[] | `[429, 500, 502, 503, 504]` | Status codes that trigger retry. |
 | `fetch.backoff.retries` | int | `3` | Retry budget. |
 | `fetch.backoff.base_ms` | int | `2000` | Base for exponential backoff (`base * 2^attempt`). |
