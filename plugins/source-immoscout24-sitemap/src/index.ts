@@ -3,11 +3,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import type { PluginExport, Source, Context } from '@wabe/plugin-sdk';
 import type { WabeDb } from '@wabe/db';
-import {
-  BrowserBridgeTransport,
-  getCurrentBridge,
-  readHeartbeat,
-} from '@wabe/browser-bridge';
+import { BrowserBridgeTransport, getCurrentBridge, readHeartbeat } from '@wabe/browser-bridge';
 import { extractDetail } from './detail.js';
 import { discoverRentLeaves, fetchSitemapLeaf, type SitemapEntry } from './sitemap.js';
 import { loadSeenUrls, saveSeenUrls } from './state.js';
@@ -41,7 +37,7 @@ function resolveDataDir(): string {
 
 function bridgeReady(): boolean {
   const inProc = getCurrentBridge();
-  if (inProc && inProc.status().connected) return true;
+  if (inProc?.status().connected) return true;
   const hb = readHeartbeat(resolveDataDir());
   if (!hb) return false;
   if (hb.age_ms > STALE_HEARTBEAT_MS) return false;

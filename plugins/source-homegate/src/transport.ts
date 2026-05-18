@@ -64,7 +64,9 @@ export class HomegateBridgeTransport implements Transport {
     const resp = await this.inner.request({
       method: opts.method,
       url: opts.url,
-      headers: opts.hasBody ? { 'content-type': 'application/json', accept: 'application/json' } : { accept: 'application/json' },
+      headers: opts.hasBody
+        ? { 'content-type': 'application/json', accept: 'application/json' }
+        : { accept: 'application/json' },
       body: opts.body,
       timeout_ms: opts.timeoutMs,
       signal: opts.signal,
@@ -183,7 +185,7 @@ export function selectTransport(opts: SelectTransportOpts): Transport {
 
 function isBridgeAvailable(dataDir: string, checkHeartbeat: boolean): boolean {
   const inProc = getCurrentBridge();
-  if (inProc && inProc.status().connected) return true;
+  if (inProc?.status().connected) return true;
   if (!checkHeartbeat) return false;
   const hb = readHeartbeat(dataDir);
   if (!hb) return false;

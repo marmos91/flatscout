@@ -68,10 +68,7 @@ export function registerStart(prog: Command): void {
         const stopHeartbeat = startHeartbeat(paths.dataDir, () => liveBridge.status());
         shutdownHooks.push(stopHeartbeat);
         shutdownHooks.push(() => liveBridge.stop());
-        logger.info(
-          { host: cfg.top.bridge.host, port: bridge.port },
-          'browser bridge listening',
-        );
+        logger.info({ host: cfg.top.bridge.host, port: bridge.port }, 'browser bridge listening');
       }
 
       let shuttingDown = false;

@@ -3,12 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import pino from 'pino';
-import {
-  MockAgent,
-  setGlobalDispatcher,
-  getGlobalDispatcher,
-  type Dispatcher,
-} from 'undici';
+import { MockAgent, setGlobalDispatcher, getGlobalDispatcher, type Dispatcher } from 'undici';
 import type { BootstrapResult } from '@wabe/browser-runtime';
 import {
   HomegateBridgeTransport,
@@ -50,12 +45,10 @@ describe('UndiciTransport', () => {
   it('issues a request with default JSON headers', async () => {
     const pool = agent.get('https://api.homegate.ch');
     let seenHeaders: Record<string, string> = {};
-    pool
-      .intercept({ method: 'POST', path: '/search/listings' })
-      .reply((req) => {
-        seenHeaders = (req.headers as Record<string, string>) ?? {};
-        return { statusCode: 200, data: '{}' };
-      });
+    pool.intercept({ method: 'POST', path: '/search/listings' }).reply((req) => {
+      seenHeaders = (req.headers as Record<string, string>) ?? {};
+      return { statusCode: 200, data: '{}' };
+    });
     const t = new UndiciTransport();
     const res = await t.request({
       method: 'POST',
@@ -80,14 +73,12 @@ describe('PlaywrightTransport', () => {
     const pool = agent.get('https://api.homegate.ch');
     let cookie = '';
     let ua = '';
-    pool
-      .intercept({ method: 'POST', path: '/search/listings' })
-      .reply((req) => {
-        const h = (req.headers as Record<string, string>) ?? {};
-        cookie = h.Cookie ?? h.cookie ?? '';
-        ua = h['User-Agent'] ?? h['user-agent'] ?? '';
-        return { statusCode: 200, data: '{}' };
-      });
+    pool.intercept({ method: 'POST', path: '/search/listings' }).reply((req) => {
+      const h = (req.headers as Record<string, string>) ?? {};
+      cookie = h.Cookie ?? h.cookie ?? '';
+      ua = h['User-Agent'] ?? h['user-agent'] ?? '';
+      return { statusCode: 200, data: '{}' };
+    });
     const t = new PlaywrightTransport({ dataDir: dir, ensureBootstrapFn });
     const res = await t.request({
       method: 'POST',
@@ -106,10 +97,7 @@ describe('PlaywrightTransport', () => {
   it('reuses bootstrap across multiple requests', async () => {
     const ensureBootstrapFn = vi.fn().mockResolvedValue(makeCookies('once'));
     const pool = agent.get('https://api.homegate.ch');
-    pool
-      .intercept({ method: 'POST', path: '/search/listings' })
-      .reply(200, '{}')
-      .times(2);
+    pool.intercept({ method: 'POST', path: '/search/listings' }).reply(200, '{}').times(2);
     const t = new PlaywrightTransport({ dataDir: dir, ensureBootstrapFn });
     const sig = new AbortController().signal;
     await t.request({

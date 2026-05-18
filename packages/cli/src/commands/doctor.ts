@@ -120,21 +120,11 @@ export function registerDoctor(prog: Command): void {
         } else if (hb.age_ms > 15_000) {
           result('browser bridge', true, `stale (heartbeat ${Math.round(hb.age_ms / 1000)}s old)`);
         } else if (!hb.connected) {
-          result(
-            'browser bridge',
-            true,
-            `server up on port ${hb.port}, no extension paired`,
-          );
+          result('browser bridge', true, `server up on port ${hb.port}, no extension paired`);
         } else {
           const lastSeen =
-            hb.last_seen_at === 0
-              ? 'unknown'
-              : `${Math.round((Date.now() - hb.last_seen_at) / 1000)}s ago`;
-          result(
-            'browser bridge',
-            true,
-            `connected on port ${hb.port}, extension last seen ${lastSeen}`,
-          );
+            hb.last_seen_at === 0 ? 'unknown' : `${Math.round((Date.now() - hb.last_seen_at) / 1000)}s ago`;
+          result('browser bridge', true, `connected on port ${hb.port}, extension last seen ${lastSeen}`);
         }
       }
 

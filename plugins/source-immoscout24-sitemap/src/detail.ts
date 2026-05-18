@@ -72,9 +72,7 @@ function collect(obj: unknown, out: DetailPayload): void {
  * page should be caught by integration tests rather than this regex.
  */
 function extractNextData(html: string): DetailPayload {
-  const m = html.match(
-    /<script[^>]+id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/,
-  );
+  const m = html.match(/<script[^>]+id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/);
   if (!m?.[1]) return { listing: null };
   try {
     const blob = JSON.parse(m[1]) as { props?: { pageProps?: Record<string, unknown> } };

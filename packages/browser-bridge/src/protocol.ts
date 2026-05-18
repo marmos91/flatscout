@@ -51,16 +51,8 @@ export const BridgeError = z.object({
 });
 export type BridgeError = z.infer<typeof BridgeError>;
 
-export const ServerMessage = z.discriminatedUnion('type', [
-  ServerWelcome,
-  ServerReject,
-  BridgeRequest,
-]);
+export const ServerMessage = z.discriminatedUnion('type', [ServerWelcome, ServerReject, BridgeRequest]);
 export type ServerMessage = z.infer<typeof ServerMessage>;
 
-export const ClientMessage = z.discriminatedUnion('type', [
-  ClientHello,
-  BridgeResponse,
-  BridgeError,
-]);
+export const ClientMessage = z.discriminatedUnion('type', [ClientHello, BridgeResponse, BridgeError]);
 export type ClientMessage = z.infer<typeof ClientMessage>;

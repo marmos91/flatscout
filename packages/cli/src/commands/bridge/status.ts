@@ -24,22 +24,19 @@ export function registerStatus(parent: Command): void {
       }
       if (hb.age_ms > STALE_MS) {
         console.log(
-          `STALE — heartbeat ${Math.round(hb.age_ms / 1000)}s old. ` +
-            'wabe start may have crashed; restart it.',
+          `STALE — heartbeat ${Math.round(hb.age_ms / 1000)}s old. wabe start may have crashed; restart it.`,
         );
         process.exitCode = 1;
         return;
       }
       if (!hb.connected) {
         console.log(
-          `server reachable on port ${hb.port}, but no extension paired. ` +
-            'Run `wabe bridge pair` and paste into the extension popup.',
+          `server reachable on port ${hb.port}, but no extension paired. Run \`wabe bridge pair\` and paste into the extension popup.`,
         );
         return;
       }
       const lastSeenAgoMs = hb.last_seen_at === 0 ? null : Date.now() - hb.last_seen_at;
-      const lastSeenLabel =
-        lastSeenAgoMs === null ? 'unknown' : `${Math.round(lastSeenAgoMs / 1000)}s ago`;
+      const lastSeenLabel = lastSeenAgoMs === null ? 'unknown' : `${Math.round(lastSeenAgoMs / 1000)}s ago`;
       console.log(
         `connected on port ${hb.port}; extension last seen ${lastSeenLabel}; ${hb.inflight} request(s) in-flight.`,
       );

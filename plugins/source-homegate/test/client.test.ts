@@ -114,17 +114,13 @@ describe('fetchSearch', () => {
         { status: 500, body: 'boom' },
       ],
     });
-    await expect(fetchSearch(body, ctxWith(t, 2, [500]))).rejects.toBeInstanceOf(
-      HomegateHttpError,
-    );
+    await expect(fetchSearch(body, ctxWith(t, 2, [500]))).rejects.toBeInstanceOf(HomegateHttpError);
   });
 
   it('aborts when the AbortSignal fires before the next attempt', async () => {
     const ac = new AbortController();
     const t = makeTransport({
-      responses: [
-        { status: 429, body: 'rate limited' },
-      ],
+      responses: [{ status: 429, body: 'rate limited' }],
     });
     const ctx = {
       paceMs: 0,

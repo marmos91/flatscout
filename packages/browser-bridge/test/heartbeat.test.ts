@@ -35,11 +35,7 @@ describe('startHeartbeat', () => {
 
   it('updates the file on a periodic tick', async () => {
     let counter = 0;
-    const stop = startHeartbeat(
-      dir,
-      () => fakeStatus({ inflight: ++counter }),
-      { intervalMs: 30 },
-    );
+    const stop = startHeartbeat(dir, () => fakeStatus({ inflight: ++counter }), { intervalMs: 30 });
     const first = JSON.parse(readFileSync(join(dir, 'bridge.status.json'), 'utf8'));
     await new Promise((r) => setTimeout(r, 80));
     const later = JSON.parse(readFileSync(join(dir, 'bridge.status.json'), 'utf8'));
@@ -49,11 +45,7 @@ describe('startHeartbeat', () => {
 
   it('stops writing after stop() is called', async () => {
     let counter = 0;
-    const stop = startHeartbeat(
-      dir,
-      () => fakeStatus({ inflight: ++counter }),
-      { intervalMs: 30 },
-    );
+    const stop = startHeartbeat(dir, () => fakeStatus({ inflight: ++counter }), { intervalMs: 30 });
     await new Promise((r) => setTimeout(r, 60));
     const before = JSON.parse(readFileSync(join(dir, 'bridge.status.json'), 'utf8'));
     stop();

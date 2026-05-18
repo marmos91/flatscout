@@ -151,9 +151,7 @@ describe('BridgeResponse', () => {
     expect(r.body).toBe('');
   });
   it('rejects status > 599', () => {
-    expect(() =>
-      BridgeResponse.parse({ type: 'response', id: 'r-3', status: 600 }),
-    ).toThrow();
+    expect(() => BridgeResponse.parse({ type: 'response', id: 'r-3', status: 600 })).toThrow();
   });
 });
 
@@ -186,11 +184,7 @@ describe('discriminated unions', () => {
         auth_token_hex: 'a'.repeat(64),
       }).type,
     ).toBe('hello');
-    expect(
-      ClientMessage.parse({ type: 'response', id: 'r', status: 200 }).type,
-    ).toBe('response');
-    expect(
-      ClientMessage.parse({ type: 'error', id: 'r', message: 'x' }).type,
-    ).toBe('error');
+    expect(ClientMessage.parse({ type: 'response', id: 'r', status: 200 }).type).toBe('response');
+    expect(ClientMessage.parse({ type: 'error', id: 'r', message: 'x' }).type).toBe('error');
   });
 });
