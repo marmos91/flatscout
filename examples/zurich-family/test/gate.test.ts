@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { FiltersFile, ScoringFile } from '@wabe/core';
+import { FiltersFile, RentalTermFile, ScoringFile } from '@wabe/core';
 import { mapFlatfoxListing, type FlatfoxApiResult } from '@wabe/source-flatfox/dist/map.js';
 
 // NOTE: deviated from plan — use import.meta.url instead of __dirname since the
@@ -68,5 +68,10 @@ describe('example-config gate', () => {
       if (!flatfoxFields.has(f)) missingFromFlatfox.push(f);
     }
     expect({ missingFromFlatfox }).toEqual({ missingFromFlatfox: [] });
+  });
+
+  it('rental_term.yaml parses against RentalTermFile', () => {
+    const yaml = readFileSync(join(CONFIG_DIR, 'rental_term.yaml'), 'utf8');
+    expect(() => RentalTermFile.parse(parse(yaml))).not.toThrow();
   });
 });

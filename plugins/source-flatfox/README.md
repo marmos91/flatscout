@@ -58,6 +58,24 @@ sources:
 > applied **client-side** after fetching. Tune `page_size` / `max_pages` to
 > balance coverage against politeness.
 
+### Rental term detection
+
+The mapper populates the canonical `rental_term` and `lease_until` fields
+on every listing using two signals:
+
+1. **Structured**: `object_type === 'FURNISHED_FLAT'` → `rental_term: 'short'`
+   (Blueground-style serviced apartments and other furnished sublets).
+2. **Description regex**: a multilingual lexicon (DE/FR/IT/EN) detects
+   markers like `befristet`, `möbliert`, `auf Zeit`, `meublé`, `temporaneo`,
+   `furnished`, `short-term`, `sublet`, etc. Patterns matching
+   `befristet bis DD.MM.YYYY` (and equivalents) also extract a concrete
+   `lease_until` date.
+
+Listings with no detected signal stay `rental_term: 'unknown'`. The
+orchestrator's `rental_term.yaml` config controls how these classifications
+are filtered (default `mode: long, exclude_unknown: false`). See
+`examples/zurich-family/config/rental_term.yaml` for a reference policy.
+
 ## Credentials / auth
 
 **None.** The Flatfox public listing API is unauthenticated. No env vars,

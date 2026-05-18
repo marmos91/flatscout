@@ -2,7 +2,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { Listing, FiltersFile, ScoringFile } from '../src/index.js';
+import { Listing, FiltersFile, RentalTermFile, ScoringFile } from '../src/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const outDir = join(__dirname, '..', '..', '..', 'examples', 'schema');
@@ -12,4 +12,5 @@ const write = (name: string, schema: object) =>
 write('listing.schema.json', zodToJsonSchema(Listing, 'Listing'));
 write('filters.schema.json', zodToJsonSchema(FiltersFile, 'FiltersFile'));
 write('scoring.schema.json', zodToJsonSchema(ScoringFile, 'ScoringFile'));
+write('rental_term.schema.json', zodToJsonSchema(RentalTermFile, 'RentalTermFile'));
 console.log(`wrote schemas to ${outDir}`);

@@ -136,6 +136,23 @@
             }
           ]
         },
+        "lease_until": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "rental_term": {
+          "type": "string",
+          "enum": ["long", "short", "unknown"],
+          "default": "unknown"
+        },
         "agency": {
           "type": ["string", "null"]
         },

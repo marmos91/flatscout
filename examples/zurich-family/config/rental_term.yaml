@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=../../schema/rental_term.schema.json
+# Zurich family persona: looking for a permanent home, not a furnished sublet.
+# Default mode 'long' rejects listings classified as short-term (FURNISHED_FLAT,
+# `befristet`, `möbliert`, etc.) and any listing whose detected lease end date
+# is already in the past. Unknown-term listings still pass — set
+# `exclude_unknown: true` for strict-only-explicit-long behaviour.
+rental_term:
+  mode: long
+  exclude_unknown: false
