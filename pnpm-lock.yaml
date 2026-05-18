@@ -93,6 +93,9 @@ importers:
       '@wabe/server':
         specifier: workspace:*
         version: link:../server
+      '@wabe/source-homegate':
+        specifier: workspace:*
+        version: link:../../plugins/source-homegate
       commander:
         specifier: ^12.1.0
         version: 12.1.0

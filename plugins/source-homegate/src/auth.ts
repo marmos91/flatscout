@@ -1,12 +1,11 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Logger } from 'pino';
 import { request } from 'undici';
+import { AUTH_BASE, CLIENT_ID } from './constants.js';
 import { HomegateAuthError } from './errors.js';
 
-const AUTH_BASE = 'https://auth.homegate.ch';
 const TOKEN_PATH = '/oauth/token';
-const AUTH0_CLIENT_ID = 'lU7SBprOA383MV4TCsRfP9wUPc4JAcy1';
 const SECRETS_FILE = 'secrets.json';
 const REFRESH_SKEW_MS = 60_000;
 
@@ -39,6 +38,9 @@ async function writeSecrets(dataDir: string, secrets: SecretsFile): Promise<void
   const tmp = `${path}.tmp`;
   await writeFile(tmp, JSON.stringify(secrets, null, 2), { mode: 0o600 });
   await rename(tmp, path);
+  // Re-apply chmod after rename — `writeFile`'s `mode` option does not survive
+  // `rename` across all platforms (mirrors `@wabe/server`'s `secrets.ts`).
+  await chmod(path, 0o600);
 }
 
 /**
@@ -69,7 +71,7 @@ export async function getAccessToken(dataDir: string, logger: Logger): Promise<s
     headers: { 'Content-Type': 'application/json', Accept: '*/*' },
     body: JSON.stringify({
       grant_type: 'refresh_token',
-      client_id: AUTH0_CLIENT_ID,
+      client_id: CLIENT_ID,
       refresh_token: hg.refreshToken,
     }),
   });

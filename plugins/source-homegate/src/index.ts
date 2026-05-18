@@ -91,5 +91,12 @@ const plugin: Source = {
   },
 };
 
+/**
+ * Public named exports for HG clients (e.g. `@wabe/cli`'s login/logout). The
+ * plugin is the canonical source of truth for the OAuth2 wire shape; clients
+ * import these instead of duplicating the literals.
+ */
+export { AUDIENCE, AUTH_BASE, CLIENT_ID, REDIRECT_URI, SCOPE } from './constants.js';
+
 const exp: PluginExport = { kind: 'source', plugin };
 export default exp;

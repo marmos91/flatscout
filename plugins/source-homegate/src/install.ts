@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { USER_AGENT, X_APP_VERSION } from './headers.js';
 
@@ -47,5 +47,8 @@ export function getInstall(dataDir: string): InstallIdentity {
   const tmp = `${path}.tmp`;
   writeFileSync(tmp, JSON.stringify(data, null, 2), { mode: 0o600 });
   renameSync(tmp, path);
+  // Re-apply chmod after rename — `writeFile`'s `mode` option does not survive
+  // `rename` across all platforms (mirrors `@wabe/server`'s `secrets.ts`).
+  chmodSync(path, 0o600);
   return { xUdid, userAgent: USER_AGENT, xAppVersion: X_APP_VERSION };
 }

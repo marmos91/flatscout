@@ -3,14 +3,12 @@ import * as p from '@clack/prompts';
 import type { Command } from 'commander';
 import { request } from 'undici';
 import { setHomegateTokens } from '@wabe/server';
+import { AUDIENCE, AUTH_BASE, CLIENT_ID, REDIRECT_URI, SCOPE } from '@wabe/source-homegate';
 import { resolvePaths } from '../paths.js';
 
-/** Auth0 / Homegate OAuth2 constants — captured from the iOS app. */
-export const AUTH_BASE = 'https://auth.homegate.ch';
-export const CLIENT_ID = 'lU7SBprOA383MV4TCsRfP9wUPc4JAcy1';
-export const REDIRECT_URI = 'homegate://login/redirect';
-export const SCOPE = 'openid profile email offline_access';
-export const AUDIENCE = 'https://api.homegate.ch';
+// Re-exported so existing tests can keep importing them from the login module
+// without churn — the canonical source is `@wabe/source-homegate`.
+export { AUDIENCE, AUTH_BASE, CLIENT_ID, REDIRECT_URI, SCOPE };
 
 /**
  * Pure PKCE primitives — base64url-encoded `verifier` + SHA-256 `challenge`

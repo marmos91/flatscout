@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { BootstrapResult } from '@wabe/browser-runtime';
 
@@ -29,6 +29,9 @@ export async function saveCookies(dataDir: string, result: BootstrapResult): Pro
   const tmp = `${path}.tmp`;
   await writeFile(tmp, JSON.stringify(result, null, 2), { mode: 0o600 });
   await rename(tmp, path);
+  // Re-apply chmod after rename — `writeFile`'s `mode` option does not survive
+  // `rename` across all platforms (mirrors `@wabe/server`'s `secrets.ts`).
+  await chmod(path, 0o600);
 }
 
 /** Removes the persisted cookie file. No-op if the file does not exist. */
