@@ -105,9 +105,15 @@ export function registerInit(prog: Command): void {
       if (p.isCancel(tgToken)) return p.cancel('aborted');
       const tgChat = await p.text({ message: 'Telegram chat id (numeric, e.g. 123456789):' });
       if (p.isCancel(tgChat)) return p.cancel('aborted');
-      const lat = await p.text({ message: 'Search center latitude (default: 47.3553 = Witikon)', placeholder: '47.3553' });
+      const lat = await p.text({
+        message: 'Search center latitude (default: 47.3553 = Witikon)',
+        placeholder: '47.3553',
+      });
       if (p.isCancel(lat)) return p.cancel('aborted');
-      const lon = await p.text({ message: 'Search center longitude (default: 8.5839)', placeholder: '8.5839' });
+      const lon = await p.text({
+        message: 'Search center longitude (default: 8.5839)',
+        placeholder: '8.5839',
+      });
       if (p.isCancel(lon)) return p.cancel('aborted');
       const priceMax = await p.text({ message: 'Max monthly rent CHF', placeholder: '4000' });
       if (p.isCancel(priceMax)) return p.cancel('aborted');

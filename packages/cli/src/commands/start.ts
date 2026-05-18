@@ -23,13 +23,24 @@ export function registerStart(prog: Command): void {
       const db = openDb(paths.dbFile);
       migrate(db);
       const loaded = await loadPlugins(cfg);
-      const breakers = new Map(loaded.sources.map((s) => [s.name, new CircuitBreaker({ failuresBeforeOpen: 3, cooldownMs: 600_000 })]));
+      const breakers = new Map(
+        loaded.sources.map((s) => [
+          s.name,
+          new CircuitBreaker({ failuresBeforeOpen: 3, cooldownMs: 600_000 }),
+        ]),
+      );
       const quota = new Quota(db, cfg.scoring.notify.daily_quota);
       const ctrl = new AbortController();
       const handle = scheduleSources(loaded.sources, logger, async (s) => {
         await runOnce({
-          cfg, db, logger, signal: ctrl.signal,
-          sources: [s], notifiers: loaded.notifiers, breakers, quota,
+          cfg,
+          db,
+          logger,
+          signal: ctrl.signal,
+          sources: [s],
+          notifiers: loaded.notifiers,
+          breakers,
+          quota,
         });
       });
       const shutdown = (sig: NodeJS.Signals) => {

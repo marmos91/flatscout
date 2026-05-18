@@ -51,7 +51,13 @@ ORDER BY l.first_seen_at DESC
 LIMIT ${opts.limit}`;
         const rows = db._raw.prepare<typeof params, Row>(sql).all(...params);
         if (opts.json) {
-          console.log(JSON.stringify(rows.map(({ payload, ...rest }) => ({ ...rest, listing: JSON.parse(payload) })), null, 2));
+          console.log(
+            JSON.stringify(
+              rows.map(({ payload, ...rest }) => ({ ...rest, listing: JSON.parse(payload) })),
+              null,
+              2,
+            ),
+          );
           return;
         }
         const headers = ['SCORE', 'SOURCE', 'ID', 'URL', 'SEEN'];

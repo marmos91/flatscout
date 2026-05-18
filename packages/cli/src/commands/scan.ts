@@ -1,12 +1,5 @@
 import type { Command } from 'commander';
-import {
-  CircuitBreaker,
-  Quota,
-  createLogger,
-  loadConfig,
-  loadPlugins,
-  runOnce,
-} from '@wabe/server';
+import { CircuitBreaker, Quota, createLogger, loadConfig, loadPlugins, runOnce } from '@wabe/server';
 import { migrate, openDb } from '@wabe/db';
 import { resolvePaths } from '../paths.js';
 
@@ -30,7 +23,9 @@ export function registerScan(prog: Command): void {
         sources = sources.filter((s) => allow.has(s.name));
       }
       const notifiers = opts.dryRun ? [] : loaded.notifiers;
-      const breakers = new Map(sources.map((s) => [s.name, new CircuitBreaker({ failuresBeforeOpen: 3, cooldownMs: 600_000 })]));
+      const breakers = new Map(
+        sources.map((s) => [s.name, new CircuitBreaker({ failuresBeforeOpen: 3, cooldownMs: 600_000 })]),
+      );
       const quota = new Quota(db, cfg.scoring.notify.daily_quota);
       const ctrl = new AbortController();
       process.once('SIGINT', () => ctrl.abort());
