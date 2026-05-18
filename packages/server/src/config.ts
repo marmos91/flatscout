@@ -111,13 +111,10 @@ export function configBaseDir(configFile: string): string {
 async function expandAgenciesIfPresent(
   top: TopConfig,
   configDir: string,
-): Promise<
-  | {
-      expandedSources: EnabledEntry[];
-      skipped: Array<{ id: string; platform: string; reason: string }>;
-    }
-  | null
-> {
+): Promise<{
+  expandedSources: EnabledEntry[];
+  skipped: Array<{ id: string; platform: string; reason: string }>;
+} | null> {
   const meta = top.enabled.sources.find((s) => s.plugin === 'agencies');
   if (!meta) return null;
   const metaCfgPath = join(configDir, meta.config);
@@ -142,7 +139,7 @@ async function expandAgenciesIfPresent(
       const sig = readFileSync(sigPath, 'utf8').trim();
       const payload = readFileSync(raw.registry, 'utf8');
       const ok = await verifySignature(payload, sig, raw.signature_pubkey);
-      if (!ok) throw new Error(`agency-registry signature verification failed`);
+      if (!ok) throw new Error('agency-registry signature verification failed');
     }
   }
   const { expanded, skipped } = expandRegistry(registry, BUNDLED_ADAPTERS as Set<string>);

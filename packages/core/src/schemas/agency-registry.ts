@@ -1,8 +1,32 @@
 import { z } from 'zod';
 
 const CANTONS = [
-  'ZH', 'BE', 'LU', 'UR', 'SZ', 'OW', 'NW', 'GL', 'ZG', 'FR', 'SO', 'BS', 'BL',
-  'SH', 'AR', 'AI', 'SG', 'GR', 'AG', 'TG', 'TI', 'VD', 'VS', 'NE', 'GE', 'JU',
+  'ZH',
+  'BE',
+  'LU',
+  'UR',
+  'SZ',
+  'OW',
+  'NW',
+  'GL',
+  'ZG',
+  'FR',
+  'SO',
+  'BS',
+  'BL',
+  'SH',
+  'AR',
+  'AI',
+  'SG',
+  'GR',
+  'AG',
+  'TG',
+  'TI',
+  'VD',
+  'VS',
+  'NE',
+  'GE',
+  'JU',
 ] as const;
 
 export const AgencyEntry = z.object({

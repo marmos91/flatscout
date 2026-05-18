@@ -7,7 +7,14 @@ const reg: AgencyRegistry = AgencyRegistry.parse({
   source: 'test',
   agencies: [
     { id: 'walde', name: 'Walde', website: 'https://walde.ch', canton: 'ZH', platform: 'schemaorg' },
-    { id: 'nobilis', name: 'Nobilis', website: 'https://nobilis.ch', canton: 'ZH', platform: 'casasoft', enabled: false },
+    {
+      id: 'nobilis',
+      name: 'Nobilis',
+      website: 'https://nobilis.ch',
+      canton: 'ZH',
+      platform: 'casasoft',
+      enabled: false,
+    },
     { id: 'unknown-fam', name: 'X', website: 'https://x.ch', canton: 'ZH', platform: 'immomig' },
   ],
 });

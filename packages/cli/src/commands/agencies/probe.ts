@@ -13,7 +13,7 @@ export function registerProbe(parent: Command): void {
       console.log(`- id: ${slug}`);
       console.log(`  name: ${slug}`);
       console.log(`  website: ${url}`);
-      console.log(`  canton: ZH`);
+      console.log('  canton: ZH');
       console.log(`  platform: ${result.platform}`);
     });
 }

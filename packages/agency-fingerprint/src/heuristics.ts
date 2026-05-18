@@ -24,8 +24,7 @@ export const HEURISTICS: Heuristic[] = [
   },
   {
     platform: 'iframe-portal',
-    test: ({ html }) =>
-      /<iframe[^>]+src=["'][^"']*(?:homegate|immoscout24)\.ch/i.test(html),
+    test: ({ html }) => /<iframe[^>]+src=["'][^"']*(?:homegate|immoscout24)\.ch/i.test(html),
   },
   {
     platform: 'schemaorg',

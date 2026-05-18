@@ -17,6 +17,6 @@ describe('verifySignature', () => {
   it('returns false when payload is mutated', async () => {
     const payload = 'version: 1\nsource: test\nagencies: []\n';
     const sig = sign(null, Buffer.from(payload), privateKey).toString('hex');
-    await expect(verifySignature(payload + 'tampered', sig, pubHex)).resolves.toBe(false);
+    await expect(verifySignature(`${payload}tampered`, sig, pubHex)).resolves.toBe(false);
   });
 });

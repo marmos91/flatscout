@@ -27,12 +27,19 @@ export async function fingerprint(url: string, signal: AbortSignal): Promise<Fin
   });
   const html = await res.body.text();
   const headers: Record<string, string> = {};
-  for (const [k, v] of Object.entries(res.headers)) headers[k] = Array.isArray(v) ? v.join(',') : String(v ?? '');
+  for (const [k, v] of Object.entries(res.headers))
+    headers[k] = Array.isArray(v) ? v.join(',') : String(v ?? '');
   const input: HeuristicInput = { html, url, headers };
   for (const h of HEURISTICS) {
-    if (h.test(input)) return { platform: h.platform, url, status: res.statusCode, reason: `matched heuristic: ${h.platform}` };
+    if (h.test(input))
+      return {
+        platform: h.platform,
+        url,
+        status: res.statusCode,
+        reason: `matched heuristic: ${h.platform}`,
+      };
   }
   return { platform: 'custom', url, status: res.statusCode, reason: 'no heuristic matched' };
 }
 
-export { type Platform } from './heuristics.js';
+export type { Platform } from './heuristics.js';

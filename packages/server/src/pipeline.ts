@@ -81,7 +81,7 @@ async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise
       const priority =
         typeof cfgPriority === 'number'
           ? cfgPriority
-          : SOURCE_PRIORITY_DEFAULTS[src.plugin.name] ?? DEFAULT_SOURCE_PRIORITY;
+          : (SOURCE_PRIORITY_DEFAULTS[src.plugin.name] ?? DEFAULT_SOURCE_PRIORITY);
       const enriched: Listing = Listing.parse({
         ...raw,
         id: raw.id ?? `${raw.source}:unknown:${Date.now()}`,

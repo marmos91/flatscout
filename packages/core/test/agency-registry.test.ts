@@ -16,7 +16,13 @@ describe('AgencyEntry', () => {
   });
   it('rejects non-kebab id', () => {
     expect(() =>
-      AgencyEntry.parse({ id: 'Walde Immo', name: 'x', website: 'https://x.ch', canton: 'ZH', platform: 'schemaorg' }),
+      AgencyEntry.parse({
+        id: 'Walde Immo',
+        name: 'x',
+        website: 'https://x.ch',
+        canton: 'ZH',
+        platform: 'schemaorg',
+      }),
     ).toThrow();
   });
   it('rejects unknown canton', () => {
@@ -37,15 +43,19 @@ describe('AgencyRegistry', () => {
       version: 1,
       source: 'marco-private-2026q2',
       agencies: [
-        { id: 'walde', name: 'Walde Immobilien', website: 'https://walde.ch', canton: 'ZH', platform: 'schemaorg' },
+        {
+          id: 'walde',
+          name: 'Walde Immobilien',
+          website: 'https://walde.ch',
+          canton: 'ZH',
+          platform: 'schemaorg',
+        },
       ],
     });
     expect(r.agencies).toHaveLength(1);
     expect(r.agencies[0]?.id).toBe('walde');
   });
   it('rejects wrong version', () => {
-    expect(() =>
-      AgencyRegistry.parse({ version: 2, source: 'x', agencies: [] }),
-    ).toThrow();
+    expect(() => AgencyRegistry.parse({ version: 2, source: 'x', agencies: [] })).toThrow();
   });
 });

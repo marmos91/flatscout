@@ -13,6 +13,8 @@ describe('extractJsonLd', () => {
     expect(extractJsonLd(html).listing?.['@type']).toBe('Apartment');
   });
   it('returns null when no matching type', () => {
-    expect(extractJsonLd('<script type="application/ld+json">{"@type":"Article"}</script>')).toEqual({ listing: null });
+    expect(extractJsonLd('<script type="application/ld+json">{"@type":"Article"}</script>')).toEqual({
+      listing: null,
+    });
   });
 });

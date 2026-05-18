@@ -39,21 +39,35 @@ function writeYaml(path: string, body: string) {
 
 describe('agency registry — end-to-end', () => {
   it('expands one schemaorg row into a working source plugin that yields a listing', async () => {
-    writeYaml('config.yaml', `enabled:
+    writeYaml(
+      'config.yaml',
+      `enabled:
   sources:
     - {name: agencies-test, plugin: agencies, config: plugins/agencies.yaml}
   notifiers: []
 log: { level: silent }
-`);
-    writeYaml('filters.yaml', `filters: []
-`);
-    writeYaml('scoring.yaml', `scoring:
+`,
+    );
+    writeYaml(
+      'filters.yaml',
+      `filters: []
+`,
+    );
+    writeYaml(
+      'scoring.yaml',
+      `scoring:
   - {type: rule, name: x, weight: 1, metric: price.total, normalize: {type: linear, best: 1, worst: 2, invert: false}}
 notify: { threshold: 0, daily_quota: 10 }
-`);
-    writeYaml('plugins/agencies.yaml', `registry: ./agencies.yaml
-`);
-    writeYaml('agencies.yaml', `version: 1
+`,
+    );
+    writeYaml(
+      'plugins/agencies.yaml',
+      `registry: ./agencies.yaml
+`,
+    );
+    writeYaml(
+      'agencies.yaml',
+      `version: 1
 source: test
 agencies:
   - id: walde
@@ -62,11 +76,16 @@ agencies:
     canton: ZH
     platform: schemaorg
     enabled: true
-`);
+`,
+    );
     // Intercept the schemaorg plugin's sitemap + detail HTTPs.
     const pool = agent.get('https://walde.example');
-    pool.intercept({ method: 'GET', path: '/sitemap.xml' }).reply(200, SITEMAP, { headers: { 'content-type': 'application/xml' } });
-    pool.intercept({ method: 'GET', path: '/objekt-12345' }).reply(200, DETAIL, { headers: { 'content-type': 'text/html' } });
+    pool
+      .intercept({ method: 'GET', path: '/sitemap.xml' })
+      .reply(200, SITEMAP, { headers: { 'content-type': 'application/xml' } });
+    pool
+      .intercept({ method: 'GET', path: '/objekt-12345' })
+      .reply(200, DETAIL, { headers: { 'content-type': 'text/html' } });
 
     const cfg = await loadConfig(dir);
     expect(cfg.top.enabled.sources.some((s) => s.name === 'agency:schemaorg:walde')).toBe(true);
@@ -84,7 +103,9 @@ agencies:
     const ac = new AbortController();
     const yielded = [];
     for await (const raw of src.plugin.fetch({
-      logger: { child: () => ({ debug: () => {}, warn: () => {}, info: () => {}, error: () => {} }) } as never,
+      logger: {
+        child: () => ({ debug: () => {}, warn: () => {}, info: () => {}, error: () => {} }),
+      } as never,
       config: src.config,
       signal: ac.signal,
       db: { _raw: {} as never } as never,
