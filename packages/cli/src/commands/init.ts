@@ -100,15 +100,17 @@ export function registerInit(prog: Command): void {
         const sourceDir = opts.exampleDir ?? resolveExampleDir(opts.example as string);
         p.intro(`wabe init --example ${opts.example ?? '(custom)'}`);
         const stats = copyTreeRecursive(sourceDir, paths.configDir, force);
-        writeIfMissing(join(process.cwd(), '.env'), ENV_SKELETON, force);
+        const envPath = join(process.cwd(), '.env');
+        const envWritten = writeEnvIfAbsent(envPath, ENV_SKELETON);
         const db = openDb(paths.dbFile);
         const m = migrate(db);
         const skippedNote =
           stats.skipped.length > 0
             ? `\nskipped (already exist, use --force):\n  - ${stats.skipped.join('\n  - ')}`
             : '';
+        const envNote = envWritten ? '.env: created skeleton' : '.env: preserved (already present)';
         p.note(
-          `source: ${sourceDir}\nconfig: ${paths.configDir}\ndata:   ${paths.dataDir}\nfiles written: ${stats.written.length}\nmigrations applied: ${m.applied.length}${skippedNote}`,
+          `source: ${sourceDir}\nconfig: ${paths.configDir}\ndata:   ${paths.dataDir}\nfiles written: ${stats.written.length}\n${envNote}\nmigrations applied: ${m.applied.length}${skippedNote}`,
         );
         p.outro(
           'done — fill in .env (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID), then run `wabe doctor` and `wabe scan`.',
@@ -137,14 +139,19 @@ export function registerInit(prog: Command): void {
         force,
       );
       writeIfMissing(join(paths.configDir, 'plugins', 'notifier-telegram.yaml'), telegramSample, force);
-      writeIfMissing(
-        join(process.cwd(), '.env'),
+      const envPath = join(process.cwd(), '.env');
+      const envWritten = writeEnvIfAbsent(
+        envPath,
         `TELEGRAM_BOT_TOKEN=${tgToken}\nTELEGRAM_CHAT_ID=${tgChat}\n`,
-        force,
       );
       const db = openDb(paths.dbFile);
       const m = migrate(db);
-      p.note(`config: ${paths.configDir}\ndata:   ${paths.dataDir}\nmigrations applied: ${m.applied.length}`);
+      const envNote = envWritten
+        ? '.env: written with your Telegram credentials'
+        : `.env: preserved (already present) — your typed credentials were NOT applied; edit ${envPath} manually if needed`;
+      p.note(
+        `config: ${paths.configDir}\ndata:   ${paths.dataDir}\n${envNote}\nmigrations applied: ${m.applied.length}`,
+      );
       p.outro('done — run `wabe doctor` to verify, then `wabe scan`.');
     });
 }
@@ -153,6 +160,20 @@ function writeIfMissing(file: string, content: string, force = false): void {
   if (existsSync(file) && !force) return;
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, content);
+}
+
+/**
+ * Writes a file only when it does not already exist. Unlike `writeIfMissing`,
+ * `--force` is intentionally NOT honored here — used for `.env` so user-entered
+ * secrets are never clobbered by a re-run of `wabe init`.
+ *
+ * @returns true if the file was newly written, false if an existing one was preserved.
+ */
+function writeEnvIfAbsent(file: string, content: string): boolean {
+  if (existsSync(file)) return false;
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, content);
+  return true;
 }
 
 interface CopyStats {
