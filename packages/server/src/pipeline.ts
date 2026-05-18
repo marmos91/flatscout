@@ -1,11 +1,12 @@
 import type { Logger } from 'pino';
-import { Listing, evaluateFilters, scoreListing } from '@wabe/core';
+import { Listing, evaluateFilters, scoreListing, SOURCE_PRIORITY_DEFAULTS, DEFAULT_SOURCE_PRIORITY, canonicalKey } from '@wabe/core';
 import type { WabeDb } from '@wabe/db';
 import type { LoadedConfig } from './config.js';
 import type { LoadedPlugin } from './loader.js';
 import type { CircuitBreaker } from './circuit.js';
 import type { Quota } from './quota.js';
 import { upsertListing } from './dedupe.js';
+import { shouldNotify } from './canonical-dedup.js';
 import { passes as rentalTermPasses } from './rental-term-gate.js';
 
 export interface RunOptions {
@@ -57,11 +58,21 @@ async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise
   try {
     for await (const raw of src.plugin.fetch(ctx)) {
       if (opts.signal.aborted) return;
+      const ck = canonicalKey({
+        postal_code: raw.location?.postal_code ?? null,
+        rooms: raw.rooms ?? null,
+        area_m2: raw.area_m2 ?? null,
+        price_total: raw.price?.total ?? null,
+        url: raw.url,
+      });
+      const priority = SOURCE_PRIORITY_DEFAULTS[src.plugin.name] ?? DEFAULT_SOURCE_PRIORITY;
       const enriched: Listing = Listing.parse({
         ...raw,
         id: raw.id ?? `${raw.source}:unknown:${Date.now()}`,
         first_seen_at: raw.first_seen_at ?? new Date(),
         last_seen_at: raw.last_seen_at ?? new Date(),
+        canonical_key: ck,
+        source_priority: priority,
       });
       const { changed, isNew } = upsertListing(opts.db, enriched);
       if (!changed) continue;
@@ -83,11 +94,16 @@ async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise
         log.debug({ listing_id: enriched.id, score: score.final }, 'below threshold');
         continue;
       }
+      const verdict = shouldNotify(opts.db, enriched);
+      if (verdict.suppress) {
+        log.debug({ listing_id: enriched.id, canonical_key: enriched.canonical_key }, 'cross-source dedup suppressed');
+        continue;
+      }
       if (!opts.quota.tryConsume()) {
         log.info({ listing_id: enriched.id, score: score.final }, 'quota exhausted; skipping notify');
         continue;
       }
-      const event = { listing: enriched, score };
+      const event = { listing: enriched, score, also_seen_on: verdict.also_seen_on };
       for (const n of opts.notifiers) await notifySafely(n, event, opts);
       log.info({ listing_id: enriched.id, score: score.final, isNew }, 'notified');
     }
@@ -111,7 +127,7 @@ async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise
  */
 async function notifySafely(
   n: LoadedPlugin<'notifier'>,
-  event: { listing: Listing; score: { final: number; breakdown: Record<string, number> } },
+  event: { listing: Listing; score: { final: number; breakdown: Record<string, number> }; also_seen_on?: string[] },
   opts: RunOptions,
 ): Promise<void> {
   const log = opts.logger.child({ notifier: n.name });

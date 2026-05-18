@@ -6,6 +6,8 @@ import type { ScoreResult } from './scorer.js';
 export interface ListingEvent {
   listing: Listing;
   score: ScoreResult;
+  /** Names of other sources in the same canonical group, sorted. Empty when this is the only source. Phase A addition. */
+  also_seen_on?: string[];
 }
 
 export interface NotifierResponse {
