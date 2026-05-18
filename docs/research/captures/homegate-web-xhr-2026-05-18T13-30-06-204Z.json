@@ -1,0 +1,321 @@
+[
+  {
+    "ts": 1779111006415,
+    "kind": "req",
+    "method": "GET",
+    "url": "https://www.homegate.ch/rent",
+    "type": "document",
+    "requestHeaders": {
+      "accept-language": "en-US,en;q=0.9",
+      "upgrade-insecure-requests": "1",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.7778.96 Safari/537.36",
+      "sec-ch-ua": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \";Not A Brand\";v=\"99\"",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": "\"Mac OS X\""
+    }
+  },
+  {
+    "ts": 1779111006508,
+    "kind": "res",
+    "url": "https://www.homegate.ch/rent",
+    "status": 301,
+    "type": "document",
+    "responseHeaders": {
+      "alt-svc": "h3=\":443\"; ma=86400",
+      "cf-cache-status": "DYNAMIC",
+      "cf-ray": "9fdb36ee4f4d0215-ZRH",
+      "content-length": "0",
+      "date": "Mon, 18 May 2026 13:30:06 GMT",
+      "location": "/rent/real-estate-search",
+      "server": "cloudflare",
+      "server-timing": "cfCacheStatus;desc=\"DYNAMIC\"\ncfEdge;dur=11,cfOrigin;dur=34",
+      "via": "1.1 2df3825a2dc874fe2f6a21536c6d8f72.cloudfront.net (CloudFront)",
+      "x-amz-cf-id": "mg4JindRjwBZosBmKORo6CVUsOrE8bmHf6MCEK9RxV8gt7BMG1V59g==",
+      "x-amz-cf-pop": "ZRH52-P1",
+      "x-cache": "LambdaGeneratedResponse from cloudfront"
+    },
+    "contentType": "",
+    "bodySnippet": "<unknown>"
+  },
+  {
+    "ts": 1779111006509,
+    "kind": "req",
+    "method": "GET",
+    "url": "https://www.homegate.ch/rent/real-estate-search",
+    "type": "document",
+    "requestHeaders": {
+      "accept-language": "en-US,en;q=0.9",
+      "upgrade-insecure-requests": "1",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.7778.96 Safari/537.36",
+      "sec-ch-ua": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \";Not A Brand\";v=\"99\"",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": "\"Mac OS X\""
+    }
+  },
+  {
+    "ts": 1779111006574,
+    "kind": "res",
+    "url": "https://www.homegate.ch/rent/real-estate-search",
+    "status": 403,
+    "type": "document",
+    "responseHeaders": {
+      "accept-ch": "Sec-CH-UA,Sec-CH-UA-Mobile,Sec-CH-UA-Platform,Sec-CH-UA-Arch,Sec-CH-UA-Full-Version-List,Sec-CH-UA-Model,Sec-CH-Device-Memory",
+      "access-control-allow-credentials": "true",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "x-dd-b, x-set-cookie",
+      "alt-svc": "h3=\":443\"; ma=86400",
+      "cache-control": "max-age=0, private, no-cache, no-store, must-revalidate",
+      "cf-ray": "9fdb36eeafa40215-ZRH",
+      "charset": "utf-8",
+      "content-encoding": "gzip",
+      "content-type": "text/html;charset=utf-8",
+      "date": "Mon, 18 May 2026 13:30:06 GMT",
+      "pragma": "no-cache",
+      "server": "cloudflare",
+      "server-timing": "cfEdge;dur=11,cfOrigin;dur=0,cfWorker;dur=32",
+      "x-datadome": "protected",
+      "x-datadome-cid": "AHrlqAAAAAMArWf48ftagKoAM5ogww==",
+      "x-dd-b": "1"
+    },
+    "contentType": "text/html;charset=utf-8",
+    "bodySnippet": "<html lang=\"en\"><head><title>homegate.ch</title><style>#cmsg{animation: A 1.5s;}@keyframes A{0%{opacity:0;}99%{opacity:0;}100%{opacity:1;}}</style></head><body style=\"margin:0\"><p id=\"cmsg\">Please enable JS and disable any ad blocker</p><script data-cfasync=\"false\">var dd={'rt':'c','cid':'AHrlqAAAAAMArWf48ftagKoAM5ogww==','hsh':'F366DD7CF4DB76FA9B54F971FAB24F','t':'fe','qp':'','s':58425,'e':'76f9c"
+  },
+  {
+    "ts": 1779111006616,
+    "kind": "req",
+    "method": "GET",
+    "url": "https://geo.captcha-delivery.com/captcha/?initialCid=AHrlqAAAAAMArWf48ftagKoAM5ogww%3D%3D&hash=F366DD7CF4DB76FA9B54F971FAB24F&cid=eKe_6RA6uand7mRlO1iEUHAmF2DVWeIrodCIwcm67w7PJJGZtt5XJ08N0mQHQBK8hrSzGTJOUJVLlGgRUYmYwMT1HiO5ZaSm6kndzwKjDcJC2EiWiJ7Y49975iYsc9r6&t=fe&referer=https%3A%2F%2Fwww.homegate.ch%2Frent%2Freal-estate-search&s=58425&e=76f9cb280ad9ab9b52544381c57de5dc27b0cf31e78ab1bcf53b59e2bc5204b2759948aaea5beb90a773d11147bae28f&dm=cd",
+    "type": "document",
+    "requestHeaders": {
+      "accept-language": "en-US,en;q=0.9",
+      "referer": "https://www.homegate.ch/",
+      "upgrade-insecure-requests": "1",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.7778.96 Safari/537.36",
+      "sec-ch-ua": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \";Not A Brand\";v=\"99\"",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": "\"Mac OS X\""
+    }
+  },
+  {
+    "ts": 1779111007838,
+    "kind": "req",
+    "method": "POST",
+    "url": "https://www.homegate.ch/cdn-cgi/challenge-platform/h/g/jsd/oneshot/825e783f7fae/0.9095062752519802:1779109692:dkP3pHJLOsXHSuuETIasGPqcVuYSsjEnaXmWYoMUx04/9fdb36eeafa40215",
+    "type": "xhr",
+    "postData": "uNHE5QgLkXWccepsHnTmqTgmagcnKn+GknHbgqnJEipQ4CNCgDnUQuQanNkK9n7Q+EWFn9DTgVjEdRbFdndNNidnk74aiinqULT3ERXTAuQkhuqTEER9OvT-xj1knkKZLJAkuCZQkZRWEnubUCJbaknArpAe9-a0UJMneUECGWevFVYKjVYPfk2RUyq7HikHmn7brpcTIznZamFby8n9ag7nnrTEk9naKhfCebnFEg0eEnjg8m3jnhi9yggengx0qEIeqrYnWLOXKeFsEoYRqhfXkNibThKtmgGneGtUmnpFOuGbx1ORq9KoWk9whXnnbKmVZQP3wpPw5PAnRUPOenkHI+tWZRY9enr+w-58kih+y8VlksT4iFAmjds3wmuwiuKDnn+dc2szhorOm-neHNU$HURmtgS5qNMqHN1j9oCmoxACIi12nWQydnnq7DLuKEZkLQzA8nkv0e7NeEe7anxTITogVWernH7axLE3md4ouhkjOJuGZHuH8D1F3AHd4jkd5dZHnbOZvOrT$7R8sUagK09e1Kdgei1ulAqEG$kTUseWm+j20XGJZGDWwVsx0eIApjr9HGX20mNYo4128EnLD$$09G6OZqjZbwGC7GS7$tUhoSrkqUVnmDy8LENTCom0RM05znzCqzb2lN08QrOYMKqUjTwogpVS4rg-WhOE0HSPD4x9pSbSCAZbMQqesYIiMmHEOMN$C8ki-cC7bwI6DEVucATRqzaH9na08Q1gzhe$gSwjdzcdVEgLsl5LmijWqVvEO8cncQADV9qnZEOqNRQSQvnpcfnReKubIYqqKUTjGw$VigarsqkHFk-d-ZkFckC5qHmbEPZLVWqHhEYEgamTnCkH55uEAgLH7ORN9XdgtRmFC9R$DgwLpVgCgw3V8raPGeWHZQkkpnV6a$jY6WEMCKPebnPZaEYYxE4G6eGHk-nadWnVZ4GuWHImwxEqr7LH$o80eVnFKNZvNLbTE+d3gkr+ENrG5m3YtHHrnknnwGTTYKYTOq3qHFWJ7kVvX5TORVdL5CiKnkVkuYvYLkaNrNXHvY9Hkn9EWOgW+aaNTFsOv9enGoRiZOFN3+NDpqSbVW0kLvEmsv118aHJ3q7GmaiLHEQk5$jDNwC7zEWNdkkREl+keugnV4aZWXjUmuGj$dkyHWiG8fk43Qqn+skdugue3VPV119vVm6WRPJbuTDwfarnFoEnkirWkZykCtcHcylRHCi0LWxDeX7euhHmPCNR9rC3an92Lp5qqzZ3quECUEkUDkJe7mytWZLF-HkYjhfpTKncbmiIczaHHTH3QKXH7kJeWa5zR7imxWQ2d9ZeZENmHxjbutj765YGEeZToRqqRwcLqzqNaDRJy1IcgnMfRHgYl9JPC-HaS7vXlQ0xIblhXbHTd4b2feUTFTArPTvYgRDGywpayWZw5OmDnAAVntAqzMJDnVWl7gJ3zaPK73CHV3WHTLWErghibX9Vn0THl+VbMSkppVUMuAMfLJLoD1nkfkFeFTKnTxG5tNoqeUI249iIOERXlJgLvGxYthu5ERginKG9nnh1HHU$kq0cTbaLEaqK10QxLqbkOtnGKQaZeO3JQtvtQHnE1ZYkKZTsn2wHTJQHDhVEnnzonYg8W3NCZEA9rfsnJNUTH5z9HCH9aPRKo25fynutWgcoJ4A5LFg9q0mmuAoL4Q1WbKEswwUafLRH5-qFMrYeRauCWPfTQXHNj1H7b1yLsHX5qXmCEJ3n0nDjGlWE7a4kaQ0o2Sg9W1Nd+HXlkb7k4qMPgotXackGEboLYlWePgghnoi8NNXcC-waViQkWeGgGgDf6dIZaC+3QYgQG-WDKU-oWqP82xAbfZRZiF8Xb$-aEqYHHIcSEFzTgJaqYQdEc3L5ZXNX25HIfHs6ZXRm7dYrEv-qejZXm-T3$QnvLXfNTHiNav6W-jN5mXf-kNnaavmvT4K+6qehqbnJ1EEFwEsNKu5QlyD4QavfzzhpnwAXGvyv2VZ+zFrZeDy60PdKx-fh3CJGTyPm7jkqHUoiZAXoi$DyWdou6gLNbWgNPojrWq+bmzinQZa4ZHqN4mhvXAd0kNKUJHaXYZnTeau1N+D9uRK6SQFWiZNqzoOgnKQrPmqf2AD3RR-UdLm0msuAViWSCS4EoiVmReeualmhpqgvnumIWee34ENkycJna5GMo1FDdl5Nu$gWSF-inoGT769OEycXVee-6pFgcj8y7FzYkUnuxlPOXxQ93YxSLuUhmdQ0ew5mkT3E5w+HH5XXuG9FWLebH7naEd9eO+HZ9PksYNU3P-HNNvRgbEY9mHVwu8wVm7cCS1yvwwvQyfVxEZurwcE9WzZ5kqiwrpt4LI$9hFcYHFQbX2AazwOzWsCHbPT8-uwJI1eT9A9t71iXtbmeaatVHoK+ahrpHdF$LWHgm3w5XVHdOSOwSaswuDaoyCOQIbYuzur-QOQJW9oqMPu7Ds1zt+l4O9jaagTf2UMPMAW7hEROqu4nNkgv7thK$nmHvCWkwQUUOAsNji20I87atY6DxFsghPZSAb7h6q5k6ntrurfkrmlrF9RThu$YvDzLbHlXwhtbZvZCGw+O5GKj-$$9YUVrg9XO99uC$WToIViqmlZwub1IsnVQ$dMY2w3XHbswXwEFipiLLbq$1OHdaUH7zN$f7IJmDq7TQ7EyhoYnLrXU7DW6oAU1bet71Or$u8oqV0HqOootN6SCWw$WFwJgFdQQpWWMX+lbLbeNsHzwoZLnnZpo2QdZwuiPMkhRPfH4zzxZ$Wr1PHjbSENoYOe5ns5O49wrvaz7cDuPZgEkT-GsufwzI6KrKUTaFpEuHLKxy7G$5mUqK0r0dWFTMg9qgeUhuu$uRrxtPw1F+nmCA9vyuyULrqnsbtVRkTdPqk5LDJIM4LreX5bDpSdETXFpswaDplHjwa$9n156Yx6EigEkqmckTDC-D1ueJQytkT5D4cNnP+yTjqscwzUJCRw15FJIYNU7yEPHLMLh4pURllSgTw3vW1yAjq$hxHzVO63oCOoZ6f$I5GFdP+wa-IDwOCOzReApr50+Fx9JxtbyVvODXFhKV0yVOUjAO7PV7mc5sXY2Q6OvxQzZ05cfpOJyUpc2dxJOtLKYI2Vwcr$Hu9kTVVZVwJ5L0c7J0fDcyeJq-zXuhxi7oxU9HWOP57KWGZJlNuQFUfa3aiHvymUkxXqACHTYyqYMgVWFfeFFgRsjK9nnrs-lfdtGkI78Te85sXzJd8+vo635GsxiRPbbENw1HGH05J7hFHdJ2rJTOuFiRxvkK3miRIRymfgKEepdvjAf0fkLbqRcmIJR7Z9McGT7aEbDOMVxjTacMHcgxt9pbecYGnlsX5-MWwMNb8ZKINn6F65qvKYSl+iStq18+vM-IrFgF9lIK2usNJ6Amylcwc$z5mTg6OVo1VeX5f7xdAjglfpSTanNS+2a4XnNbZv9onEa4Rljw5NflxuqJWEA7uncm4zieFnvIXlbpSpZvWiPHd5fnvU+5kTb7Knmns8befnCakzKIbXZv0xPxXw4wKE8wZURH+6f5bEoEMTjE3TeVKUW09e0MeeRUSTjMHmKpnQatqaUUu8frqdZdnQZvatPEPEIU0EtalaUapnVePTWtgaUEsGd1+aEEJuFVqEfnCIxuqIfxrn1Tcmb0ZIgTJIfnGo+RkTNxPywTEH6aXxwExTRTEaoT6xiHtZaa1J9buxRTyxfexE2xFanJaR9G0EsS+Qg8iJdH3JXnAJHHDJf6aqZJdZuJk5qxaatJRnrtfnhWja4mc40orT$mNoZmUHkWgRxm2hAyZnMn$mzPkT6G4m4m$zWv0E6DjWfmEVL+fnNThThwnvfn8VqVwTOT2nGv9TdVqTfnUVwRnNOgRVb$5VFgZRkT1lwT1+k+Wb8NC2K+5HZaANUTp+9t0bt+iyHNhTcy+mlN8yRmTacyARbeOyATEe1Onbvn$yrWrTcyAtjTUTsy7xwTCxkE66ZS7elTb5K3fn-50E15+N65LEhTJ5RIrT-CDtkTt5dzqF0LjTSbasiNgEf2qCvsLUfCvs5eMn2P4EYs0EYuW5Fbs8XEWsXCYi0sFb2sP2a0wTVTz0kT-0ZAi0fHhTD0fNZMSnTtbPPfwCUTo9Vojo48FdnzV0P9QDWNvnTtdPFP5oFb3eQCMnG1ZtwHhT2aWtgnltLRqNTR5zcRStkTYnoNmXy29eQEy2fNpey2PT$z6ny2weIeYXQezXtRSNUXCRHe3EDodbizcCoXpou9QTQzyProfnCcM9pzmzo0ezICUTCcCbUTDzVPkhxUuPitWP4cMnpcGPw9JP+WWRFXIT68R7RX$HynoTGXpemEVegnGYbdLTJpaT6aJac75N0Ea1b191SbnO4LMnYnyiR2n0KFnQipgObauGFmScTPXCYSdSqm3EO-yE5WRCy+kTZeLVL8KLE8XnwZ0b0-oMjLMGHsgiANRxkO7mEQLTg8Xk6ERCJL0bR8naR1nQPHce7HQnXcWT+taafnnnAVT8IkHOqWTnGQLCN16kXnSe0UCPrkCaSZDnzdnZ7Qw4WU9W5n6nSqcYc4vyIZi5W9drXkN4gZggPCXELlJDQWx+JEW1Vo13qg244ohCpPHnyvtYLoigWDxKe5x49Opf4f9FPuzWzs92PdlilXbWd1dYXcpFqqcoIejQOorZAeDnencZQg81-KTgMVDVHkXC9UVjGKF3LYVevEbjeeRXAR+yIe+f-Q2zYEW5igwZ2CYWOEETHkUEckblzofs8kQKc3+i3r4XYYHFDrqRd919NCAZvKeZpgVoqZaT19wzofDKp3KHmDTZkRacRo03$CKCrih$cruV7FLdKVKY-ocUpWcGgHwWWKhDkegDTQg1youUQgyrTDXnneLObObDYJEopm7ZevEHX4gCsydVnvEeb+Go4SLanvYIsvQEsFxqga8fm5sYnRsWHmsn4rZMnN8Vsn7eIw8tHf+Yg7sfY9cH0Mn$sK$H$TwNEcYX8kZ3-e06p-8kxb$3Q2g5N7EkpGg4ixrVgWIrZOzo8jdPsT8agWcN7j8TnvwFNiwHb1s7YvYf9J$g8l9ceN$SEbmR8-dpvgnb3PCb$m-s42CLWSmpnk7feZdfis4TYOcb3SYWYJE70ibpdtYHXG0n4$wRu8wj8O7WdI0Ygg735vscgJ0570NgwLgV0+0Fd4EL4OYvYVnW-ysH4u535RgjYsd7g1sl0bY8UtXntjwpNJ0u$FpTEvgC-hcanS9RaD+PYdI9zJ$7g4vb3YXU85a4nI7VgA4CbHuFNSmp5Hiagg74YinAUAe+vanFYSgxeHba9KEdY9XKE08JmOZL+v5f$DtVgC8gnDh3WcgyY+Ugt0sVb5gd-3hJ$gbPedY$t1YITAhYhano0REZtxbO-pn7idCJmL4ZEg3AEItVnI7WtVtcgJtH4mgznVtXmtHI7st0tgz5tZE9HotttHaltyhanh8Jg5hTgznV4lh-hlnI7nREqPtHag34icmxT3r2hXhGnTn2httVgeq5YTR2t8hfnDrr7FnaqJgLtcn0ZbYRYwy0sob1eeNo7dG1nfq0YSndEtHG01$ecjHar7pTrcgiR1gV7jY67CNUt6qoJkNA4T4gNOxbYjpgqAahmuUIEUt3qYmkX$R+9x3VgK7n7ScH7xE90sHKRxItgggPEfnP5cnZwD+8scNlpr$sE5wucowP0tRdNbpOEhYa4$N5nRikJFpWc3ssevQcmwqvg8ebNDEwnjHmt-ZLLagoba1bN07tEU75pVYVnnEFYUbNbOmLgbYzoU71t+Q0van-oWg6hrNwmJmnEDYvE0ZmNgnE0io81onTgjcw0WwTnL4GNf-z111K1FnDovQnhhE5aO8AovY1oK1W0vQ31jyeGbEmNGIOrQtdG4EcZ1CL1Z1TuORLIri+0nor18EKbL15NeYxmobx1GoJ1obfeRusnyppdORlXR-9sp1P7tYKZbIOqPbr4vYlJe7h$lhmhbtP1vnS1LaII8CgwDfN1S1svsI8Cb3LY2zc7ZebPvE-Nq$nvzP7hdn2oaKwozN5nht67sdxHY0Vm5YE1S1zNrg0o21wobqy1-KS1N7kXfh5p-N8PvYKKXNvgM7xhOPFb5ntHzKhh1zT8OKEPSCOPqw6P7iOKFKqmnhOKxhhP-KhNMGd$$mOKKaAP8WJgZPpoHXwKWmMvHb6mO$AmqbssVn5KxzzQcpFdFr5NtH6$ieggwZNeGg5ar4sXpX-HyCwVGPcg5ysvPHxphqaDqbNPGLQo5y-sn-mlIEinFYtpMsF7h1r9Clsuq00K0gsuT4ZgXp7n2Nalhor$Z$RPyKO4dkHbEpwphpqND+Rq0Z1kpE5acmb$RqX1K15gFpRRVnL4UhPo1E5$35smGh7C1fbTsG0d4l5mImxN$DpGpl3DMJhCglcnsvZDwbSghGrDsmonhY8o4lLY5ngnUwanbDt+d94DIl7x8GG1cmU1Voz5H4+1RuslRDsotD9PEDsl8nK07p1YnF-gMl$EKkqE4IfmtDsl-84h-Ctbq$F16JTj-NNPEGahCF5-9PwDcFIlzj5J1gwlcFXjZeXKTgcH913nbmijvP7m9jf9zFq$hjiKkFGPbFijRJCpXNSDsl-pOFXpcFce4RAFvEEoDFTn4FAjcj1YW8TiJg1mpjgg1nhhsYLcpgnl4tFjW8+oH$jlW8Jb916KFN-8W7pcLKU7i$aE7hMHhC9tVgtYDcbpMDSmRGlXTg-Fvt68+wjjRFSF3KW$ZmeNNbrgTYqnLntHlFxw9ulipg8RQqc-bF1iZpMjdh9D1gRnyPMFxH3neFH7l1oaWYrKkn2jk2HUws6KRXwPDuOYC7bEY8SRRj6bh+Z$GDpn6$QcFpPj$-yj+EI5QqJD-z3K7rEmkgc2g2rkk91-NCpWD$gOvNxmr-MrZO1KvhAmraDryWtEu2hlI2xOII6NGhbmxOra2D7mvOu2y2V$RFsObpn4JOy2-pVeuxYGROiFADTjrvqOsOgj220OoOqmFKCGM2Qqs2tY7nUkyH3G+2vtitR2tY$dM0aSUOr4m2fm9SbA9oJg5OzSLmeAcEeAYO+GXAu2+2RON7kbiS$KTAr4yEXeLnr4XmjNaSmAS22bbckZYnlbx3k7yEpmnA7CZnaJROYAjfmA2ywSpYZYLS$AbAuOAlqmdA9OZS-ofAraChih5gLSuARjwA8FPQN$R2CompnUJSWsVA54fZVSj2R2u5yn5a1Arn1-tA4SUSiYJgWgLAjAWgdU+OsRaYROoAFnsHwFEM1APSUSSKdbPKEMR2vPPgZF$K8SUSI0q$N6KEhEoa6Pn4+mX6-8R296KTY$jFAHfADAnS-THAKOqgfOv6lOQ6pSfMlgvMdS9S-TXEbEX6CNkna6HNJnpgO65gaEyKY6kgn6Q6n6XAiMwS-TraKbJe1gA4DzXMNh-2rMKb3nrau6R4Aax63gAYrMZnuTX69a9XwOpd+M7N1g16jns6Ocqgv-aaeNs6mEwpuiK6q67MDMhaDkMg0N+A3TWjCmD3ft7EgOwf4G6TcWEkQDEn6ACPDPh77ROnHXwRR1opIJvAh25guNeApsugnVlenfmvEeenU6lPxP8dfnfDJvgDv9wFEdrN8YhwOC4t2+9Pbjc5OTRKoQT5hmGznAPnvoOyvNReIm1lj5s5-oppPgAgU75w5sDUNLW9APn1a+jaDpLkSAP2Fawx39qhgSACEt0ZIevmDLxgcz5wdvC13tbDfqE8aLmRy$6gdC4x7a7bjGfAZFg9EhtQ7RrNckCN7ntMYbuzRXWJnQ$WaAbfv0iuQ8K+HqGevvmKnTi$denqeifT4kOARixJo7WQRkneYX+n7m7qXgTTs8TvxHapYvRW4-hhf0HLnrD7jcW1hyXniZvetWzvYGyL+$9uS7hLXcAzqmA9jDwH4TE2H+H0eRweukr1PaomLnaiRUWnaZazmf-Kp4+rFHZaGmKIlvt7WoAZnXUGpyLbXEQFMtxbbhzekZkycDTD35$qTRe-Q1DTT1gTq2bDIYhtV0mdJ12bRgyv0a1N7JYc4cIcYyTM$2yZLn7WlqoVnEuNTGfjnWEKTlN0CR6RRpn4THJOQkH-7EQn40dxb9k5g8vNsYcaJ3CQdd8sa6-tTmcukuEtskuhwHmcjHvDYJ4CDO0wNLfde7Q$lNrTkC9fd4Ww3gnGT8TEv5N4wxynyydQOcd4WRcbTWaLTZ$zWtNVlq2HImWqZAqUkQ4mHxvGTkD+ITHbbsgOoWqg7XWbFbsPeCWRMbVxWY6EfwqkG3$ZupERniII8XtywQrNcQkgsP9Iq1n0EpGXmuO9ldGnt1tqAzLhddQK9R4vPX7ujqFVKate-wqNgbZzfgVRKRrKOIaalWtgyDkFjzx9E331Lr--b1wgVG8wXmC3-DZX4fUFVsc-z1bzOI1dFERnc1UnksEKFWqR493$zWdmcnsRbnQ3qFSH9Cdx7Axq3$z7c7KH+qoa+qVCWvjKXVZrQL3gTPcxrW75IQcHCv58g+eRRxQcHr25cxKHFncdJnTyZ+EFHoRknr3AE4EfZ+k$EzmCvbQTRFdJZmUyFYbN-9OuiVdWZ3TNOE7knlqPQt3uTxKkvk7nuVXOZEk0sPPgVPcuLMtq6WJCIi7aDiYH-HuNZ6kcGLHlNy21hYd8u3xYrgxG89+SRqgbd8YAkxWWaCgNa-uViNHwDTC13LdIHQEemzgWxxbFhal7cbZKZvkyK7WXT0x+u7$-RXlNUNZCkInCHIK8b3FGrRH8NaLa2a0gV45NCrX4dSbzy1qztQVVviOCbG2eKr+yWKdmCVOnhGefW-03Dnqf4pqTqwCNCDCVOdHKxnEYoKn0na26TX1hauKWLSff$iibq++3HCJgqwTfNEgT1yAPfd+UTQmdldC+XEXH5DYdTwNMtjwI2kPsKVa$budA8sZc+E3pE7DdwYtCLobge$NXWCPNP-brkvF7HhyWcdQCbHc$4RR99WZO87+J17RPUmNWeC$fseY92Jsgyi1ukvFAeQERGd8CZ+v$4RSiKIn8eY+w$6yZ8Ar3RRd3O$n+4mfUuz11njHlN38fcUqGW+Yn+EdEuZP1GGVfD0C83ZpXInF7MqasS1sjWhCbHJ$LE5y2NUFGKdk4MV4MRYWy+qkq$Zzttmu5Kokn7$rQr45HnNiwdLev+jnu9lXdacQ1suFag3W+YvQhw5+wFk7zgovna7rCwmXbZ7sVJvQTjXnWm4TkUQ3Cosb8Xkgwng3bhosAYj6v4s7bFNybzv4M9wECyxHobyKXjYmgevh79o0gnLqNCoUq7KkaYFJj9fLeIe0X34ZjDe1wTw8xrHm$TWU0H+kQdJbKSrPTww3m8KkZaH13nkjgRElaZQAu3q1w3lmSyaX9iFfoiylmUtX-2bCAW24AYdJXDaHza4wyAakIPad0u$mKy07zxPpFVnYQ1yAaos4b+0X1E2ao7Xta1RF3IobX2H3rWD975qtKgWnfZZAFtjAE4y08wCvKcbnx+On3m5SWY1kVcQ$v-nhLlQuEgLkzcxCiLhqREWUoMcVDU+Ri4aRXiryvEN57EFOnNvUyVDJLzFQlF87CLFph5At2AuQgUv6OlLQVCS914WytbsdjOfou0oWXG1jVHA0cy8pKYppli7A+J+-ksvta$TgMkVTR1tul$PEI2oPj4txvHA+ne6LJdjCub+pF75wkVF2oW9+p3j0O7yn6v+vkpsLV9fZ1toeI2plmt64DyLRS-hpq+jhdGgWtxyTEunLIgnsy+hdkDTUH$oPHc7XkxpsLQ3CyDmnLnHZ5cGjCnsaPIy9ZU+dFj-eHPGn8FznzYa0Dtob4qnrnwYaJ5Trei5aWUu6fnWsC2JfZJ27EulX8WLHfZVkYXFaZFn-5Uh$kvwunse9UrOpJeSLxlFw08mpZTg5MmSu01Zy6ZiQ$$E8ZHKXzfqlL31om$1Eq5Vm5aTajn8wt2y81aIroYm2igiU+EuXao8a$wgwJUZ+ZFOxlu1w1k3CxLtpWcn-9MdnpAeS3x8YqfCiOwdnR1YNsNaeigZDWW3+e$cr1id99-h$$YjTqCiMb5+ZvulFiqW-XGzXrYPPdhRxvK$df-+Q9s7QNafGMEddKvKVtYHpdmntsslrWVKbqG5CZto9swrS4WdvXfzZuXNE34hGjfm$2jlPT8nG$ckEM$OK8CpTfmq6SJ1X2l3Kkwn4C+Oecml33THGVn0-S4yQKTLJGJ3i3KnnWC1zcE5kZaj6DFKoizqpqSnaLOrmUkRX3I5yc0+awrrQbtPjOEUWtbmzY1Hy+pQnnWm5f6h5yLeiyqA+MI$h9iCCLmqsGodKbQQa+8MgHCH8KnSx0tCVKwE34yk5akIE4FTnmEYbK9aDem3kya+u7HnXM8CRMwA5vmF-bTRf$ggJLG7+iveiJ964X9Drca5gHkqtsigdmynFZs-keR$GAr-E0-xdzREYbabSR0gcaHb1Vn2F-8YJYberKX86e3n3GAeWwnugbeVn7r+8O5sWdPdKHumXw$3pvkyrMn1mAZzQtw8DEMnTUbh$$p98xrq0rgqw80hD8HOxC5U7WEx9E5-eW8On+h2IKe8xrLnYUxr+hf3HDf78pOELZEPDHeU5fCndH4cQVn8DC0xubkYXQTLXU6cbZXHZgaOIsbuz3huERgKaEYKrnb7XPrdaWJsbSMRnHv1MemvtKoz3wqMkXYrIvpgwvzVSTKoIsLzX8GvgXis9ak0DMtL41lUoP5f7UfhHYgLq3Ytakw$UnIwEXdCZ88brvx-2L9WwPpqm6xZQmHebpFcxUoNVrX2gVQu4DUdh+CxYk4CwyMvrwDzqnehrZXzGNcN7HwUaG2sqXzX4PoDDIYXned+2ZoseWfPtyQbczsiq4DIQIYaDR7WOXiCridXCix+0Ggj4xnRnbpiZxuwDRg7$zL96qQqHClgb3TvuQqGN55EoCzwM30d4d8NFmUrsKTsETE939f7FxbzTzPb+IRHDIYzAsqTVwDg-hjdnrlqoy1YceUQwGmHoK2oeQCziphUz1E++42OkTHsaET0Vr$2vkQ0uutfuVwDnT5kn7uq1tfFYI0nvw2FQ+LyL7s8tup7uEPF527IeDS8PHH13dYpcbgPCpn01ty9zIzY60VYM6PhWZq-Ug4AASvqV4CUkng0KT12wE1Hk-Dd0+gzLnMIM9f0c+3Dk1VIQ5Ymz1ucmd0XyA$OXl6XeIf+kNi0zNUVde1jzU5rrcXgFxywm1ohKiDDQ3UhIhcxQxl4mzMfJ8oL0sbbWrY1-DIhcfwHvQEDIES$XWaAjU$qw1giIaX8H9p2iV50pnZE7S8TC8DAIFdGm4srVjlR-wsuJTHtfre8z3sYmGD18mUmT9k7YCGKNp4ClH1LavudDD+xL83QG0+IUw38FVz8zP3IGZEaRfpnswAfvIm1lL9u$mQxxKfoC6qe9HlgDajaPmRQ1v41Z0QIgYEKIw$2k3uscn2HPTZwRTaTwvELqzbnYcdD6nrnDCrZZAsysf3MDDDsvVMfNW09rnhct-0vn0+Ec3XyFYIj8dw3iQ-zyFE$fUHd9Mz5aEPbTkUFHaeg1npet-buH9fcyxbdeG0GInezz3o$vOCQLrFgVhgMD59CgrGZLC1hnZcOCQPsIcwYzazRxeQ7uX8ExT0xrTaKfnnGl-rUxIVescFc$9IffOcOQq05Os5gweDnlWlwRmhr$Ih$+ZwRL08VDfm-7cawRfRmegvg-evOMv7xVpNjGxbYwPMqNk9tptYmfCDysqYkyqkzUd8HwXReObmI7xEEHKqHgslbmFYWAtnFEynkjU2h2aSv4uCNV+Lh-RLrNKuUGUQgKLZEqjEpE1CkX$4$fCCatIc0vtZxEilCgLewV3L1nNXuxrVeDQE0cb8PiIrOOJwmHigTk9MA8cori9tapCEx+Ssxou8RJ5hiyV225KrrGmF3PhFM2UfPn9wmHkGRM8egnha-whQI4aeJwXs17o6QQrvOEFAkU4HHFOdjmZT$sNWRD4npkeLlcXpfrihnzj$LfTq3CQ5WFHiEnu04HeiuXFRRgJQQmTLW1XFRaxOC79vXuglDWdRODmbTNxr7hdTwgCbUOWrPjwqRqEUAhLNjcAxLJeWDYTdW8hgxb2sbuiuSERCuPAHSWQW3GWRLri0FYeFp$D-q+59am7Cj8RvziIRLes5WELvLe0g8T-OXgv8qTNYH3Ty-8wEkniFE7XFZQmR$$8TNCkcndeqTY8bEGjYoDeLRXXQ-aVFHXHMUlXW-q9vbLbh+1mfXt99NjcLKPtqAQiCTNh4GQEJvXu8R37gYMnSCAvuH+mVZYoDdsKQaXRiVY5nEXacYD$TgXrU5wHQv1fNH1V2qMpcmezsimYGjcxTyFuyVp3QbOWbT6kDJ5e3MEAH$Q1RgVCDnjH+YyiRceswhn3JmLFa5Nkjy8Xp7EH51s-GO$+-vxtc18IdvGZ+-8xvc1814v-Ney+J3EFNhnVQF9x77HnAlYq1aF9p9WVn9Swruu1jgjV2quvS-SYqbRbE0aSN6H$+Ha18a9dGNhYYYuC4b$Tm$QmQ0-jzb9$M3JeyaZL1HoN$Nd835bLJRwID$wzHCyZR-wAIIW6cvClnYc4hdteIdOaFqXekN1seosADCkegX9oD+Lkqid7HhPR9f-s6ETr$d91Na4+Kzxlaab-oV8UVIUHmMI238nqjeWb$6kSVT1+pfY-FD6Wib-QMq7hou7Ncsra4yxqnNfo1cUlVfl9W+ziDWO1dTashaxdwyYsuvfhfo0FSGRhOn0y0dcyVW1wOLQsDYOcQbRsFYjLAN7mJgZ6E7lXHWwXZTbmL+ZCKxQ+XmQQYuEndflEU4-x9yrDihIEDkyjcgXEHkbgFIQbO3CyUUZAQ22HG$uOE78TkbEPCgrchyiDv$IzW4b-Ro-$xel+ROk4IfjxunkF$LR0QNalb6krWbWgkeaTAUTpMbg9vXtGZDq9p-uZ0cXkad4ygnbHwOb0Z647CosLEtMIruftHzvLSbNec7DM3hOCh7SGAb63GyxU5-wFH7RDnO0eb2XTo0R5MYNnQ+Gp3IjA0YErpYnWn1Im6LwQy3JESpt-NgxSCEKhEmK6$5xr2jMoWnXZyQRgS+eF7C5zZokFYLpgUnR+hzNNDPOIEotaeMwsV7GgYYtklDwZinNa1Xa6C8r0Ed0WEejF9q8hopSquhixZXKKELEbaqSzwnR4lGyrr1mUkvbIHzqvI+ChczyFDaG$14QqR0ayzFUVwQGGw7l$CO8KEaqG39Q$0u80ux1xIjVE7bxmzvNhsvxl4v86f7oyviLzDap74kEocGcRdTi0uMXZyMVVX1Qz+ijF54D5GiZqGZ9EagKr+lYGAQZL$4ILLL60jwn7uTEcdwiDnr1VqSgVoo2Jir$lFWqHr6ZpvQQSi3hAwNedR+uyqAGGricih2qsvbRSZb637XiQmPbiFwAujaHIdJr-mO1QZ4+Q5bweOmgzekInqP3f8dn3dYkyWPUI9y5H46dqIbq$sR+b-2sHvwyP8Yip6uH8jCWGaQsXUswUCZHsNztJ+Z9rbawue3b+s5CPmHlq9ux8tH3UD9NTgLOxTtsRC4hpxbQ9XnrphmchMxLA2s8GslUGh3kHtYIQn0CpYN+eDAO+oR7w$D3X+ncIkW$3718DwwAmHmUw19kSeNpypQyn2dQoWPgzeHnZ5MFbX9HeeYk+eD3e7usHuI058+73EzLd5RIq27afJhJTWhgS+7OJnL12v88QWoNWsfLa0u6zZcVzk+Z1DaImqDkLR7clj58Ju1pv19gHp$02HfwXaXCcpuG0fuS1lKy72e$rHNcxLnGZrO88knq+bdHkcZc8lEmcTPTH0LeWqlNKy$tdseeIIhD005Cx+RNAHZ1lv0Ru8DMsxIOADwnwITqZd0JIAD+0hImUcTGb4FT1eKNUYi-XUd6enESaf$ADSG4xdXNEiUFvAcHyxPxhC696AIu+cAXLaKkjuREqNC9cDf$xC8dGWsXrlWnUxphoKS$q$Du5x7YUjlRid4DOtXLjFH7ggPbg9tLdNA-93pkXvZ$UmzAUjb21Tx7tpwgwwbcFIVd9tkcfRXbEYVslHL3xtA-t+5NInPy4EUcDPyZw$mhyKJOc6LWcQ$DLu4xCsxSw8k+UL3dKMJoSwaCI14tla0mk3AOYck0OlJ6CNq5sjnF$0aW36znpzOI09tSNCeRkAtOWlrsyIOclnN1QXyeRp4LAho0qX+DD945KHoK07fmV9tw5dOUP0HTUDQ1$W6G1D0sXEk0DxWt6DiUrewruIt7va81QbL+laaT2uGITJ+cIgI817E4-tPbS2lOER8z4zpyHg+-hyD5jvRH6bLXgynGJG4DLIv0xgFUw4uKk$TmIVdmxrpuTiiwGlgdEceH7aHQDwmzlUJ7V-xXJkcLNlC0AxZZObpb8Fjbb5$cZRe1T2P1Laatx-wdOO9SivEtD$t72TtYp02VeKUciaiFZwXTIlfqVPepLEg0yaygGOz$$ayWXC7jisQpkkc8FQ24Rm8pr8LtD+p5R6NNKDNgfKDiio6QzYLX20Em5266EV+oWOPuPrLG0Xmo5cGEhcUu6t0XiVZnqxc3wUeXS3E0T9yy+WYJQLMRijoucG$Ovro-SZcbmWUU4NX4R$TqUZjVQ3gN--x9MU+sfM4rTrwqHect0h+Rbs57qIThnd4S$ryYyjLpYEvFhCvw$hT-tALokPHvkl8JEgSGq-Pcf5i2f24pRcQRUSYxb0LduReJPg$amkh1lCWMrfYbiRLcZmg9uxGcGT41Npv$Y0aVJ7xSZlU4dIeHfeI7NYcfNPQJgbz1KiV2I03ADEfPbQ9fYqo$L0YqPUXgA5v8vW5aJsR5vGzvNPVeiZoZExGhww$xdLfqNsyGUIkxXyzbzso0qlEkxNdZ2H3W7rh8M$IGxGPOuTtC9DsN4bJPMN1byWUULkX-04gYsc8Josso4bKulHn5kZYD2sHx$G5Vw6xLQ3PPJ$VU-5eg$osADNOxwbwhxx624bj9gbFId79YNVRyw+JOR2Xk3O0FlcOWCcYVAe$Clu45ycaJ7Z3ul1pI8c3ayAbSuS-F71fFSWr36gsNViaHsel5xKE+ZV766uRlJwwxrtO+ANFQTuDlrWcH0GrDZP$IezucS0sr3wk-hJ2yPuhfUz9ToAF2jR9tMrJCs+KyOVPZs3xtAvbmVnO8qvGaXHC+TFafnuGk3XNQcq+HI-yLjbqaRkyuTrnN8P$4H390kdKvm8FJz9T9$Xn5Gb8qC4iC4wo4io0UngFG4$LLgUJvEKxZOhvWstnlW-ZOZCRs0UqseyLAhOzz4jL1Cj-U$Ctd0aJOHcETRzW6gNJaOXTn2sW$2Eo-0u3wgZm77hbnlIcr49fuLm$TAefZgf9stGvukGFVu3e-TFAVvWCbMV$9XHTHes3JhSeAgjoQ4wvd-o8qa1jyLjGWE9ZapWR6om$D1bvtVvAg9rzr+Tzel7xTO8aO3uZIWYE+v39cwb4j$tN-vAgj5tTzfpRxzVnvE$wmGCMZ9Y6nJ5W1wOuZQ-Aua3K4CqJWERL6WernVaP-$fcOfzODQlT4i8AFi+w4lkj1zic7k0Na$lU6P45hXqf-e4ijE3H82-Yb6LaVFCXJ2gkoeNZAH7Fhx2i-ROnGAjJ8FM-FV8iwsdf2SZgHC3fw-StOruGIsJ-qwJtG-2SL8syrhbhTxD2+RZO1F2x+JA82$bUIapGq6L4hdpWR5-UNulWHYxZz7drG6w-$2p2buSFu6uDJPCyDZtF0-Xe$yG4z21PNXFxMXQPAnUgeP4O93smZH+EbEfazQo8E33GkHYWedJNM9-PQo+ZGtyRk0twJbtge58IWOi4x9JC9UiiYQgYMSxgn9UqgCWkilMdeS0j7RlHR4-HMRZKj8wcXyzkN6HS6j-8uVhdMmMg2$jlMnK9MTCrmbaIrbE4WIy9OdJAdZoJWqHz8w0c6u7qiVqptc6E+PTidZxaFJVgd8Wwan2uaHV-m$fqHj1$$yCjjaVlk2s1nqDr-kskXV9rsr-erM2A2tTbSPpspNzIqC932Ir-JgeUhMUSydoXsx4IMkIqOEfs1zhKF$+Qb2dYAqX$N4+sdpOTb7WUEhftbAnM-UIohuld7lHjQvqDu2+6d8WGGk7$-aC460$SAVit8iz5Go6f7MxcFnxUZAtCQqhJnWaWLc9VI38L1DbuZqjt-v+aTNbDTPWnV$2+KyETZmuwjXJNWydAC1KPlzQQ3+1g3S-4uFmdSvLS8EIJjoHIcOYJ7nhORDLPl0GtJ1IQCh-xvVyI5f4dV9YyZ$FVhhySwuMaV8YF56NmG43S3M7EndYl-GwYqgeXMTd1d70H3IPTxLgfyqE3k2EaxK65lhJ-WmWEPMz-YdYW$7NAla3gW-jDG1gMDxMlX3+3FlKJ$ZkkForgu8afqnbvT5rGXghf+bZaWWOuzW5n+qZvESgLnJ9grgCbZInnnkfwWegYE9zqqn98KfkHnvTdFnf3HdxwnSn4EP$RggIEPR3TW6C04QmWAC+EFTnzTbbganfnEnnmUbXaeKgc9jnnngOXEH2aLneEjekfnvXgHknEeEFjneawnW+neaKnnngieEFnJnaFdGkbTnjkV+nuaKnqqnuaxnZeW8eFO9TnfncwZEafnlU1kainSa5F4hhbaWT$mnHznRnYnNbREgbnSTHan0nyKoNgmNXTHcksnCkWaYYEP$gUGgLAEi3YX8Z8gbkfCrC184knM1qbgdHFHdy4FI+kYfCin4Ej-nfnXTieW4n-aXCkbbKaufWZnsqq9WtEraj9k9n+aFzkJnETuVaVnGDgXkmEvTFcW0n6TXLkOn7TuLWLEVTjZYEaRT5-knEmHdkkTEElW0J6E1HimkFebfEzEvTPanngwaKvmkrR9Ky$EIE3EZDWtE+nRwYzEENuVuGEXcRHnFHFEg9xKn9kZz-2Egdk-9F1K4EHEvEPAVinhnTorTpLzfGGnEYMkNZvIUan9gVgIEmLqgkT5iH9grrCi1gQgHC419eN09XcWam-iWTRr4IaRH17rm$XckHmsaeQVH$f9fQ1Ug7HLbWIevT7bqgW6SS8Rrn9nuXg-kgTjkGbEKaqTizWHnW9gagHnZnRsgaHZZempm357WdavTHSlHGxT9kRepzCZcTCEmELCXg$ZFXe55gDkiDZnY9Q+E17Xou7jytYIR+9uGWcn09qkJ0$j8oLNoCqNFTnnnbVAk2v9knamP$uhQTm61PkEH$kaNCFggOhfQVTmS-0zX1aLn0biPuFH0bibdHziQVjgYE9Fre7RErbnngSqXinn",
+    "requestHeaders": {
+      "sec-ch-ua-platform": "\"Mac OS X\"",
+      "referer": "",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.7778.96 Safari/537.36",
+      "sec-ch-ua": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \";Not A Brand\";v=\"99\"",
+      "content-type": "text/plain;charset=UTF-8",
+      "sec-ch-ua-mobile": "?0",
+      "accept-language": "en-US,en;q=0.9"
+    }
+  },
+  {
+    "ts": 1779111007862,
+    "kind": "res",
+    "url": "https://geo.captcha-delivery.com/captcha/?initialCid=AHrlqAAAAAMArWf48ftagKoAM5ogww%3D%3D&hash=F366DD7CF4DB76FA9B54F971FAB24F&cid=eKe_6RA6uand7mRlO1iEUHAmF2DVWeIrodCIwcm67w7PJJGZtt5XJ08N0mQHQBK8hrSzGTJOUJVLlGgRUYmYwMT1HiO5ZaSm6kndzwKjDcJC2EiWiJ7Y49975iYsc9r6&t=fe&referer=https%3A%2F%2Fwww.homegate.ch%2Frent%2Freal-estate-search&s=58425&e=76f9cb280ad9ab9b52544381c57de5dc27b0cf31e78ab1bcf53b59e2bc5204b2759948aaea5beb90a773d11147bae28f&dm=cd",
+    "status": 200,
+    "type": "document",
+    "responseHeaders": {
+      "connection": "keep-alive",
+      "content-encoding": "gzip",
+      "content-type": "text/html;charset=utf-8",
+      "date": "Mon, 18 May 2026 13:30:06 GMT",
+      "transfer-encoding": "chunked"
+    },
+    "contentType": "text/html;charset=utf-8",
+    "bodySnippet": "<!DOCTYPE html>\n<html lang=\"en\"  style=\"background-color:#ffffff\">\n    <head>\n        <title>You have been blocked | Homegate</title>\n<!--[if !mso]>\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"></meta>\n<![endif]-->\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0\">\n"
+  },
+  {
+    "ts": 1779111007867,
+    "kind": "res",
+    "url": "https://www.homegate.ch/cdn-cgi/challenge-platform/h/g/jsd/oneshot/825e783f7fae/0.9095062752519802:1779109692:dkP3pHJLOsXHSuuETIasGPqcVuYSsjEnaXmWYoMUx04/9fdb36eeafa40215",
+    "status": 200,
+    "type": "xhr",
+    "responseHeaders": {
+      "timing-allow-origin": "https://www.homegate.ch",
+      "cf-ray": "9fdb36f6fad3bb0f-ZRH",
+      "alt-svc": "h3=\":443\"; ma=86400",
+      "server-timing": "cfExtPri",
+      "content-length": "0",
+      "cf-chl-out-s": "6zXVwhi5HsqHS1DFWLNF0Q==$osst5I+eXRBMn1Tw//SKyA==",
+      "date": "Mon, 18 May 2026 13:30:07 GMT",
+      "content-type": "text/plain; charset=UTF-8",
+      "server": "cloudflare",
+      "priority": "u=1,i"
+    },
+    "contentType": "text/plain; charset=UTF-8",
+    "bodySnippet": ""
+  },
+  {
+    "ts": 1779111008221,
+    "kind": "req",
+    "method": "POST",
+    "url": "https://www.homegate.ch/cdn-cgi/rum?",
+    "type": "xhr",
+    "postData": "{\"memory\":{\"totalJSHeapSize\":15200000,\"usedJSHeapSize\":10600000,\"jsHeapSizeLimit\":3760000000},\"resources\":[],\"referrer\":\"\",\"eventType\":1,\"firstPaint\":0,\"firstContentfulPaint\":0,\"startTime\":1779111006414.6,\"versions\":{\"fl\":\"2024.11.0\",\"js\":\"2026.5.0\",\"timings\":2},\"pageloadId\":\"72147e94-9a5e-403b-8c56-246ca2e68f36\",\"location\":\"https://www.homegate.ch/rent/real-estate-search\",\"nt\":\"navigate\",\"timingsV2\":{\"nextHopProtocol\":\"h2\",\"domainLookupStart\":92.80000001192093,\"domainLookupEnd\":92.80000001192093,\"connectStart\":92.80000001192093,\"connectEnd\":92.80000001192093,\"requestStart\":93.90000003576279,\"responseStart\":145.5,\"responseEnd\":146,\"domInteractive\":207.69999998807907,\"domComplete\":1804.300000011921,\"loadEventStart\":1804.4000000357628,\"loadEventEnd\":1804.4000000357628,\"finalResponseHeadersStart\":145.5,\"firstInterimResponseStart\":0,\"transferSize\":1608,\"decodedBodySize\":2188},\"dt\":\"\",\"siteToken\":\"6e1080a0a398404ca22c79dc285384f5\",\"st\":2}",
+    "requestHeaders": {
+      "sec-ch-ua-full-version-list": "\"Chromium\";v=\"148.0.7778.96\", \"HeadlessChrome\";v=\"148.0.7778.96\", \"Not/A)Brand\";v=\"99.0.0.0\"",
+      "sec-ch-ua-platform": "\"Mac OS X\"",
+      "referer": "https://www.homegate.ch/rent/real-estate-search",
+      "accept-language": "en-US,en;q=0.9",
+      "sec-ch-ua": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \";Not A Brand\";v=\"99\"",
+      "sec-ch-ua-model": "\"\"",
+      "sec-ch-device-memory": "32",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-arch": "\"x86\"",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.7778.96 Safari/537.36",
+      "content-type": "application/json"
+    }
+  },
+  {
+    "ts": 1779111008232,
+    "kind": "res",
+    "url": "https://www.homegate.ch/cdn-cgi/rum?",
+    "status": 204,
+    "type": "xhr",
+    "responseHeaders": {
+      "access-control-max-age": "86400",
+      "access-control-allow-credentials": "true",
+      "access-control-allow-methods": "POST,OPTIONS",
+      "cf-ray": "9fdb36f95d3ebb0f-ZRH",
+      "access-control-allow-origin": "https://www.homegate.ch",
+      "alt-svc": "h3=\":443\"; ma=86400",
+      "server-timing": "cfExtPri",
+      "date": "Mon, 18 May 2026 13:30:08 GMT",
+      "content-type": "text/plain",
+      "vary": "Origin",
+      "server": "cloudflare",
+      "priority": "u=1,i"
+    },
+    "contentType": "text/plain",
+    "bodySnippet": ""
+  },
+  {
+    "ts": 1779111011740,
+    "kind": "req",
+    "method": "GET",
+    "url": "https://www.homegate.ch/rent/real-estate/canton-zurich/matching-list?ac=8001,8002,8003,8004,8005,8006,8008,8032&be=3&ag=4500",
+    "type": "document",
+    "requestHeaders": {
+      "accept-language": "en-US,en;q=0.9",
+      "upgrade-insecure-requests": "1",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.7778.96 Safari/537.36",
+      "sec-ch-device-memory": "32",
+      "sec-ch-ua": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \";Not A Brand\";v=\"99\"",
+      "sec-ch-ua-arch": "\"x86\"",
+      "sec-ch-ua-full-version-list": "\"Chromium\";v=\"148.0.7778.96\", \"HeadlessChrome\";v=\"148.0.7778.96\", \"Not/A)Brand\";v=\"99.0.0.0\"",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-model": "\"\"",
+      "sec-ch-ua-platform": "\"Mac OS X\""
+    }
+  },
+  {
+    "ts": 1779111011816,
+    "kind": "req",
+    "method": "GET",
+    "url": "https://geo.captcha-delivery.com/captcha/?initialCid=AHrlqAAAAAMArWf48ftagKoAM5ogww%3D%3D&hash=F366DD7CF4DB76FA9B54F971FAB24F&cid=Q6z3JxMSn7aG3~gcA5c8nrQYXoeB~UvPvbvTVSKPTnP2XXmV9Sq4YDVgWnJdixAmjoxma8skHfXwAeD~NgeOIjVqc8~HTe8spOFh3l9lD89_2s0fl8gteXDroUnoFYbY&t=fe&referer=https%3A%2F%2Fwww.homegate.ch%2Frent%2Freal-estate%2Fcanton-zurich%2Fmatching-list%3Fac%3D8001%2C8002%2C8003%2C8004%2C8005%2C8006%2C8008%2C8032%26be%3D3%26ag%3D4500&s=58425&e=be827698a58fe5e71ca948382188d72a904f90fcd0d517fc3e7f603541aafdb366fae93b274f7f321d7cb7a1db3f0e03&dm=cd",
+    "type": "document",
+    "requestHeaders": {
+      "accept-language": "en-US,en;q=0.9",
+      "referer": "https://www.homegate.ch/",
+      "upgrade-insecure-requests": "1",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.7778.96 Safari/537.36",
+      "sec-ch-ua": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \";Not A Brand\";v=\"99\"",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": "\"Mac OS X\""
+    }
+  },
+  {
+    "ts": 1779111011818,
+    "kind": "res",
+    "url": "https://www.homegate.ch/rent/real-estate/canton-zurich/matching-list?ac=8001,8002,8003,8004,8005,8006,8008,8032&be=3&ag=4500",
+    "status": 403,
+    "type": "document",
+    "responseHeaders": {
+      "accept-ch": "Sec-CH-UA,Sec-CH-UA-Mobile,Sec-CH-UA-Platform,Sec-CH-UA-Arch,Sec-CH-UA-Full-Version-List,Sec-CH-UA-Model,Sec-CH-Device-Memory",
+      "access-control-allow-credentials": "true",
+      "access-control-allow-origin": "*",
+      "access-control-expose-headers": "x-dd-b, x-set-cookie",
+      "alt-svc": "h3=\":443\"; ma=86400",
+      "cache-control": "max-age=0, private, no-cache, no-store, must-revalidate",
+      "cf-ray": "9fdb370f6ce4bb0f-ZRH",
+      "charset": "utf-8",
+      "content-encoding": "gzip",
+      "content-type": "text/html;charset=utf-8",
+      "date": "Mon, 18 May 2026 13:30:11 GMT",
+      "pragma": "no-cache",
+      "priority": "u=0,i",
+      "server": "cloudflare",
+      "server-timing": "cfEdge;dur=15,cfOrigin;dur=0,cfWorker;dur=28\ncfExtPri",
+      "x-datadome": "protected",
+      "x-datadome-cid": "AHrlqAAAAAMArWf48ftagKoAM5ogww==",
+      "x-dd-b": "1"
+    },
+    "contentType": "text/html;charset=utf-8",
+    "bodySnippet": "<html lang=\"en\"><head><title>homegate.ch</title><style>#cmsg{animation: A 1.5s;}@keyframes A{0%{opacity:0;}99%{opacity:0;}100%{opacity:1;}}</style></head><body style=\"margin:0\"><p id=\"cmsg\">Please enable JS and disable any ad blocker</p><script data-cfasync=\"false\">var dd={'rt':'c','cid':'AHrlqAAAAAMArWf48ftagKoAM5ogww==','hsh':'F366DD7CF4DB76FA9B54F971FAB24F','t':'fe','qp':'','s':58425,'e':'be827"
+  },
+  {
+    "ts": 1779111012080,
+    "kind": "res",
+    "url": "https://geo.captcha-delivery.com/captcha/?initialCid=AHrlqAAAAAMArWf48ftagKoAM5ogww%3D%3D&hash=F366DD7CF4DB76FA9B54F971FAB24F&cid=Q6z3JxMSn7aG3~gcA5c8nrQYXoeB~UvPvbvTVSKPTnP2XXmV9Sq4YDVgWnJdixAmjoxma8skHfXwAeD~NgeOIjVqc8~HTe8spOFh3l9lD89_2s0fl8gteXDroUnoFYbY&t=fe&referer=https%3A%2F%2Fwww.homegate.ch%2Frent%2Freal-estate%2Fcanton-zurich%2Fmatching-list%3Fac%3D8001%2C8002%2C8003%2C8004%2C8005%2C8006%2C8008%2C8032%26be%3D3%26ag%3D4500&s=58425&e=be827698a58fe5e71ca948382188d72a904f90fcd0d517fc3e7f603541aafdb366fae93b274f7f321d7cb7a1db3f0e03&dm=cd",
+    "status": 200,
+    "type": "document",
+    "responseHeaders": {
+      "connection": "keep-alive",
+      "content-encoding": "gzip",
+      "content-type": "text/html;charset=utf-8",
+      "date": "Mon, 18 May 2026 13:30:11 GMT",
+      "transfer-encoding": "chunked"
+    },
+    "contentType": "text/html;charset=utf-8",
+    "bodySnippet": "<!DOCTYPE html>\n<html lang=\"en\"  style=\"background-color:#ffffff\">\n    <head>\n        <title>You have been blocked | Homegate</title>\n<!--[if !mso]>\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"></meta>\n<![endif]-->\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0\">\n"
+  },
+  {
+    "ts": 1779111012081,
+    "kind": "req",
+    "method": "POST",
+    "url": "https://www.homegate.ch/cdn-cgi/rum?",
+    "type": "xhr",
+    "postData": "{\"memory\":{\"totalJSHeapSize\":15200000,\"usedJSHeapSize\":10600000,\"jsHeapSizeLimit\":3760000000},\"resources\":[],\"referrer\":\"\",\"eventType\":1,\"firstPaint\":0,\"firstContentfulPaint\":0,\"startTime\":1779111011738.4,\"versions\":{\"fl\":\"2024.11.0\",\"js\":\"2026.5.0\",\"timings\":2},\"pageloadId\":\"2c758b76-55bf-4bd1-9d89-367ced84b9d6\",\"location\":\"https://www.homegate.ch/rent/real-estate/canton-zurich/matching-list\",\"nt\":\"navigate\",\"timingsV2\":{\"nextHopProtocol\":\"h3\",\"domainLookupStart\":0,\"domainLookupEnd\":0,\"connectStart\":0,\"connectEnd\":0,\"requestStart\":1,\"responseStart\":62.799999952316284,\"responseEnd\":65.69999998807907,\"domInteractive\":78.89999997615814,\"domComplete\":339.5,\"loadEventStart\":339.5,\"loadEventEnd\":339.5,\"finalResponseHeadersStart\":62.799999952316284,\"firstInterimResponseStart\":0,\"transferSize\":1181,\"decodedBodySize\":1269},\"dt\":\"\",\"siteToken\":\"6e1080a0a398404ca22c79dc285384f5\",\"st\":2}",
+    "requestHeaders": {
+      "sec-ch-ua-full-version-list": "\"Chromium\";v=\"148.0.7778.96\", \"HeadlessChrome\";v=\"148.0.7778.96\", \"Not/A)Brand\";v=\"99.0.0.0\"",
+      "sec-ch-ua-platform": "\"Mac OS X\"",
+      "referer": "https://www.homegate.ch/rent/real-estate/canton-zurich/matching-list?ac=8001,8002,8003,8004,8005,8006,8008,8032&be=3&ag=4500",
+      "accept-language": "en-US,en;q=0.9",
+      "sec-ch-ua": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \";Not A Brand\";v=\"99\"",
+      "sec-ch-ua-model": "\"\"",
+      "sec-ch-device-memory": "32",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-arch": "\"x86\"",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.7778.96 Safari/537.36",
+      "content-type": "application/json"
+    }
+  },
+  {
+    "ts": 1779111012088,
+    "kind": "res",
+    "url": "https://www.homegate.ch/cdn-cgi/rum?",
+    "status": 204,
+    "type": "xhr",
+    "responseHeaders": {
+      "access-control-max-age": "86400",
+      "access-control-allow-credentials": "true",
+      "access-control-allow-methods": "POST,OPTIONS",
+      "cf-ray": "9fdb37117f22bb0f-ZRH",
+      "access-control-allow-origin": "https://www.homegate.ch",
+      "alt-svc": "h3=\":443\"; ma=86400",
+      "server-timing": "cfExtPri",
+      "date": "Mon, 18 May 2026 13:30:12 GMT",
+      "content-type": "text/plain",
+      "vary": "Origin",
+      "server": "cloudflare",
+      "priority": "u=1,i"
+    },
+    "contentType": "text/plain",
+    "bodySnippet": ""
+  }
+]

@@ -67,10 +67,7 @@ async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise
       if (!changed) continue;
       const termVerdict = rentalTermPasses(enriched, opts.cfg.rentalTerm);
       if (!termVerdict.ok) {
-        log.debug(
-          { listing_id: enriched.id, reason: termVerdict.reason },
-          'rental_term gate rejected',
-        );
+        log.debug({ listing_id: enriched.id, reason: termVerdict.reason }, 'rental_term gate rejected');
         continue;
       }
       const filterResult = await evaluateFilters(opts.cfg.filters.filters, enriched);

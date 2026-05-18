@@ -20,7 +20,11 @@ const RE_DDMMYYYY = '(?<endDate>\\d{1,2}[./]\\d{1,2}[./]\\d{2,4})';
 
 export const SHORT_TERM_PATTERNS: TermPattern[] = [
   // Date-capturing patterns first.
-  { lang: 'de', pattern: new RegExp(`befristet\\s+bis(?:\\s+zum)?\\s+${RE_DDMMYYYY}`, 'i'), capturesDate: true },
+  {
+    lang: 'de',
+    pattern: new RegExp(`befristet\\s+bis(?:\\s+zum)?\\s+${RE_DDMMYYYY}`, 'i'),
+    capturesDate: true,
+  },
   { lang: 'de', pattern: new RegExp(`bis(?:\\s+zum)?\\s+${RE_DDMMYYYY}`, 'i'), capturesDate: true },
   { lang: 'fr', pattern: new RegExp(`jusqu['’\\s]au\\s+${RE_DDMMYYYY}`, 'i'), capturesDate: true },
   { lang: 'it', pattern: new RegExp(`fino\\s+al\\s+${RE_DDMMYYYY}`, 'i'), capturesDate: true },

@@ -16,9 +16,7 @@ function formatDmy(d: Date): string {
 /** Returns the 🗓 short-term line for short listings, or null for long/unknown. */
 function renderShortTermLine(listing: Listing): string | null {
   if (listing.rental_term !== 'short') return null;
-  return listing.lease_until
-    ? `🗓 short-term · until ${formatDmy(listing.lease_until)}`
-    : '🗓 short-term';
+  return listing.lease_until ? `🗓 short-term · until ${formatDmy(listing.lease_until)}` : '🗓 short-term';
 }
 
 /**

@@ -8,6 +8,9 @@ import { registerList } from './commands/list.js';
 import { registerMigrate } from './commands/migrate.js';
 import { registerDoctor } from './commands/doctor.js';
 import { registerPurge } from './commands/purge.js';
+import { registerLogin } from './commands/login.js';
+import { registerLogout } from './commands/logout.js';
+import { registerHomegateBootstrap } from './commands/homegate-bootstrap.js';
 
 const program = new Command();
 program
@@ -24,6 +27,9 @@ registerList(program);
 registerMigrate(program);
 registerDoctor(program);
 registerPurge(program);
+registerLogin(program);
+registerLogout(program);
+registerHomegateBootstrap(program);
 
 program.parseAsync().catch((err) => {
   console.error(err);

@@ -1,8 +1,19 @@
+import { readFile, stat } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { Command } from 'commander';
 import { request } from 'undici';
-import { loadConfig, loadPlugins } from '@wabe/server';
+import { loadConfig, loadPlugins, loadSecrets } from '@wabe/server';
 import { openDb } from '@wabe/db';
 import { resolvePaths } from '../paths.js';
+
+/** Compact relative-time formatter — `"3h ago"`, `"2d ago"`, `"45s ago"`. */
+function relAge(epochMs: number): string {
+  const deltaS = Math.max(0, Math.floor((Date.now() - epochMs) / 1000));
+  if (deltaS < 60) return `${deltaS}s ago`;
+  if (deltaS < 3600) return `${Math.floor(deltaS / 60)}m ago`;
+  if (deltaS < 86400) return `${Math.floor(deltaS / 3600)}h ago`;
+  return `${Math.floor(deltaS / 86400)}d ago`;
+}
 
 /** Registers the `wabe doctor` subcommand: probes config, DB, plugin loading, and external APIs. */
 export function registerDoctor(prog: Command): void {
@@ -64,6 +75,39 @@ export function registerDoctor(prog: Command): void {
       } catch (e) {
         result('flatfox API reachable', false, (e as Error).message);
       }
+      // Informational homegate checks — these NEVER fail the overall
+      // doctor exit code; they exist to make state-debugging easier.
+      try {
+        await stat(join(paths.dataDir, 'homegate-install.json'));
+        result('homegate install present', true, 'yes');
+      } catch {
+        result('homegate install present', true, 'not yet (first scan will generate)');
+      }
+      try {
+        const raw = await readFile(join(paths.dataDir, 'homegate-cookies.json'), 'utf8');
+        const parsed = JSON.parse(raw) as { capturedAt?: number };
+        if (typeof parsed.capturedAt === 'number') {
+          const age = relAge(parsed.capturedAt);
+          const fresh = parsed.capturedAt + 12 * 3600_000 > Date.now();
+          result('homegate cookies fresh', true, `${fresh ? 'fresh' : 'stale'} (captured ${age})`);
+        } else {
+          result('homegate cookies fresh', true, 'present but malformed');
+        }
+      } catch {
+        result('homegate cookies fresh', true, 'absent (will harvest on first scan)');
+      }
+      try {
+        const secrets = await loadSecrets(paths.dataDir);
+        if (secrets.homegate?.refreshToken) {
+          const who = secrets.homegate.userSub ?? 'unknown';
+          result('homegate user token', true, `logged in as ${who}`);
+        } else {
+          result('homegate user token', true, 'not logged in (optional)');
+        }
+      } catch (e) {
+        result('homegate user token', true, `(skipped: ${(e as Error).message})`);
+      }
+
       process.exit(ok ? 0 : 1);
     });
 }

@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { FiltersFile, RentalTermFile, ScoringFile } from '@wabe/core';
 import { mapFlatfoxListing, type FlatfoxApiResult } from '@wabe/source-flatfox/dist/map.js';
+import sourceHomegate from '@wabe/source-homegate';
+import { mapHomegateResult, HomegateApiSchema } from '@wabe/source-homegate/dist/map.js';
 
 // NOTE: deviated from plan — use import.meta.url instead of __dirname since the
 // test runs as an ESM module (project-wide "type": "module").
@@ -73,5 +75,45 @@ describe('example-config gate', () => {
   it('rental_term.yaml parses against RentalTermFile', () => {
     const yaml = readFileSync(join(CONFIG_DIR, 'rental_term.yaml'), 'utf8');
     expect(() => RentalTermFile.parse(parse(yaml))).not.toThrow();
+  });
+
+  it('source-homegate.yaml parses against its plugin config schema', () => {
+    const yaml = readFileSync(join(CONFIG_DIR, 'plugins', 'source-homegate.yaml'), 'utf8');
+    expect(() => sourceHomegate.plugin.configSchema.parse(parse(yaml))).not.toThrow();
+  });
+
+  it('homegate mapper populates every field referenced by filters/scoring', () => {
+    // Minimal envelope mirroring the iOS srp-list capture; fields here are
+    // chosen to populate every key the gate test's filters + scoring touch.
+    const homegateSample = HomegateApiSchema.parse({
+      id: 'hg-1',
+      listing: {
+        id: 'hg-1',
+        address: {
+          geoCoordinates: { latitude: 47.37, longitude: 8.54 },
+          locality: 'Zürich',
+          postalCode: '8001',
+        },
+        prices: {
+          rent: { net: 2400, extra: 200, gross: 2600 },
+          currency: 'CHF',
+        },
+        characteristics: {
+          numberOfRooms: 3.5,
+          livingSpace: 80,
+        },
+        localization: {
+          primary: 'de',
+          de: { text: { title: 't', description: 'd' } },
+        },
+      },
+    });
+    const referenced = new Set([...fieldsReferencedByFilters(), ...fieldsReferencedByScoring()]);
+    const homegateFields = new Set(flatPaths(mapHomegateResult(homegateSample)));
+    const missingFromHomegate: string[] = [];
+    for (const f of referenced) {
+      if (!homegateFields.has(f)) missingFromHomegate.push(f);
+    }
+    expect({ missingFromHomegate }).toEqual({ missingFromHomegate: [] });
   });
 });

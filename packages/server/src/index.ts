@@ -6,3 +6,4 @@ export * from './quota.js';
 export * from './circuit.js';
 export * from './logger.js';
 export * from './dedupe.js';
+export * from './secrets.js';
