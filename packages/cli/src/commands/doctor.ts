@@ -21,6 +21,11 @@ export function registerDoctor(prog: Command): void {
       try {
         const cfg = loadConfig(paths.configDir);
         result('config files parse', true, `config dir: ${paths.configDir}`);
+        const rentalDetail =
+          cfg.rentalTerm.mode === 'short'
+            ? `mode=short${cfg.rentalTerm.stay ? ' (stay constraints set)' : ''}`
+            : `mode=long, exclude_unknown=${cfg.rentalTerm.exclude_unknown}`;
+        result('rental_term policy', true, rentalDetail);
         try {
           const loaded = await loadPlugins(cfg);
           result(

@@ -61,13 +61,33 @@ LIMIT ${opts.limit}`;
           );
           return;
         }
-        const headers = ['SCORE', 'SOURCE', 'ID', 'URL', 'SEEN'];
+        const headers = ['SCORE', 'TERM', 'UNTIL', 'SOURCE', 'ID', 'URL', 'SEEN'];
         console.log(headers.join('\t'));
         for (const r of rows) {
+          const parsed = JSON.parse(r.payload) as {
+            rental_term?: 'long' | 'short' | 'unknown';
+            lease_until?: string | null;
+          };
+          const term = parsed.rental_term === 'short' ? 'S' : parsed.rental_term === 'long' ? 'L' : '?';
+          const until = parsed.lease_until ? formatDmy(new Date(parsed.lease_until)) : '';
           console.log(
-            [r.final ?? '-', r.source, r.id, r.url, new Date(r.first_seen_at).toISOString()].join('\t'),
+            [
+              r.final ?? '-',
+              term,
+              until,
+              r.source,
+              r.id,
+              r.url,
+              new Date(r.first_seen_at).toISOString(),
+            ].join('\t'),
           );
         }
       },
     );
+}
+
+function formatDmy(d: Date): string {
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  return `${dd}.${mm}.${d.getUTCFullYear()}`;
 }

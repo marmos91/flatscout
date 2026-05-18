@@ -75,6 +75,32 @@ TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
 `;
 
+function rentalTermSample(opts: {
+  mode: 'long' | 'short';
+  excludeUnknown: boolean;
+  stayFrom?: string;
+  stayTo?: string;
+  minMonths?: string;
+  maxMonths?: string;
+}): string {
+  const lines: string[] = ['rental_term:', `  mode: ${opts.mode}`];
+  if (opts.mode === 'long') {
+    lines.push(`  exclude_unknown: ${opts.excludeUnknown}`);
+  }
+  const stayKeys = [
+    ['from', opts.stayFrom],
+    ['to', opts.stayTo],
+    ['min_months', opts.minMonths],
+    ['max_months', opts.maxMonths],
+  ] as const;
+  const stayEntries = stayKeys.filter(([, v]) => v && v.length > 0);
+  if (opts.mode === 'short' && stayEntries.length > 0) {
+    lines.push('  stay:');
+    for (const [k, v] of stayEntries) lines.push(`    ${k}: ${v}`);
+  }
+  return `${lines.join('\n')}\n`;
+}
+
 /**
  * Registers the `wabe init` subcommand: interactively prompts the user for
  * Telegram credentials and search parameters, then writes a starter set of
@@ -129,6 +155,50 @@ export function registerInit(prog: Command): void {
       const roomsMin = await p.text({ message: 'Min rooms', placeholder: '3.5' });
       if (p.isCancel(roomsMin)) return p.cancel('aborted');
 
+      const rentalMode = (await p.select({
+        message: 'Rental term preference?',
+        options: [
+          { label: 'Long-term only (default)', value: 'long' as const },
+          { label: 'Short-term only', value: 'short' as const },
+        ],
+      })) as 'long' | 'short' | symbol;
+      if (p.isCancel(rentalMode)) return p.cancel('aborted');
+
+      let stayFrom = '';
+      let stayTo = '';
+      let minMonths = '';
+      let maxMonths = '';
+      if (rentalMode === 'short') {
+        const r1 = await p.text({
+          message: 'Stay from (ISO date, optional)',
+          placeholder: '2026-06-01',
+          defaultValue: '',
+        });
+        if (p.isCancel(r1)) return p.cancel('aborted');
+        stayFrom = String(r1);
+        const r2 = await p.text({
+          message: 'Stay to (ISO date, optional)',
+          placeholder: '2026-08-31',
+          defaultValue: '',
+        });
+        if (p.isCancel(r2)) return p.cancel('aborted');
+        stayTo = String(r2);
+        const r3 = await p.text({
+          message: 'Min stay length in months (optional)',
+          placeholder: '1',
+          defaultValue: '',
+        });
+        if (p.isCancel(r3)) return p.cancel('aborted');
+        minMonths = String(r3);
+        const r4 = await p.text({
+          message: 'Max stay length in months (optional)',
+          placeholder: '6',
+          defaultValue: '',
+        });
+        if (p.isCancel(r4)) return p.cancel('aborted');
+        maxMonths = String(r4);
+      }
+
       writeIfMissing(join(paths.configDir, 'config.yaml'), SAMPLE_CONFIG_YAML, force);
       writeIfMissing(join(paths.configDir, 'filters.yaml'), SAMPLE_FILTERS_YAML, force);
       writeIfMissing(join(paths.configDir, 'scoring.yaml'), SAMPLE_SCORING_YAML, force);
@@ -139,6 +209,18 @@ export function registerInit(prog: Command): void {
         force,
       );
       writeIfMissing(join(paths.configDir, 'plugins', 'notifier-telegram.yaml'), telegramSample, force);
+      writeIfMissing(
+        join(paths.configDir, 'rental_term.yaml'),
+        rentalTermSample({
+          mode: rentalMode as 'long' | 'short',
+          excludeUnknown: false,
+          stayFrom,
+          stayTo,
+          minMonths,
+          maxMonths,
+        }),
+        force,
+      );
       const envPath = join(process.cwd(), '.env');
       const envWritten = writeEnvIfAbsent(
         envPath,
