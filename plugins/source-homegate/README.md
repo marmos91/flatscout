@@ -38,9 +38,10 @@ sources:
         cookie_max_age_hours: 12
 ```
 
-> **First run downloads ~300MB of Chromium via Playwright.** This is a
-> one-time, lazy install triggered by the bootstrap call — subsequent runs
-> reuse the same browser binary.
+> **Chromium download (~300MB) required on first run.** Either trigger it
+> upfront with `pnpm install:browsers` (recommended), or let the first
+> `bootstrap()` call lazy-install it on demand. Subsequent runs reuse the
+> same browser binary cached under `~/.cache/ms-playwright/`.
 
 ## Configuration reference
 

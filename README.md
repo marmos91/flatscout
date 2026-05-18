@@ -78,9 +78,10 @@ pnpm wabe login homegate   # OAuth2 + PKCE login for user-bound Homegate feature
 pnpm wabe logout homegate  # revoke local Homegate credentials
 ```
 
-> **Homegate notes.** The `@wabe/source-homegate` plugin triggers a one-time
-> ~300MB Chromium download via Playwright on the first scan (used to harvest
-> DataDome cookies). Anonymous public search works without credentials.
+> **Homegate notes.** The `@wabe/source-homegate` plugin needs a one-time
+> ~300MB Chromium download via Playwright (used to harvest DataDome cookies).
+> Pre-install with `pnpm install:browsers`, or let the first scan trigger
+> the lazy download. Anonymous public search works without credentials.
 > Optional: run `wabe login homegate` to wire user-bound features (favourites,
 > applicator) — the flow uses out-of-band OAuth2 + PKCE; tokens are stored
 > 0600 under your data dir.
