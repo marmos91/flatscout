@@ -53,11 +53,11 @@ The plugin needs two pieces of information:
 1. Open Telegram and start a chat with [@BotFather](https://t.me/BotFather).
 2. Send `/newbot` and follow the prompts (display name + unique username
    ending in `bot`).
-3. BotFather replies with an API token of the form
-   `123456789:AAH...`. Export it:
+3. BotFather replies with an API token. Export it (or put it in your
+   project-root `.env`):
 
    ```bash
-   export TELEGRAM_BOT_TOKEN="123456789:AAH..."
+   export TELEGRAM_BOT_TOKEN="<your-token>"
    ```
 
    Treat this token as a secret — anyone holding it can send messages as
@@ -85,10 +85,10 @@ The chat id identifies where the bot will post. To obtain it:
   `getUpdates` (or use a helper like @userinfobot). Channel ids are also
   negative.
 
-Export it:
+Export it (or put it in your project-root `.env`):
 
 ```bash
-export TELEGRAM_CHAT_ID="123456789"
+export TELEGRAM_CHAT_ID="<your-chat-id>"
 ```
 
 The plugin accepts both string and numeric ids.

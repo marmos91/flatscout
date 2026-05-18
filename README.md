@@ -29,6 +29,46 @@ Requires Node 22 (see `.nvmrc`) and pnpm 9+.
 
 ```bash
 pnpm wabe init       # interactive setup: writes config + .env
+```
+
+### Telegram setup
+
+Wabe pushes every matching listing to a Telegram chat, so the notifier needs a
+bot token and a chat id before `wabe scan` will do anything useful.
+
+1. **Create a bot.** Open Telegram, search for [@BotFather](https://t.me/BotFather),
+   send `/newbot`, pick a display name, then a unique username ending in `bot`.
+   BotFather replies with an **HTTP API token** — copy it.
+
+2. **Get the chat id.** Open the new bot in Telegram and tap **Start** (this
+   sends `/start`). Then ask the Bot API for the latest update:
+
+   ```bash
+   curl -s "https://api.telegram.org/bot<your-token>/getUpdates?offset=-1" \
+     | jq '.result[].message.chat.id'
+   ```
+
+   For a **group chat**, add the bot to the group, send any message there,
+   then re-run the same `curl`. Group ids are negative (typically
+   `-100…`).
+
+3. **Wire `.env`.** In the project root, create a `.env` (gitignored) with:
+
+   ```env
+   TELEGRAM_BOT_TOKEN=<your-token>
+   TELEGRAM_CHAT_ID=<your-chat-id>
+   ```
+
+   The Telegram notifier resolves these via `${env.TELEGRAM_BOT_TOKEN}` and
+   `${env.TELEGRAM_CHAT_ID}` in `notifier-telegram.yaml`.
+
+> **Security:** the bot token is a credential — anyone holding it can post
+> as your bot. Never commit `.env` (it's already in `.gitignore`). If the
+> token leaks, revoke it via `/revoke` in @BotFather and reissue.
+
+### Run the pipeline
+
+```bash
 pnpm wabe scan       # one-shot scan; pings Telegram on matches
 pnpm wabe start      # daemon mode; runs cron-driven scans
 pnpm wabe list       # browse persisted listings

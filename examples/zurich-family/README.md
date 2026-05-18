@@ -25,14 +25,20 @@ on rent-value, size, and rooms. Uses both shipping source plugins
 2. Create a `.env` next to the config (or export the variables in your shell):
 
    ```env
-   TELEGRAM_BOT_TOKEN=123456:ABC-…
-   TELEGRAM_CHAT_ID=987654321
+   TELEGRAM_BOT_TOKEN=<your-token>
+   TELEGRAM_CHAT_ID=<your-chat-id>
 
    # Optional — only needed if you enable the homegate source
    HOMEGATE_BASIC_USER=…
    HOMEGATE_BASIC_PASS=…
    HOMEGATE_APP_SECRET=…
    ```
+
+   See the **Telegram setup** section of the [root README](../../README.md#telegram-setup)
+   for a step-by-step walkthrough of creating the bot via @BotFather and
+   resolving the chat id. The `notifier-telegram` plugin's own
+   [README](../../plugins/notifier-telegram/README.md) covers the same flow
+   in more depth (group / channel ids, troubleshooting).
 
 3. Initialise the database and verify environment:
 
