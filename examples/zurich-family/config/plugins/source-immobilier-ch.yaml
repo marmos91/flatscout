@@ -1,0 +1,5 @@
+schedule: '*/15 * * * *'
+pace_ms: 5000
+max_details_per_scan: 30
+url_must_include: ['/zurich/zurich/']
+emit_on_first_scan: false
