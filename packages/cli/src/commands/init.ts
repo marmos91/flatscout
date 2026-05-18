@@ -1,8 +1,8 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
 import type { Command } from 'commander';
 import * as p from '@clack/prompts';
-import { resolvePaths } from '../paths.js';
+import { resolveExampleDir, resolvePaths } from '../paths.js';
 import { openDb } from '@wabe/db';
 import { migrate } from '@wabe/db';
 
@@ -92,20 +92,55 @@ chat_id:   '\${env.TELEGRAM_CHAT_ID}'
 format: compact
 `;
 
+const ENV_SKELETON = `\
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+# HOMEGATE_BASIC_USER=
+# HOMEGATE_BASIC_PASS=
+# HOMEGATE_APP_SECRET=
+`;
+
 /**
  * Registers the `wabe init` subcommand: interactively prompts the user for
  * Telegram credentials and search parameters, then writes a starter set of
  * config files, a `.env`, and runs initial DB migrations.
  *
- * Existing files are never overwritten — re-running is safe.
+ * With `--example <name>`, skips prompts and copies the bundled example config
+ * tree (e.g. `examples/zurich-family/config/`) into the resolved config dir.
+ * Existing files are preserved unless `--force` is set.
  */
 export function registerInit(prog: Command): void {
   prog
     .command('init')
-    .description('Interactive setup: writes config + .env, runs migrate + doctor')
-    .action(async () => {
+    .description('Interactive setup, or `--example <name>` for non-interactive bootstrap')
+    .option('--example <name>', 'copy a bundled example config tree (skips prompts)')
+    .option('--example-dir <path>', 'absolute path to an example config dir (overrides resolver)')
+    .option('--force', 'overwrite existing files', false)
+    .action(async (opts: { example?: string; exampleDir?: string; force?: boolean }) => {
       const globalOpts = prog.opts<{ config?: string; dataDir?: string }>();
       const paths = resolvePaths({ config: globalOpts.config, dataDir: globalOpts.dataDir });
+      const force = opts.force ?? false;
+
+      if (opts.example || opts.exampleDir) {
+        const sourceDir = opts.exampleDir ?? resolveExampleDir(opts.example as string);
+        p.intro(`wabe init --example ${opts.example ?? '(custom)'}`);
+        const stats = copyTreeRecursive(sourceDir, paths.configDir, force);
+        writeIfMissing(join(process.cwd(), '.env'), ENV_SKELETON, force);
+        const db = openDb(paths.dbFile);
+        const m = migrate(db);
+        const skippedNote =
+          stats.skipped.length > 0
+            ? `\nskipped (already exist, use --force):\n  - ${stats.skipped.join('\n  - ')}`
+            : '';
+        p.note(
+          `source: ${sourceDir}\nconfig: ${paths.configDir}\ndata:   ${paths.dataDir}\nfiles written: ${stats.written.length}\nmigrations applied: ${m.applied.length}${skippedNote}`,
+        );
+        p.outro(
+          'done — fill in .env (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID), then run `wabe doctor` and `wabe scan`.',
+        );
+        return;
+      }
+
       p.intro('wabe init');
 
       const tgToken = await p.text({ message: 'Telegram bot token (from @BotFather):' });
@@ -127,22 +162,25 @@ export function registerInit(prog: Command): void {
       const roomsMin = await p.text({ message: 'Min rooms', placeholder: '3.5' });
       if (p.isCancel(roomsMin)) return p.cancel('aborted');
 
-      writeIfMissing(join(paths.configDir, 'config.yaml'), SAMPLE_CONFIG_YAML);
-      writeIfMissing(join(paths.configDir, 'filters.yaml'), SAMPLE_FILTERS_YAML);
-      writeIfMissing(join(paths.configDir, 'scoring.yaml'), SAMPLE_SCORING_YAML);
+      writeIfMissing(join(paths.configDir, 'config.yaml'), SAMPLE_CONFIG_YAML, force);
+      writeIfMissing(join(paths.configDir, 'filters.yaml'), SAMPLE_FILTERS_YAML, force);
+      writeIfMissing(join(paths.configDir, 'scoring.yaml'), SAMPLE_SCORING_YAML, force);
       mkdirSync(join(paths.configDir, 'plugins'), { recursive: true });
       writeIfMissing(
         join(paths.configDir, 'plugins', 'source-flatfox.yaml'),
         flatfoxSample(Number(lat), Number(lon), Number(priceMax), Number(roomsMin)),
+        force,
       );
       writeIfMissing(
         join(paths.configDir, 'plugins', 'source-homegate.yaml'),
         homegateSample(Number(lat), Number(lon), Number(priceMax), Number(roomsMin)),
+        force,
       );
-      writeIfMissing(join(paths.configDir, 'plugins', 'notifier-telegram.yaml'), telegramSample);
+      writeIfMissing(join(paths.configDir, 'plugins', 'notifier-telegram.yaml'), telegramSample, force);
       writeIfMissing(
         join(process.cwd(), '.env'),
         `TELEGRAM_BOT_TOKEN=${tgToken}\nTELEGRAM_CHAT_ID=${tgChat}\n# HOMEGATE_BASIC_USER=...\n# HOMEGATE_BASIC_PASS=...\n# HOMEGATE_APP_SECRET=...\n`,
+        force,
       );
       const db = openDb(paths.dbFile);
       const m = migrate(db);
@@ -151,8 +189,43 @@ export function registerInit(prog: Command): void {
     });
 }
 
-function writeIfMissing(file: string, content: string): void {
-  if (existsSync(file)) return;
+function writeIfMissing(file: string, content: string, force = false): void {
+  if (existsSync(file) && !force) return;
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, content);
+}
+
+interface CopyStats {
+  written: string[];
+  skipped: string[];
+}
+
+function copyTreeRecursive(srcDir: string, destDir: string, force: boolean): CopyStats {
+  const stats: CopyStats = { written: [], skipped: [] };
+  if (!existsSync(srcDir) || !statSync(srcDir).isDirectory()) {
+    throw new Error(`Example source dir not found or not a directory: ${srcDir}`);
+  }
+  mkdirSync(destDir, { recursive: true });
+  walk(srcDir, srcDir, destDir, force, stats);
+  return stats;
+}
+
+function walk(rootSrc: string, curSrc: string, rootDest: string, force: boolean, stats: CopyStats): void {
+  for (const entry of readdirSync(curSrc, { withFileTypes: true })) {
+    const absSrc = join(curSrc, entry.name);
+    const rel = relative(rootSrc, absSrc);
+    const absDest = join(rootDest, rel);
+    if (entry.isDirectory()) {
+      mkdirSync(absDest, { recursive: true });
+      walk(rootSrc, absSrc, rootDest, force, stats);
+    } else if (entry.isFile()) {
+      if (existsSync(absDest) && !force) {
+        stats.skipped.push(rel);
+        continue;
+      }
+      mkdirSync(dirname(absDest), { recursive: true });
+      writeFileSync(absDest, readFileSync(absSrc));
+      stats.written.push(rel);
+    }
+  }
 }
