@@ -24,6 +24,33 @@ importers:
         specifier: ^2.1.1
         version: 2.1.9(@types/node@22.19.19)
 
+  examples/zurich-family:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.7.4
+        version: 22.19.19
+      '@wabe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@wabe/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      '@wabe/source-flatfox':
+        specifier: workspace:*
+        version: link:../../plugins/source-flatfox
+      '@wabe/source-homegate':
+        specifier: workspace:*
+        version: link:../../plugins/source-homegate
+      typescript:
+        specifier: ^5.6.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.1
+        version: 2.1.9(@types/node@22.19.19)
+      yaml:
+        specifier: ^2.5.1
+        version: 2.9.0
+
   packages/cli:
     dependencies:
       '@clack/prompts':

@@ -1,0 +1,88 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
+import { FiltersFile, ScoringFile } from '@wabe/core';
+import { mapFlatfoxListing, type FlatfoxApiResult } from '@wabe/source-flatfox/dist/map.js';
+import { mapHomegateListing, type HomegateListing } from '@wabe/source-homegate/dist/map.js';
+
+// NOTE: deviated from plan — use import.meta.url instead of __dirname since the
+// test runs as an ESM module (project-wide "type": "module").
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const CONFIG_DIR = join(__dirname, '..', 'config');
+
+function flatPaths(obj: unknown, prefix = ''): string[] {
+  if (obj === null || obj === undefined) return prefix ? [prefix] : [];
+  if (typeof obj !== 'object') return prefix ? [prefix] : [];
+  if (Array.isArray(obj))
+    return obj.flatMap((v, i) => flatPaths(v, prefix ? `${prefix}.${i}` : String(i)));
+  const out: string[] = [];
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    const p = prefix ? `${prefix}.${k}` : k;
+    out.push(p);
+    out.push(...flatPaths(v, p));
+  }
+  return out;
+}
+
+function fieldsReferencedByFilters(): string[] {
+  const yaml = readFileSync(join(CONFIG_DIR, 'filters.yaml'), 'utf8');
+  const parsed = FiltersFile.parse(parse(yaml));
+  const out: string[] = [];
+  for (const f of parsed.filters) if (f.kind === 'field') out.push(f.field);
+  return out;
+}
+
+function fieldsReferencedByScoring(): string[] {
+  const yaml = readFileSync(join(CONFIG_DIR, 'scoring.yaml'), 'utf8');
+  const parsed = ScoringFile.parse(parse(yaml));
+  const out: string[] = [];
+  for (const d of parsed.scoring) {
+    if (d.type !== 'rule') continue;
+    if (!d.metric.startsWith('=')) out.push(d.metric);
+  }
+  return out;
+}
+
+const flatfoxSample: FlatfoxApiResult = {
+  pk: 1,
+  slug: 's',
+  city: 'Zürich',
+  zipcode: 8000,
+  price_display: 2500,
+  number_of_rooms: '3.5',
+  surface_living: 80,
+  public_title: 't',
+  latitude: 47.37,
+  longitude: 8.54,
+  offer_type: 'RENT',
+  object_category: 'FLAT',
+  agency: { name: 'A' },
+};
+const homegateSample: HomegateListing = {
+  id: 'h1',
+  address: { locality: 'Zürich', postal_code: '8000', street: 'S' },
+  characteristics: { number_of_rooms: 4, living_space: 100 },
+  prices: { rent: { gross: 3000 } },
+  coordinates: { latitude: 47.37, longitude: 8.54 },
+  realtor: { name: 'R' },
+};
+
+describe('example-config gate', () => {
+  it('every field referenced by filters/scoring is populated by BOTH shipping sources', () => {
+    const referenced = new Set([...fieldsReferencedByFilters(), ...fieldsReferencedByScoring()]);
+    const flatfoxFields = new Set(flatPaths(mapFlatfoxListing(flatfoxSample)));
+    const homegateFields = new Set(flatPaths(mapHomegateListing(homegateSample)));
+    const missingFromFlatfox: string[] = [];
+    const missingFromHomegate: string[] = [];
+    for (const f of referenced) {
+      if (!flatfoxFields.has(f)) missingFromFlatfox.push(f);
+      if (!homegateFields.has(f)) missingFromHomegate.push(f);
+    }
+    expect({ missingFromFlatfox, missingFromHomegate }).toEqual({
+      missingFromFlatfox: [],
+      missingFromHomegate: [],
+    });
+  });
+});
