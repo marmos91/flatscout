@@ -73,7 +73,11 @@ export async function fetchPage(cfg: SearchConfig, page: number, opts: ClientOpt
   let attempt = 0;
   // simple retry-on-backoff loop
   while (true) {
-    const res = await request(url, { signal: opts.signal, method: 'GET', headers: { accept: 'application/json' } });
+    const res = await request(url, {
+      signal: opts.signal,
+      method: 'GET',
+      headers: { accept: 'application/json' },
+    });
     if (res.statusCode >= 200 && res.statusCode < 300) {
       const body = (await res.body.json()) as RealAdvisorPage;
       return { total_count: body.total_count ?? 0, listings: body.listings ?? [] };

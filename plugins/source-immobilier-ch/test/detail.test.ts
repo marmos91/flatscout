@@ -13,6 +13,9 @@ describe('extractJsonLd', () => {
     expect(out.residence?.numberOfRooms).toBe('4.5');
   });
   it('returns nulls when no JSON-LD blocks present', () => {
-    expect(extractJsonLd('<html><body>no json-ld here</body></html>')).toEqual({ product: null, residence: null });
+    expect(extractJsonLd('<html><body>no json-ld here</body></html>')).toEqual({
+      product: null,
+      residence: null,
+    });
   });
 });

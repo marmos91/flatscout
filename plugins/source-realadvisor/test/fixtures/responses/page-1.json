@@ -49,21 +49,13 @@
       "lat": 47.254915,
       "lng": 8.610993,
       "bullet_points": {
-        "de": [
-          "Ökologischer Minergiestandard",
-          "Geräumiges Wohnzimmer mit Balkonen",
-          "Gute Anbindung an ÖV"
-        ],
+        "de": ["Ökologischer Minergiestandard", "Geräumiges Wohnzimmer mit Balkonen", "Gute Anbindung an ÖV"],
         "en": [
           "Eco-friendly Minergie standard",
           "Spacious living with balconies",
           "Great public transport access"
         ],
-        "fr": [
-          "Norme Minergie écologique",
-          "Grand salon avec balcons",
-          "Accès facile aux transports"
-        ],
+        "fr": ["Norme Minergie écologique", "Grand salon avec balcons", "Accès facile aux transports"],
         "it": [
           "Standard Minergie ecologico",
           "Ampio soggiorno con balconi",
@@ -132,16 +124,8 @@
       "lat": 47.590626,
       "lng": 8.469007,
       "bullet_points": {
-        "de": [
-          "Frisch renoviertes Interieur",
-          "Gemütliche Kaminatmosphäre",
-          "Ruhige Lage nahe der Natur"
-        ],
-        "en": [
-          "Freshly renovated interior",
-          "Cozy fireplace ambiance",
-          "Quiet location near nature"
-        ],
+        "de": ["Frisch renoviertes Interieur", "Gemütliche Kaminatmosphäre", "Ruhige Lage nahe der Natur"],
+        "en": ["Freshly renovated interior", "Cozy fireplace ambiance", "Quiet location near nature"],
         "fr": [
           "Intérieur fraîchement rénové",
           "Ambiance chaleureuse avec cheminée",
@@ -215,26 +199,10 @@
       "lat": 47.6114723,
       "lng": 8.5402379,
       "bullet_points": {
-        "de": [
-          "Heller Wohnbereich",
-          "Hochwertige Küche",
-          "Grosser Sitzplatz"
-        ],
-        "en": [
-          "Spacious living area",
-          "High-quality kitchen",
-          "Large outdoor seating"
-        ],
-        "fr": [
-          "Espace de vie spacieux",
-          "Cuisine de haute qualité",
-          "Grand espace extérieur"
-        ],
-        "it": [
-          "Ampio soggiorno",
-          "Cucina di alta qualità",
-          "Grande spazio esterno"
-        ]
+        "de": ["Heller Wohnbereich", "Hochwertige Küche", "Grosser Sitzplatz"],
+        "en": ["Spacious living area", "High-quality kitchen", "Large outdoor seating"],
+        "fr": ["Espace de vie spacieux", "Cuisine de haute qualité", "Grand espace extérieur"],
+        "it": ["Ampio soggiorno", "Cucina di alta qualità", "Grande spazio esterno"]
       },
       "agency_id": "0727bdb0-1169-11f1-a973-eb85985e25be",
       "agency_logo_url": "https://storage.googleapis.com/img.realadvisor.ch/Logo__k9wJl3jdV5jW43Xruts4t.png",
@@ -298,26 +266,10 @@
       "lat": 47.285938,
       "lng": 8.549413,
       "bullet_points": {
-        "de": [
-          "Geräumige Wohnbereiche",
-          "Grosser sonniger Balkon",
-          "Moderne Ausstattung überall"
-        ],
-        "en": [
-          "Spacious living areas",
-          "Large sunny balcony",
-          "Modern fixtures throughout"
-        ],
-        "fr": [
-          "Espaces de vie spacieux",
-          "Grand balcon ensoleillé",
-          "Équipements modernes partout"
-        ],
-        "it": [
-          "Ampie aree soggiorno",
-          "Grande balcone soleggiato",
-          "Finiture moderne ovunque"
-        ]
+        "de": ["Geräumige Wohnbereiche", "Grosser sonniger Balkon", "Moderne Ausstattung überall"],
+        "en": ["Spacious living areas", "Large sunny balcony", "Modern fixtures throughout"],
+        "fr": ["Espaces de vie spacieux", "Grand balcon ensoleillé", "Équipements modernes partout"],
+        "it": ["Ampie aree soggiorno", "Grande balcone soleggiato", "Finiture moderne ovunque"]
       },
       "agency_id": "632a750a-bfbe-11f0-a52a-0b6f08e37c7d",
       "agency_logo_url": "https://storage.googleapis.com/img.realadvisor.ch/logo-agentur-ziegler_2025-11-12-115508.jpg",
@@ -381,26 +333,10 @@
       "lat": 47.285938,
       "lng": 8.549413,
       "bullet_points": {
-        "de": [
-          "Geräumige 20m² Küche",
-          "Privater Gartensitzplatz",
-          "Einzigartiges Layout über drei Etagen"
-        ],
-        "en": [
-          "Spacious 20m² kitchen",
-          "Private garden seating",
-          "Unique three-level layout"
-        ],
-        "fr": [
-          "Cuisine spacieuse de 20m²",
-          "Espace jardin privé",
-          "Agencement unique sur trois niveaux"
-        ],
-        "it": [
-          "Cucina spaziosa di 20m²",
-          "Giardino privato",
-          "Layout unico su tre livelli"
-        ]
+        "de": ["Geräumige 20m² Küche", "Privater Gartensitzplatz", "Einzigartiges Layout über drei Etagen"],
+        "en": ["Spacious 20m² kitchen", "Private garden seating", "Unique three-level layout"],
+        "fr": ["Cuisine spacieuse de 20m²", "Espace jardin privé", "Agencement unique sur trois niveaux"],
+        "it": ["Cucina spaziosa di 20m²", "Giardino privato", "Layout unico su tre livelli"]
       },
       "agency_id": "632a750a-bfbe-11f0-a52a-0b6f08e37c7d",
       "agency_logo_url": "https://storage.googleapis.com/img.realadvisor.ch/logo-agentur-ziegler_2025-11-12-115508.jpg",

@@ -41,7 +41,10 @@ describe('fetchPage', () => {
 
   it('retries on 429 then succeeds', async () => {
     const pool = agent.get('https://realadvisor.ch');
-    pool.intercept({ method: 'GET', path: /\/api\/listings/ }).reply(429, 'rate limited').times(1);
+    pool
+      .intercept({ method: 'GET', path: /\/api\/listings/ })
+      .reply(429, 'rate limited')
+      .times(1);
     pool.intercept({ method: 'GET', path: /\/api\/listings/ }).reply(200, pageOne, {
       headers: { 'content-type': 'application/json' },
     });

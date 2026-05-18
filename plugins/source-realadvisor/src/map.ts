@@ -32,7 +32,10 @@ export function mapHit(h: RawHit): RawListing | null {
     built_year: h.construction_year ?? null,
     renovated_year: h.renovation_year ?? null,
     location: {
-      coords: h.lat !== null && h.lat !== undefined && h.lng !== null && h.lng !== undefined ? [h.lng, h.lat] : null,
+      coords:
+        h.lat !== null && h.lat !== undefined && h.lng !== null && h.lng !== undefined
+          ? [h.lng, h.lat]
+          : null,
       address: h.address ?? null,
       postal_code: h.postcode ?? null,
       city: h.locality ?? null,

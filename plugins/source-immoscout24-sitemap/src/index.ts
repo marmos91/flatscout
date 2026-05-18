@@ -22,7 +22,9 @@ const plugin: Source = {
     const cfg = ctx.config as Config;
     const db = ctx.db as WabeDb;
     const leaves = await discoverRentLeaves(cfg.root_url, ctx.signal);
-    const filtered = leaves.filter((url) => cfg.languages.some((lang) => url.includes(`-RENT-${lang}.xml.gz`)));
+    const filtered = leaves.filter((url) =>
+      cfg.languages.some((lang) => url.includes(`-RENT-${lang}.xml.gz`)),
+    );
     const seen = loadSeenUrls(db);
     const newSeen = new Set(seen ?? []);
     for (const leafUrl of filtered) {

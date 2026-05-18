@@ -5,7 +5,12 @@ describe('mapDetail', () => {
   it('maps a full Product + Residence payload', () => {
     const url = 'https://www.immobilier.ch/en/rent/zurich/zurich/great-flat-12345';
     const out = mapDetail(url, {
-      product: { '@type': 'Product', description: 'A flat', offers: { price: '3200', priceCurrency: 'CHF' }, image: 'https://x/i.jpg' },
+      product: {
+        '@type': 'Product',
+        description: 'A flat',
+        offers: { price: '3200', priceCurrency: 'CHF' },
+        image: 'https://x/i.jpg',
+      },
       residence: {
         '@type': 'Residence',
         address: { streetAddress: 'Forchstrasse 187', postalCode: '8008', addressLocality: 'Zürich' },
