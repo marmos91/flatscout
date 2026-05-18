@@ -387,6 +387,9 @@ importers:
 
   plugins/source-homegate:
     dependencies:
+      '@wabe/browser-bridge':
+        specifier: workspace:*
+        version: link:../../packages/browser-bridge
       '@wabe/browser-runtime':
         specifier: workspace:*
         version: link:../../packages/browser-runtime
