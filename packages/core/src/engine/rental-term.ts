@@ -58,7 +58,10 @@ export function classifyRentalTerm(input: ClassifyInput): ClassifyResult {
   if (input.is_furnished === true) {
     return { rental_term: 'short', lease_until: null, signal: 'structured' };
   }
-  const text = input.description ?? '';
+  // Strip common markdown emphasis markers (`**bold**`, `_italic_`) before
+  // matching — Flatfox descriptions are markdown-formatted and bold around
+  // "befristet" / dates otherwise breaks `\s+` in our patterns.
+  const text = (input.description ?? '').replace(/[*_]+/g, ' ');
   if (text.length > 0) {
     for (const { pattern, capturesDate } of SHORT_TERM_PATTERNS) {
       const m = text.match(pattern);

@@ -90,4 +90,12 @@ describe('classifyRentalTerm', () => {
     expect(r.rental_term).toBe('short');
     expect(r.lease_until).toBeNull();
   });
+
+  it('markdown-emphasis around marker and date is tolerated', () => {
+    const r = classifyRentalTerm({
+      description: 'wir vermieten die Wohnung **befristet** per sofort bis zum **31.05.2025.**',
+    });
+    expect(r.rental_term).toBe('short');
+    expect(r.lease_until?.toISOString()).toBe('2025-05-31T00:00:00.000Z');
+  });
 });
