@@ -1,7 +1,7 @@
-import type { Browser, Page } from 'playwright';
+import type { Browser, BrowserContext, Page } from 'playwright';
 import { errors as playwrightErrors } from 'playwright';
 import type { Logger } from 'pino';
-import { getStealthBrowser } from './stealth.js';
+import { getStealthBrowser, getStealthPersistentContext } from './stealth.js';
 import { BootstrapError, BootstrapTimeoutError } from './errors.js';
 
 export interface BootstrapCookie {
@@ -39,6 +39,25 @@ export interface BootstrapOptions {
   timeoutMs?: number;
   /** Run Chromium headless. Defaults to `true`. */
   headless?: boolean;
+  /**
+   * Playwright browser channel. Set to `'chrome'` to launch real Google
+   * Chrome instead of bundled Chromium — passes anti-bot stacks that
+   * fingerprint the Chromium binary.
+   */
+  channel?: 'chrome' | 'chrome-beta' | 'msedge' | 'msedge-beta';
+  /**
+   * Browser engine. `'firefox'` uses Playwright's Firefox over Marionette
+   * — different protocol fingerprint than Chromium-class browsers; often
+   * passes DataDome where Chromium gets walled.
+   */
+  engine?: 'chromium' | 'firefox';
+  /**
+   * Optional directory to persist the Chromium profile (cookies, storage,
+   * `Set-Cookie` history). When set, uses `launchPersistentContext` so the
+   * profile survives across bootstrap runs — DataDome and similar anti-bot
+   * stacks tend to trust returning sessions more than first-time visitors.
+   */
+  userDataDir?: string;
   /**
    * Optional async hook invoked after navigation settles but before cookies
    * are harvested. Use this for interactive flows where a human must clear
@@ -90,29 +109,63 @@ export async function bootstrapSite(opts: BootstrapOptions): Promise<BootstrapRe
   log?.debug({ target: opts.target, host, timeoutMs }, 'launching stealth browser');
 
   let browser: Browser | undefined;
+  let context: BrowserContext | undefined;
   try {
-    browser = await getStealthBrowser({ headless: opts.headless ?? true });
-    const context = await browser.newContext();
-    const page: Page = await context.newPage();
+    if (opts.userDataDir) {
+      context = await getStealthPersistentContext(opts.userDataDir, {
+        headless: opts.headless ?? true,
+        channel: opts.channel,
+        engine: opts.engine,
+      });
+    } else {
+      browser = await getStealthBrowser({
+        headless: opts.headless ?? true,
+        channel: opts.channel,
+        engine: opts.engine,
+      });
+      context = await browser.newContext();
+    }
+    const page: Page = (await context.pages())[0] ?? (await context.newPage());
 
     try {
-      await page.goto(opts.target, {
-        waitUntil: opts.waitUntil ?? 'networkidle',
-        timeout: timeoutMs,
-      });
-      if (opts.waitFor) {
+      try {
+        await page.goto(opts.target, {
+          waitUntil: opts.waitUntil ?? 'networkidle',
+          timeout: timeoutMs,
+        });
+      } catch (cause) {
+        if (!opts.waitForUser) {
+          if (cause instanceof playwrightErrors.TimeoutError) {
+            throw new BootstrapTimeoutError(
+              `Timed out after ${timeoutMs}ms loading ${opts.target}`,
+              { cause },
+            );
+          }
+          throw new BootstrapError(`Navigation failed for ${opts.target}`, { cause });
+        }
+        // Interactive mode: the human is in charge — surface the error in logs
+        // but keep the page open so they can complete the flow manually.
+        log?.warn({ err: (cause as Error).message }, 'navigation reported error; deferring to user');
+      }
+      if (opts.waitFor && !opts.waitForUser) {
         await page.waitForSelector(opts.waitFor, { timeout: timeoutMs });
       }
       if (opts.waitForUser) {
         await opts.waitForUser();
       }
     } catch (cause) {
+      if (cause instanceof BootstrapError) throw cause;
       if (cause instanceof playwrightErrors.TimeoutError) {
         throw new BootstrapTimeoutError(`Timed out after ${timeoutMs}ms loading ${opts.target}`, {
           cause,
         });
       }
-      throw new BootstrapError(`Navigation failed for ${opts.target}`, { cause });
+      // Anything reaching here is a waitFor/waitForUser failure (goto errors
+      // were already classified above). Surface the underlying cause verbatim.
+      throw new BootstrapError(
+        `Interactive bootstrap aborted: ${(cause as Error)?.message ?? String(cause)}`,
+        { cause },
+      );
     }
 
     const userAgent = await page.evaluate(() => navigator.userAgent);
@@ -147,6 +200,13 @@ export async function bootstrapSite(opts: BootstrapOptions): Promise<BootstrapRe
         await browser.close();
       } catch (closeErr) {
         log?.warn({ err: closeErr }, 'failed to close browser');
+      }
+    } else if (context) {
+      // Persistent-context path: close the context (which closes its browser).
+      try {
+        await context.close();
+      } catch (closeErr) {
+        log?.warn({ err: closeErr }, 'failed to close persistent context');
       }
     }
   }

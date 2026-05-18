@@ -1,17 +1,30 @@
+import { join } from 'node:path';
+import readline from 'node:readline';
 import type { Command } from 'commander';
-import * as p from '@clack/prompts';
 import { bootstrapSite, type BootstrapResult } from '@wabe/browser-runtime';
 import { saveCookies } from '@wabe/source-homegate';
 import { resolvePaths } from '../paths.js';
 
+/** Plain readline prompt, avoids @clack/prompts TTY edge cases when this
+ * command is invoked alongside a long-running headed browser. */
+function waitForEnter(message: string): Promise<void> {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    rl.question(`${message} `, () => {
+      rl.close();
+      resolve();
+    });
+  });
+}
+
 /**
- * Default deep search URL that triggers the high-friction DataDome tier.
- * Cookies harvested from this URL (after the user solves the CAPTCHA)
- * clear `api.homegate.ch/search/listings`. The low-friction `/rent`
- * landing page does not produce such cookies — see
- * `docs/research/2026-05-18-homegate-web-xhr-probe.md`.
+ * Default landing URL. The user navigates from here to a real search in the
+ * visible browser — using the homegate search UI like a normal visitor.
+ * Starting at the gentle `/rent` landing avoids DataDome's hard ban on
+ * direct-to-deep-URL automation; the user's subsequent in-page navigation
+ * produces the high-trust cookies needed for `api.homegate.ch`.
  */
-const DEFAULT_TARGET = 'https://www.homegate.ch/rent/real-estate/canton-zurich/matching-list';
+const DEFAULT_TARGET = 'https://www.homegate.ch/rent';
 
 /**
  * Registers the `wabe homegate-bootstrap` subcommand.
@@ -35,44 +48,46 @@ export function registerHomegateBootstrap(prog: Command): void {
       const globalOpts = prog.opts<{ config?: string; dataDir?: string }>();
       const paths = resolvePaths({ config: globalOpts.config, dataDir: globalOpts.dataDir });
 
-      p.intro('homegate-bootstrap');
-      p.note(
-        [
-          'A real Chromium window will open and navigate to:',
-          `  ${opts.target}`,
-          '',
-          'When you see search results (solving any CAPTCHA shown), come back',
-          'here and confirm to harvest cookies.',
-        ].join('\n'),
-      );
+      console.log('');
+      console.log('homegate-bootstrap');
+      console.log('');
+      console.log(`A Chromium window will open at:\n  ${opts.target}`);
+      console.log('');
+      console.log('In the browser: use the search UI to filter for your area / price / rooms,');
+      console.log('then hit search. When you see real listings render, come back here and');
+      console.log('press Enter to harvest the cookies.');
+      console.log('');
+      console.log('If DataDome shows a CAPTCHA at any point, solve it before pressing Enter.');
+      console.log('');
 
       let result: BootstrapResult;
       try {
         result = await bootstrapSite({
           target: opts.target,
           headless: false,
+          // Firefox over Marionette has a different protocol fingerprint
+          // than CDP-driven Chromium; DataDome appears to pass Firefox
+          // where it walls Playwright's Chromium binary.
+          engine: 'firefox',
+          // Persist the profile so DataDome scores us as a returning
+          // visitor on subsequent bootstrap runs.
+          userDataDir: join(paths.dataDir, 'homegate-browser-profile'),
           // Interactive mode: don't wait for networkidle (CAPTCHA frames keep
           // polling). The waitForUser hook is the real "page is ready" signal.
           waitUntil: 'domcontentloaded',
           timeoutMs: 60_000,
-          waitForUser: async () => {
-            const confirmed = await p.confirm({
-              message: 'Search results visible (CAPTCHA solved if any)?',
-              initialValue: true,
-            });
-            if (p.isCancel(confirmed) || !confirmed) {
-              throw new Error('user aborted bootstrap');
-            }
-          },
+          waitForUser: () => waitForEnter('[press Enter when ready]'),
         });
       } catch (err) {
-        p.cancel(`bootstrap failed: ${(err as Error).message}`);
+        const e = err as Error & { cause?: unknown };
+        const causeMsg = e.cause instanceof Error ? e.cause.message : e.cause ? String(e.cause) : '';
+        console.error(`✗ bootstrap failed: ${e.message}${causeMsg ? `\n  cause: ${causeMsg}` : ''}`);
         process.exit(1);
       }
 
       await saveCookies(paths.dataDir, result);
 
-      p.outro(
+      console.log(
         `✓ harvested ${result.cookies.length} cookie${result.cookies.length === 1 ? '' : 's'} → ${paths.dataDir}/homegate-cookies.json`,
       );
     });

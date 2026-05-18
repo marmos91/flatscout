@@ -1,4 +1,4 @@
-export { getStealthBrowser } from './stealth.js';
+export { getStealthBrowser, getStealthPersistentContext } from './stealth.js';
 export type { GetStealthBrowserOptions } from './stealth.js';
 export {
   bootstrapSite,
