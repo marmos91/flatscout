@@ -18,7 +18,8 @@ describe('migrations + schema', () => {
   it('applies the init migration cleanly and is idempotent', () => {
     const db = openDb(dbPath);
     const first = migrate(db);
-    expect(first.applied).toEqual(['0001_init.sql']);
+    // NOTE: deviated from plan — Phase A adds 0002_dedup_fields.sql; updated assertion to include it.
+    expect(first.applied).toEqual(['0001_init.sql', '0002_dedup_fields.sql']);
     const second = migrate(db);
     expect(second.applied).toEqual([]);
   });
@@ -28,15 +29,19 @@ describe('migrations + schema', () => {
     migrate(db);
     const cols = db._raw.prepare('PRAGMA table_info(listings)').all() as Array<{ name: string }>;
     const names = cols.map((c) => c.name).sort();
+    // NOTE: deviated from plan — Phase A adds canonical_key, source_priority, seen_on_sources columns.
     expect(names).toEqual(
       [
         'blocked_reason',
+        'canonical_key',
         'fingerprint',
         'first_seen_at',
         'id',
         'last_seen_at',
         'payload',
+        'seen_on_sources',
         'source',
+        'source_priority',
         'status',
         'url',
       ].sort(),
