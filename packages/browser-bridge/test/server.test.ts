@@ -1,0 +1,191 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import WebSocket from 'ws';
+import { loadOrGenerateSecret } from '../src/secret.js';
+import { startBridgeServer, type BridgeServer } from '../src/server.js';
+import type { BridgeRequest, BridgeResponse } from '../src/protocol.js';
+
+let dir: string;
+let bridge: BridgeServer;
+let port: number;
+let secret: string;
+
+beforeEach(async () => {
+  dir = mkdtempSync(join(tmpdir(), 'wabe-bridge-srv-'));
+  secret = loadOrGenerateSecret(dir);
+  bridge = await startBridgeServer({ dataDir: dir, port: 0 });
+  port = bridge.port;
+});
+
+afterEach(async () => {
+  await bridge.stop();
+  rmSync(dir, { recursive: true, force: true });
+});
+
+function client(): WebSocket {
+  return new WebSocket(`ws://127.0.0.1:${port}/bridge`);
+}
+
+async function open(ws: WebSocket): Promise<void> {
+  await new Promise<void>((r, reject) => {
+    ws.once('open', () => r());
+    ws.once('error', reject);
+  });
+}
+
+function next(ws: WebSocket): Promise<unknown> {
+  return new Promise<unknown>((resolve) => {
+    ws.once('message', (data) => resolve(JSON.parse(String(data))));
+  });
+}
+
+async function hello(ws: WebSocket, token = secret): Promise<unknown> {
+  ws.send(
+    JSON.stringify({
+      type: 'hello',
+      protocol_version: 1,
+      extension_version: '0.0.0',
+      auth_token_hex: token,
+    }),
+  );
+  return next(ws);
+}
+
+describe('startBridgeServer handshake', () => {
+  it('accepts a hello with the correct secret', async () => {
+    const ws = client();
+    await open(ws);
+    const reply = (await hello(ws)) as { type: string };
+    expect(reply.type).toBe('welcome');
+    ws.close();
+  });
+  it('rejects a hello with a wrong-but-well-formed secret', async () => {
+    const ws = client();
+    await open(ws);
+    const reply = (await hello(ws, 'b'.repeat(64))) as { type: string; reason: string };
+    expect(reply.type).toBe('reject');
+    expect(reply.reason).toMatch(/token/);
+    ws.close();
+  });
+  it('rejects a malformed hello payload', async () => {
+    const ws = client();
+    await open(ws);
+    ws.send(JSON.stringify({ type: 'hello', protocol_version: 1 }));
+    const reply = (await next(ws)) as { type: string };
+    expect(reply.type).toBe('reject');
+    ws.close();
+  });
+  it('rejects bad JSON', async () => {
+    const ws = client();
+    await open(ws);
+    ws.send('not json at all');
+    const reply = (await next(ws)) as { type: string };
+    expect(reply.type).toBe('reject');
+    ws.close();
+  });
+});
+
+describe('startBridgeServer request routing', () => {
+  it('round-trips dispatch() → BridgeResponse via the connected client', async () => {
+    const ws = client();
+    await open(ws);
+    await hello(ws);
+    ws.on('message', (data) => {
+      const m = JSON.parse(String(data)) as { type: string; id?: string };
+      if (m.type === 'request') {
+        const resp: BridgeResponse = {
+          type: 'response',
+          id: m.id ?? '',
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+          body: '{"echo":true}',
+        };
+        ws.send(JSON.stringify(resp));
+      }
+    });
+    const req: BridgeRequest = {
+      type: 'request',
+      id: 'x-1',
+      method: 'GET',
+      url: 'https://example.test/path',
+      headers: {},
+      timeout_ms: 5_000,
+    };
+    const resp = await bridge.dispatch(req);
+    expect(resp.status).toBe(200);
+    expect(resp.body).toBe('{"echo":true}');
+    ws.close();
+  });
+
+  it('propagates client-side error envelopes as rejections', async () => {
+    const ws = client();
+    await open(ws);
+    await hello(ws);
+    ws.on('message', (data) => {
+      const m = JSON.parse(String(data)) as { type: string; id?: string };
+      if (m.type === 'request') {
+        ws.send(JSON.stringify({ type: 'error', id: m.id, message: 'fetch failed' }));
+      }
+    });
+    await expect(
+      bridge.dispatch({
+        type: 'request',
+        id: 'x-err',
+        method: 'GET',
+        url: 'https://example.test/',
+        headers: {},
+        timeout_ms: 5_000,
+      }),
+    ).rejects.toThrow(/fetch failed/);
+    ws.close();
+  });
+
+  it('times out when no response arrives', async () => {
+    const ws = client();
+    await open(ws);
+    await hello(ws);
+    // do not register any message handler — server will time out
+    await expect(
+      bridge.dispatch({
+        type: 'request',
+        id: 'x-timeout',
+        method: 'GET',
+        url: 'https://example.test/',
+        headers: {},
+        timeout_ms: 100,
+      }),
+    ).rejects.toThrow(/timed out/);
+    ws.close();
+  });
+
+  it('throws when no extension is connected', async () => {
+    await expect(
+      bridge.dispatch({
+        type: 'request',
+        id: 'x-no-ext',
+        method: 'GET',
+        url: 'https://example.test/',
+        headers: {},
+        timeout_ms: 1_000,
+      }),
+    ).rejects.toThrow(/not connected/);
+  });
+});
+
+describe('startBridgeServer status', () => {
+  it('reports disconnected when no extension is paired', () => {
+    expect(bridge.status().connected).toBe(false);
+  });
+  it('reports connected after a successful hello', async () => {
+    const ws = client();
+    await open(ws);
+    await hello(ws);
+    expect(bridge.status().connected).toBe(true);
+    ws.close();
+    // Give the close event one tick to propagate
+    await new Promise((r) => setTimeout(r, 50));
+    expect(bridge.status().connected).toBe(false);
+  });
+});
