@@ -249,6 +249,9 @@ importers:
       '@noble/ed25519':
         specifier: ^2.1.0
         version: 2.3.0
+      '@wabe/browser-bridge':
+        specifier: workspace:*
+        version: link:../browser-bridge
       '@wabe/core':
         specifier: workspace:*
         version: link:../core
