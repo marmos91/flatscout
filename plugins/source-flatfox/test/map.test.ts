@@ -20,13 +20,14 @@ const fixture: FlatfoxApiResult = {
   published: '2026-05-17T08:30:00Z',
   agency: { name: 'ACME Immo AG' },
   images: ['https://cdn/img.jpg', { original_url: 'https://cdn/img2.jpg' }],
+  url: '/en/flat/address-slug/51159/',
 };
 
 describe('mapFlatfoxListing', () => {
   it('maps a representative response', () => {
     const r = mapFlatfoxListing(fixture);
     expect(r.id).toBe('flatfox:51159');
-    expect(r.url).toBe('https://flatfox.ch/en/flat/51159/address-slug');
+    expect(r.url).toBe('https://flatfox.ch/en/flat/address-slug/51159/');
     expect(r.price.total).toBe(2850);
     expect(r.rooms).toBe(2.0);
     expect(r.area_m2).toBe(85);
@@ -47,5 +48,9 @@ describe('mapFlatfoxListing', () => {
 
   it('omits coords when lat/lng missing', () => {
     expect(mapFlatfoxListing({ pk: 1 }).location.coords).toBeNull();
+  });
+
+  it('falls back to pk-only path when API url missing', () => {
+    expect(mapFlatfoxListing({ pk: 99 }).url).toBe('https://flatfox.ch/en/flat/99/');
   });
 });

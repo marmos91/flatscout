@@ -22,6 +22,8 @@ export interface FlatfoxApiResult {
   published?: string | null;
   agency?: { name?: string | null } | null;
   images?: Array<{ original_url?: string } | string> | null;
+  /** Canonical relative path as returned by the API, e.g. `/en/flat/<slug>/<pk>/`. Preferred over pk-first variant since it avoids a 301 redirect. */
+  url?: string | null;
 }
 
 /**
@@ -33,7 +35,10 @@ export interface FlatfoxApiResult {
  * Flatfox response (floor, built year, contact, etc.) are set to null/empty.
  */
 export function mapFlatfoxListing(r: FlatfoxApiResult): RawListing {
-  const url = `https://flatfox.ch/en/flat/${r.pk}${r.slug ? `/${r.slug}` : ''}`;
+  // Prefer API-canonical relative URL (slug-first, trailing slash) to avoid a 301 hop;
+  // fall back to pk-only path when absent.
+  const path = r.url?.startsWith('/') ? r.url : `/en/flat/${r.pk}/`;
+  const url = `https://flatfox.ch${path}`;
   const rooms =
     typeof r.number_of_rooms === 'string'
       ? Number.parseFloat(r.number_of_rooms)
