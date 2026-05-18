@@ -74,7 +74,16 @@ pnpm wabe start      # daemon mode; runs cron-driven scans
 pnpm wabe list       # browse persisted listings (TERM / UNTIL columns indicate rental-term classification)
 pnpm wabe doctor     # diagnose config / DB / plugin health
 pnpm wabe purge      # clear listings / scores / notifications / quota
+pnpm wabe login homegate   # OAuth2 + PKCE login for user-bound Homegate features
+pnpm wabe logout homegate  # revoke local Homegate credentials
 ```
+
+> **Homegate notes.** The `@wabe/source-homegate` plugin triggers a one-time
+> ~300MB Chromium download via Playwright on the first scan (used to harvest
+> DataDome cookies). Anonymous public search works without credentials.
+> Optional: run `wabe login homegate` to wire user-bound features (favourites,
+> applicator) — the flow uses out-of-band OAuth2 + PKCE; tokens are stored
+> 0600 under your data dir.
 
 ### Rental-term filtering
 
@@ -154,7 +163,9 @@ const plugin: Source = {
 export default { kind: 'source' as const, plugin };
 ```
 
-See `plugins/source-flatfox/` for a complete reference implementation.
+See `plugins/source-flatfox/` for a complete reference implementation, and
+`plugins/source-homegate/` for a more involved one (Playwright-driven cookie
+harvest, iOS-style headers, Auth0 + PKCE login).
 
 ## Roadmap
 

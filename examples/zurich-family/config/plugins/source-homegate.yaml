@@ -1,0 +1,12 @@
+schedule: '*/15 * * * *'
+search:
+  zipcodes: [8001, 8002, 8003, 8004, 8005, 8006, 8008, 8032]
+  price_max: 4500
+  rooms_min: 3
+  surface_min: 80
+  has_elevator: true
+fetch:
+  page_size: 20
+  max_pages: 5
+  pace_ms: 2500
+  cookie_max_age_hours: 12

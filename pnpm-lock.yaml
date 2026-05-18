@@ -38,6 +38,9 @@ importers:
       '@wabe/source-flatfox':
         specifier: workspace:*
         version: link:../../plugins/source-flatfox
+      '@wabe/source-homegate':
+        specifier: workspace:*
+        version: link:../../plugins/source-homegate
       typescript:
         specifier: ^5.6.2
         version: 5.9.3
