@@ -102,14 +102,17 @@ The plugin also persists a per-install identity at
 header — so requests from the same machine look like the same client across
 runs (matching the iOS app's behaviour).
 
-## Authentication (optional, Phase 3)
+## Authentication (optional)
 
-Anonymous search works **without** logging in. A future
-`wabe login homegate` flow will exchange an Auth0 PKCE authorization code
-for refresh + access tokens, persisted at `${dataDir}/secrets.json`, and
-the plugin will attach `Authorization: Bearer <…>` automatically when the
-secrets are present. The `auth.ts` module already implements the
-refresh-token grant and rotation; only the login command is missing.
+Anonymous search works **without** logging in. Run `wabe login homegate` to
+exchange an Auth0 PKCE authorization code (OOB copy-paste flow) for refresh
+and access tokens, persisted at `${dataDir}/secrets.json` with mode 0600.
+The plugin's `auth.ts` handles refresh-token rotation on next scan when the
+access token is close to expiry. `wabe logout homegate` revokes the
+refresh token at Auth0 (`/oauth/revoke`) and clears local credentials.
+User-bound endpoints (favourites, applicator) are not yet consumed by the
+v1 read-only search path — the plumbing ships ahead of the next applicator
+spec.
 
 ## Known gaps (TODO)
 
@@ -119,6 +122,10 @@ refresh-token grant and rotation; only the login command is missing.
   full lister object lives in a different fieldset.
 - Non-zipcode geoTags (city / canton / radius search) are not supported in
   v1. Use `zipcodes:` only.
+- `fetch.cookie_max_age_hours: 12` is a first-pass guess matching DataDome's
+  typical session window. The first week of production running will reveal
+  the right value — if 403→re-bootstrap loops every scan, drop to `3`; if
+  cookies last 24h cleanly, raise it.
 
 ## Troubleshooting
 
