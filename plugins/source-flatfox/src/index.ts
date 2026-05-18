@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import type { PluginExport, Source, Context } from '@wabe/plugin-sdk';
-import { Pool } from 'undici';
 import { SearchConfig, applyClientFilters } from './search.js';
 import { fetchPage, sleep } from './client.js';
 import { mapFlatfoxListing } from './map.js';
@@ -30,24 +29,22 @@ const plugin: Source = {
   configSchema: ConfigSchema,
   async *fetch(ctx: Context) {
     const cfg = ctx.config as Config;
-    const pool = new Pool('https://flatfox.ch');
-    try {
-      for (let page = 0; page < cfg.fetch.max_pages; page += 1) {
-        if (ctx.signal.aborted) return;
-        const offset = page * cfg.fetch.page_size;
-        const res = await fetchPage(cfg.search, cfg.fetch.page_size, offset, {
-          pool,
-          paceMs: cfg.fetch.pace_ms,
-          backoff: cfg.fetch.backoff,
-          signal: ctx.signal,
-        });
-        const filtered = applyClientFilters(res.results, cfg.search);
-        for (const r of filtered) yield mapFlatfoxListing(r);
-        if (!res.next || res.results.length < cfg.fetch.page_size) break;
-        if (page + 1 < cfg.fetch.max_pages) await sleep(cfg.fetch.pace_ms, ctx.signal);
-      }
-    } finally {
-      await pool.close();
+    // NOTE: deviated from plan — dropped the per-fetch Pool in favour of
+    // undici.request via the global dispatcher. Keeps connection pooling (the
+    // global Agent pools by default) AND makes the source mockable in E2E
+    // tests via setGlobalDispatcher(MockAgent).
+    for (let page = 0; page < cfg.fetch.max_pages; page += 1) {
+      if (ctx.signal.aborted) return;
+      const offset = page * cfg.fetch.page_size;
+      const res = await fetchPage(cfg.search, cfg.fetch.page_size, offset, {
+        paceMs: cfg.fetch.pace_ms,
+        backoff: cfg.fetch.backoff,
+        signal: ctx.signal,
+      });
+      const filtered = applyClientFilters(res.results, cfg.search);
+      for (const r of filtered) yield mapFlatfoxListing(r);
+      if (!res.next || res.results.length < cfg.fetch.page_size) break;
+      if (page + 1 < cfg.fetch.max_pages) await sleep(cfg.fetch.pace_ms, ctx.signal);
     }
   },
 };

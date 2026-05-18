@@ -196,9 +196,18 @@ importers:
       '@types/node-cron':
         specifier: ^3.0.11
         version: 3.0.11
+      '@wabe/notifier-telegram':
+        specifier: workspace:*
+        version: link:../../plugins/notifier-telegram
+      '@wabe/source-flatfox':
+        specifier: workspace:*
+        version: link:../../plugins/source-flatfox
       typescript:
         specifier: ^5.6.2
         version: 5.9.3
+      undici:
+        specifier: ^6.19.8
+        version: 6.25.0
       vitest:
         specifier: ^2.1.1
         version: 2.1.9(@types/node@22.19.19)

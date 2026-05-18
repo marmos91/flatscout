@@ -1,4 +1,4 @@
-import { Pool, type Dispatcher } from 'undici';
+import { request, type Dispatcher } from 'undici';
 import { FlatfoxHttpError } from './errors.js';
 import type { FlatfoxApiResult } from './map.js';
 import { buildQuery, type SearchConfig } from './search.js';
@@ -6,6 +6,9 @@ import { buildQuery, type SearchConfig } from './search.js';
 const HOST = 'https://flatfox.ch';
 
 export interface FetchOptions {
+  // NOTE: deviated from plan — kept the `pool` option for backwards-compat /
+  // perf but routing through `undici.request` by default so the call honours
+  // `setGlobalDispatcher` (and therefore MockAgent in the E2E test).
   pool?: Dispatcher;
   paceMs: number;
   backoff: { on: number[]; retries: number; base_ms: number };
@@ -24,14 +27,19 @@ export async function fetchPage(
   opts: FetchOptions,
 ): Promise<FlatfoxPage> {
   const url = `${HOST}/api/v1/public-listing/?${buildQuery(search, limit, offset)}`;
-  const pool = opts.pool ?? new Pool(HOST);
   for (let attempt = 0; attempt <= opts.backoff.retries; attempt += 1) {
-    const res = await pool.request({
-      method: 'GET',
-      path: url.replace(HOST, ''),
-      signal: opts.signal,
-      headers: { accept: 'application/json' },
-    });
+    const res = opts.pool
+      ? await opts.pool.request({
+          method: 'GET',
+          path: url.replace(HOST, ''),
+          signal: opts.signal,
+          headers: { accept: 'application/json' },
+        })
+      : await request(url, {
+          method: 'GET',
+          signal: opts.signal,
+          headers: { accept: 'application/json' },
+        });
     if (res.statusCode >= 200 && res.statusCode < 300) {
       const body = (await res.body.json()) as { results: FlatfoxApiResult[]; next: string | null };
       return { results: body.results ?? [], next: body.next ?? null };

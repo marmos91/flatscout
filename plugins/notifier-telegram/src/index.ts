@@ -19,7 +19,20 @@ const plugin: Notifier = {
       throw new Error('telegram bot_token unresolved (set TELEGRAM_BOT_TOKEN env)');
     if (!cfg.chat_id || (typeof cfg.chat_id === 'string' && cfg.chat_id.startsWith('${env.')))
       throw new Error('telegram chat_id unresolved (set TELEGRAM_CHAT_ID env)');
-    const bot = new Bot(cfg.bot_token);
+    // NOTE: deviated from plan — wire grammY through Node's global fetch
+    // (undici-backed) instead of its default node-fetch shim, so the notifier
+    // honours `setGlobalDispatcher` for tests AND avoids shipping a redundant
+    // HTTP client at runtime. grammY ships an `abort-controller` polyfill
+    // whose `AbortSignal` instance does NOT satisfy Node's WHATWG checks, so
+    // strip the signal before delegating. Casts placate grammY's narrow
+    // node-fetch-shaped fetch type.
+    const wrappedFetch = (input: unknown, init?: { signal?: unknown } & Record<string, unknown>) => {
+      const { signal: _ignored, ...rest } = init ?? {};
+      return (globalThis.fetch as (i: unknown, r?: unknown) => Promise<unknown>)(input, rest);
+    };
+    const bot = new Bot(cfg.bot_token, {
+      client: { fetch: wrappedFetch as unknown as never },
+    });
     const card = renderCard(event);
     const kb = new InlineKeyboard();
     for (const b of card.buttons) kb.url(b.text, b.url);
