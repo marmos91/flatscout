@@ -34,8 +34,7 @@ export async function fetchDetail(url: string, signal: AbortSignal): Promise<Det
 export function extractJsonLd(html: string): DetailPayload {
   const out: DetailPayload = { product: null, residence: null };
   const re = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(html)) !== null) {
+  for (const m of html.matchAll(re)) {
     const block = m[1];
     if (!block) continue;
     try {

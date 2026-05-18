@@ -28,7 +28,7 @@ export function parseUrlset(xmlText: string): SitemapEntry[] {
     const node = u as {
       loc?: string;
       lastmod?: string;
-      ['image:image']?: { ['image:loc']?: string; ['image:geo_location']?: string };
+      'image:image'?: { 'image:loc'?: string; 'image:geo_location'?: string };
     };
     const img = node['image:image'];
     return {
