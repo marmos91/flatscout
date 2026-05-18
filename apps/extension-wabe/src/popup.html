@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Wabe Bridge</title>
+    <style>
+      body {
+        font: 13px/1.4 system-ui, sans-serif;
+        margin: 0;
+        padding: 12px;
+        width: 280px;
+      }
+      h1 {
+        font-size: 14px;
+        margin: 0 0 8px;
+      }
+      .status {
+        padding: 6px 8px;
+        border-radius: 4px;
+        margin-bottom: 12px;
+      }
+      .status.connected {
+        background: #d4edda;
+        color: #155724;
+      }
+      .status.disconnected {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .status.unpaired {
+        background: #fff3cd;
+        color: #856404;
+      }
+      label {
+        display: block;
+        margin: 8px 0 2px;
+        font-weight: 600;
+      }
+      input,
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        font: 12px/1.4 ui-monospace, monospace;
+      }
+      textarea {
+        height: 44px;
+        resize: vertical;
+      }
+      button {
+        margin-top: 8px;
+        padding: 6px 10px;
+        font: 12px/1 system-ui, sans-serif;
+        cursor: pointer;
+      }
+      .row {
+        display: flex;
+        gap: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Wabe Bridge</h1>
+    <div id="status" class="status unpaired">loading…</div>
+
+    <label for="bridgeUrl">Bridge URL</label>
+    <input id="bridgeUrl" type="text" placeholder="ws://127.0.0.1:8431/bridge" />
+
+    <label for="authToken">Auth token</label>
+    <textarea id="authToken" placeholder="64 hex chars from `wabe bridge pair`"></textarea>
+
+    <div class="row">
+      <button id="save">Save &amp; connect</button>
+      <button id="forget">Forget pairing</button>
+    </div>
+
+    <script type="module" src="./popup.ts"></script>
+  </body>
+</html>
