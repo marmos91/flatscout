@@ -1,4 +1,45 @@
-import type { Command } from 'commander';
-export function registerStart(p: Command): void {
-  p.command('start').description('run daemon').action(async () => {});
+import { Command } from 'commander';
+import {
+  CircuitBreaker,
+  Quota,
+  createLogger,
+  loadConfig,
+  loadPlugins,
+  runOnce,
+  scheduleSources,
+} from '@wabe/server';
+import { migrate, openDb } from '@wabe/db';
+import { resolvePaths } from '../paths.js';
+
+export function registerStart(prog: Command): void {
+  prog
+    .command('start')
+    .description('Run as daemon (node-cron driven)')
+    .action(async () => {
+      const globalOpts = prog.opts<{ config?: string; dataDir?: string }>();
+      const paths = resolvePaths({ config: globalOpts.config, dataDir: globalOpts.dataDir });
+      const cfg = loadConfig(paths.configDir);
+      const logger = createLogger(cfg.top.log.level, process.stdout.isTTY);
+      const db = openDb(paths.dbFile);
+      migrate(db);
+      const loaded = await loadPlugins(cfg);
+      const breakers = new Map(loaded.sources.map((s) => [s.name, new CircuitBreaker({ failuresBeforeOpen: 3, cooldownMs: 600_000 })]));
+      const quota = new Quota(db, cfg.scoring.notify.daily_quota);
+      const ctrl = new AbortController();
+      const handle = scheduleSources(loaded.sources, logger, async (s) => {
+        await runOnce({
+          cfg, db, logger, signal: ctrl.signal,
+          sources: [s], notifiers: loaded.notifiers, breakers, quota,
+        });
+      });
+      const shutdown = (sig: NodeJS.Signals) => {
+        logger.info({ sig }, 'shutting down');
+        handle.stop();
+        ctrl.abort();
+        setTimeout(() => process.exit(0), 500);
+      };
+      process.once('SIGINT', shutdown);
+      process.once('SIGTERM', shutdown);
+      logger.info('wabe daemon up');
+    });
 }
