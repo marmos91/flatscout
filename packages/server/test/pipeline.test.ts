@@ -79,6 +79,7 @@ describe('runOnce pipeline', () => {
     await runOnce({
       cfg: {
         configDir: dir,
+        rentalTerm: { mode: 'long', exclude_unknown: false },
         top: {
           enabled: { sources: [], scorers: [], notifiers: [], enrichers: [], applicators: [] },
           log: { level: 'silent' },
@@ -124,6 +125,7 @@ describe('runOnce pipeline', () => {
     await runOnce({
       cfg: {
         configDir: dir,
+        rentalTerm: { mode: 'long', exclude_unknown: false },
         top: {
           enabled: { sources: [], scorers: [], notifiers: [], enrichers: [], applicators: [] },
           log: { level: 'silent' },
@@ -168,6 +170,7 @@ describe('runOnce pipeline', () => {
       runOnce({
         cfg: {
           configDir: dir,
+          rentalTerm: { mode: 'long', exclude_unknown: false },
           top: {
             enabled: { sources: [], scorers: [], notifiers: [], enrichers: [], applicators: [] },
             log: { level: 'silent' },

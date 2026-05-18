@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
-import { interpolateEnv, FiltersFile, ScoringFile } from '@wabe/core';
+import { interpolateEnv, FiltersFile, RentalTermFile, type RentalTermPolicy, ScoringFile } from '@wabe/core';
 import { parse as parseYaml } from 'yaml';
 
 /** A single entry in the top-level `enabled.{sources,scorers,notifiers,enrichers,applicators}` lists. */
@@ -29,8 +29,12 @@ export interface LoadedConfig {
   top: TopConfig;
   filters: z.infer<typeof FiltersFile>;
   scoring: z.infer<typeof ScoringFile>;
+  rentalTerm: RentalTermPolicy;
   configDir: string;
 }
+
+/** Default rental-term policy when `rental_term.yaml` is absent. Preserves pre-feature behavior modulo furnished/befristet auto-reject. */
+const DEFAULT_RENTAL_TERM: RentalTermPolicy = { mode: 'long', exclude_unknown: false };
 
 /** Reads and parses a YAML file. Cast assumes the caller validates the result through a schema. */
 export function loadYaml<T>(path: string): T {
@@ -47,7 +51,11 @@ export function loadConfig(configDir: string): LoadedConfig {
   const top = TopConfig.parse(loadYaml(join(configDir, 'config.yaml')));
   const filters = FiltersFile.parse(loadYaml(join(configDir, 'filters.yaml')));
   const scoring = ScoringFile.parse(loadYaml(join(configDir, 'scoring.yaml')));
-  return { top, filters, scoring, configDir };
+  const rentalTermPath = join(configDir, 'rental_term.yaml');
+  const rentalTerm = existsSync(rentalTermPath)
+    ? RentalTermFile.parse(loadYaml(rentalTermPath)).rental_term
+    : DEFAULT_RENTAL_TERM;
+  return { top, filters, scoring, rentalTerm, configDir };
 }
 
 /**

@@ -6,6 +6,7 @@ import type { LoadedPlugin } from './loader.js';
 import type { CircuitBreaker } from './circuit.js';
 import type { Quota } from './quota.js';
 import { upsertListing } from './dedupe.js';
+import { passes as rentalTermPasses } from './rental-term-gate.js';
 
 export interface RunOptions {
   cfg: LoadedConfig;
@@ -64,6 +65,14 @@ async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise
       });
       const { changed, isNew } = upsertListing(opts.db, enriched);
       if (!changed) continue;
+      const termVerdict = rentalTermPasses(enriched, opts.cfg.rentalTerm);
+      if (!termVerdict.ok) {
+        log.debug(
+          { listing_id: enriched.id, reason: termVerdict.reason },
+          'rental_term gate rejected',
+        );
+        continue;
+      }
       const filterResult = await evaluateFilters(opts.cfg.filters.filters, enriched);
       if (!filterResult.passed) {
         log.debug({ listing_id: enriched.id, reason: filterResult.reason }, 'filtered out');
