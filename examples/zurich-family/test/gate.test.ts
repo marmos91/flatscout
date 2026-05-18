@@ -55,7 +55,7 @@ const flatfoxSample: FlatfoxApiResult = {
   latitude: 47.37,
   longitude: 8.54,
   offer_type: 'RENT',
-  object_category: 'FLAT',
+  object_category: 'APARTMENT',
   agency: { name: 'A' },
 };
 

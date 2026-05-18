@@ -19,7 +19,7 @@ describe('applyClientFilters', () => {
       number_of_rooms: '3.5',
       surface_living: 80,
       offer_type: 'RENT',
-      object_category: 'FLAT',
+      object_category: 'APARTMENT',
     },
     {
       pk: 2,
@@ -28,7 +28,7 @@ describe('applyClientFilters', () => {
       number_of_rooms: '4.0',
       surface_living: 90,
       offer_type: 'RENT',
-      object_category: 'FLAT',
+      object_category: 'APARTMENT',
     },
     {
       pk: 3,
@@ -37,7 +37,7 @@ describe('applyClientFilters', () => {
       number_of_rooms: '5.0',
       surface_living: 130,
       offer_type: 'RENT',
-      object_category: 'FLAT',
+      object_category: 'APARTMENT',
     },
   ];
   it('filters by city', () => {

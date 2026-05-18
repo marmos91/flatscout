@@ -46,7 +46,7 @@ sources:
 | `search.rooms_max` | number | — | Max number of rooms. |
 | `search.surface_min` | int | — | Min living surface in m². |
 | `search.offer_type` | string | `"RENT"` | Flatfox offer type. |
-| `search.category` | string | `"FLAT"` | Flatfox object category. |
+| `search.category` | string | `"APARTMENT"` | Flatfox `object_category`. Observed live enum: `APARTMENT`, `PARK`, `INDUSTRY`, `SECONDARY`, `SHARED` (the API catalog skews heavily toward parking spots, so this filter is essential). |
 | `fetch.page_size` | int | `100` | Page size sent to the API. |
 | `fetch.max_pages` | int | `5` | Stop after this many pages per scan. |
 | `fetch.pace_ms` | int | `2000` | Sleep between page requests. |

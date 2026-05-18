@@ -11,7 +11,7 @@ export const SearchConfig = z.object({
   rooms_max: z.number().optional(),
   surface_min: z.number().int().positive().optional(),
   offer_type: z.string().default('RENT'),
-  category: z.string().default('FLAT'),
+  category: z.string().default('APARTMENT'),
 });
 export type SearchConfig = z.infer<typeof SearchConfig>;
 

@@ -15,7 +15,7 @@ const fixture: FlatfoxApiResult = {
   latitude: 47.385,
   longitude: 8.527,
   offer_type: 'RENT',
-  object_category: 'FLAT',
+  object_category: 'APARTMENT',
   status: 'act',
   published: '2026-05-17T08:30:00Z',
   agency: { name: 'ACME Immo AG' },

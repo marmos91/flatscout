@@ -56,7 +56,7 @@ search:
   rooms_min: ${roomsMin}
   surface_min: 60
   offer_type: RENT
-  category: FLAT
+  category: APARTMENT
 fetch:
   page_size: 100
   max_pages: 3
