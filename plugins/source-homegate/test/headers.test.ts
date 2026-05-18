@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildHeaders, newXAppId, USER_AGENT, X_APP_VERSION } from '../src/headers.js';
+import { buildHeaders, newXAppId } from '../src/headers.js';
 
 describe('newXAppId', () => {
   it('generates 1000 unique decimal nonces of <=26 digits', () => {
@@ -16,24 +16,32 @@ describe('newXAppId', () => {
 });
 
 describe('buildHeaders', () => {
+  const CHROME_UA =
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.7778.96 Safari/537.36';
   const baseInput = {
     cookie: 'datadome=abc; __cf_bm=def',
-    xUdid: '0E9A3DF1-F4D9-4AA5-9457-7246692CDE4D',
+    userAgent: CHROME_UA,
   };
 
-  it('returns the captured header set without bearer', () => {
+  it('returns browser-shaped headers without bearer', () => {
     const h = buildHeaders(baseInput);
-    expect(h.Accept).toBe('*/*');
-    expect(h['Accept-Encoding']).toBe('gzip, deflate, br');
+    expect(h.Accept).toBe('application/json, text/plain, */*');
+    expect(h['Accept-Encoding']).toBeUndefined();
     expect(h['Accept-Language']).toBe('en-US,en;q=0.9');
-    expect(h['User-Agent']).toBe(USER_AGENT);
-    expect(h['X-App-Version']).toBe(X_APP_VERSION);
-    expect(h['X-UDID']).toBe(baseInput.xUdid);
-    expect(h['X-App-Id']).toMatch(/^\d{1,26}$/);
-    expect(h.Priority).toBe('u=3');
+    expect(h['User-Agent']).toBe(CHROME_UA);
+    expect(h.Origin).toBe('https://www.homegate.ch');
+    expect(h.Referer).toBe('https://www.homegate.ch/');
     expect(h.Cookie).toBe(baseInput.cookie);
     expect(h.Authorization).toBeUndefined();
     expect(h['Content-Type']).toBeUndefined();
+  });
+
+  it('omits the iOS-app-specific headers (X-UDID, X-App-Version, X-App-Id, Priority)', () => {
+    const h = buildHeaders(baseInput);
+    expect(h['X-UDID']).toBeUndefined();
+    expect(h['X-App-Version']).toBeUndefined();
+    expect(h['X-App-Id']).toBeUndefined();
+    expect(h.Priority).toBeUndefined();
   });
 
   it('adds Content-Type when hasBody is true', () => {
@@ -44,11 +52,5 @@ describe('buildHeaders', () => {
   it('adds Authorization when bearer is present', () => {
     const h = buildHeaders({ ...baseInput, bearer: 'jwt.abc.def' });
     expect(h.Authorization).toBe('Bearer jwt.abc.def');
-  });
-
-  it('regenerates X-App-Id per call', () => {
-    const a = buildHeaders(baseInput);
-    const b = buildHeaders(baseInput);
-    expect(a['X-App-Id']).not.toBe(b['X-App-Id']);
   });
 });

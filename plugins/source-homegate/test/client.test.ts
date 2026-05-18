@@ -39,7 +39,6 @@ function makeCtx(opts: {
 }) {
   return {
     dataDir: '/tmp/wabe-test',
-    xUdid: 'AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE',
     paceMs: 0,
     backoff: { on: opts.on ?? [429, 500, 502, 503, 504], retries: opts.retries ?? 2, base_ms: 1 },
     signal: new AbortController().signal,

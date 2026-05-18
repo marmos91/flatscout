@@ -99,9 +99,18 @@ multilingual classifier (`classifyRentalTerm` in `@wabe/core`) as
   in a row raises `HomegateAntiBotError`.
 
 The plugin also persists a per-install identity at
-`${dataDir}/homegate-install.json` — a stable UUID used as the `X-UDID`
-header — so requests from the same machine look like the same client across
-runs (matching the iOS app's behaviour).
+`${dataDir}/homegate-install.json` — a stable UUID kept for future endpoint
+paths that bind to a per-client identity.
+
+> **⚠️ Known DataDome wall (open).** Live smoke testing (2026-05-18) shows
+> `api.homegate.ch` rejects requests with `HomegateAntiBotError` even with
+> correctly-issued DataDome cookies and matching Chrome UA. DataDome appears
+> to bind cookies to TLS fingerprint (JA3), and undici's Node TLS handshake
+> differs from Chromium's. Plumbing is correct — cookies harvest, retry runs
+> once, error surfaces cleanly — but the iOS-app API endpoint is unreachable
+> from a non-Chromium TLS client. Follow-up spec: replay search via
+> Playwright XHR interception against `www.homegate.ch`'s SPA backend
+> (different endpoint, same TLS stack as cookie issuer).
 
 ## Authentication (optional)
 

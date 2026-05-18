@@ -20,8 +20,13 @@ export function newXAppId(): string {
 export interface BuildHeadersInput {
   /** Full `Cookie:` header value (datadome + cf_bm + any auth cookies). */
   cookie: string;
-  /** Stable per-install UUID — see install.ts. */
-  xUdid: string;
+  /**
+   * UA to send. Must match the UA that issued the DataDome cookie — DataDome
+   * binds cookies to (UA + IP + TLS fingerprint), so a mismatch yields 403.
+   * Source the value from `BootstrapResult.userAgent` (the Chromium UA used
+   * during the bootstrap session), NOT the iOS app's pinned UA.
+   */
+  userAgent: string;
   /** Optional bearer token. Only attached when present (anonymous search omits it). */
   bearer?: string | null;
   /** Whether to set `Content-Type: application/json` (true for POSTs with a body). */
@@ -29,21 +34,22 @@ export interface BuildHeadersInput {
 }
 
 /**
- * Assembles the full Homegate header set per the iOS capture. `X-App-Id` is
- * regenerated on every call. `Content-Type` is only set when `hasBody` is true
- * (the iOS app omits it on GETs). `Authorization` is only set when `bearer`
- * is present.
+ * Assembles request headers that match the desktop-Chrome bootstrap session:
+ * Chrome UA, browser-shaped Accept/Accept-Language, plus the bootstrapped
+ * cookies. The iOS-app-specific headers (`X-UDID`, `X-App-Version`,
+ * `X-App-Id`, `Priority`) are deliberately omitted because they're tied to
+ * the iOS-app-issued DataDome cookie path, which we don't have.
  */
 export function buildHeaders(input: BuildHeadersInput): Record<string, string> {
+  // Accept-Encoding omitted on purpose: undici doesn't auto-decompress, and
+  // server-side gzip turns error bodies into binary blobs in logs. Identity
+  // encoding keeps responses readable; the request body is small.
   const h: Record<string, string> = {
-    Accept: '*/*',
-    'Accept-Encoding': 'gzip, deflate, br',
+    Accept: 'application/json, text/plain, */*',
     'Accept-Language': 'en-US,en;q=0.9',
-    'User-Agent': USER_AGENT,
-    'X-App-Version': X_APP_VERSION,
-    'X-UDID': input.xUdid,
-    'X-App-Id': newXAppId(),
-    Priority: 'u=3',
+    'User-Agent': input.userAgent,
+    Origin: 'https://www.homegate.ch',
+    Referer: 'https://www.homegate.ch/',
     Cookie: input.cookie,
   };
   if (input.hasBody) h['Content-Type'] = 'application/json';

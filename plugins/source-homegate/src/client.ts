@@ -25,7 +25,6 @@ export interface SearchResponse {
 
 export interface FetchContext {
   dataDir: string;
-  xUdid: string;
   paceMs: number;
   backoff: { on: number[]; retries: number; base_ms: number };
   signal: AbortSignal;
@@ -59,7 +58,7 @@ export async function fetchSearch(body: SearchBody, ctx: FetchContext): Promise<
     if (ctx.signal.aborted) throw new Error('aborted');
     const headers = buildHeaders({
       cookie: cookies.cookieHeader,
-      xUdid: ctx.xUdid,
+      userAgent: cookies.userAgent,
       bearer,
       hasBody: true,
     });

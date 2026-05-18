@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import type { Context, PluginExport, Source } from '@wabe/plugin-sdk';
 import { fetchSearch, sleep } from './client.js';
-import { getInstall } from './install.js';
 import { mapHomegateResult, HomegateApiSchema } from './map.js';
 import { buildSearchBody, SearchConfig } from './search.js';
 
@@ -50,7 +49,6 @@ const plugin: Source = {
   async *fetch(ctx: Context) {
     const cfg = ctx.config as Config;
     const dataDir = resolveDataDir();
-    const install = getInstall(dataDir);
 
     const cookieMaxAgeMs = cfg.fetch.cookie_max_age_hours * 3600_000;
 
@@ -60,7 +58,6 @@ const plugin: Source = {
       const body = buildSearchBody(cfg.search, cfg.fetch.page_size, from);
       const res = await fetchSearch(body, {
         dataDir,
-        xUdid: install.xUdid,
         paceMs: cfg.fetch.pace_ms,
         backoff: cfg.fetch.backoff,
         cookieMaxAgeMs,
