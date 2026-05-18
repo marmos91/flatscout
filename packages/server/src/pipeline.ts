@@ -1,5 +1,12 @@
 import type { Logger } from 'pino';
-import { Listing, evaluateFilters, scoreListing, SOURCE_PRIORITY_DEFAULTS, DEFAULT_SOURCE_PRIORITY, canonicalKey } from '@wabe/core';
+import {
+  Listing,
+  evaluateFilters,
+  scoreListing,
+  SOURCE_PRIORITY_DEFAULTS,
+  DEFAULT_SOURCE_PRIORITY,
+  canonicalKey,
+} from '@wabe/core';
 import type { WabeDb } from '@wabe/db';
 import type { LoadedConfig } from './config.js';
 import type { LoadedPlugin } from './loader.js';
@@ -96,7 +103,10 @@ async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise
       }
       const verdict = shouldNotify(opts.db, enriched);
       if (verdict.suppress) {
-        log.debug({ listing_id: enriched.id, canonical_key: enriched.canonical_key }, 'cross-source dedup suppressed');
+        log.debug(
+          { listing_id: enriched.id, canonical_key: enriched.canonical_key },
+          'cross-source dedup suppressed',
+        );
         continue;
       }
       if (!opts.quota.tryConsume()) {
@@ -127,7 +137,11 @@ async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise
  */
 async function notifySafely(
   n: LoadedPlugin<'notifier'>,
-  event: { listing: Listing; score: { final: number; breakdown: Record<string, number> }; also_seen_on?: string[] },
+  event: {
+    listing: Listing;
+    score: { final: number; breakdown: Record<string, number> };
+    also_seen_on?: string[];
+  },
   opts: RunOptions,
 ): Promise<void> {
   const log = opts.logger.child({ notifier: n.name });

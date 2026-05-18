@@ -35,7 +35,10 @@ export function shouldNotify(db: WabeDb, listing: Listing): DedupVerdict {
   if (maxOtherPriority === listing.source_priority && others.length > 0) {
     const self = rows.find((r) => r.id === listing.id);
     const olderTie = others.some(
-      (r) => r.source_priority === listing.source_priority && self !== undefined && r.first_seen_at < self.first_seen_at,
+      (r) =>
+        r.source_priority === listing.source_priority &&
+        self !== undefined &&
+        r.first_seen_at < self.first_seen_at,
     );
     if (olderTie) return { suppress: true, also_seen_on: [] };
   }

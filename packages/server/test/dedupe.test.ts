@@ -35,7 +35,15 @@ function makeListing(over: Partial<Listing> & { id: string; source: string; url:
     total_floors: null,
     built_year: null,
     renovated_year: null,
-    location: { coords: null, address: null, postal_code: '8008', city: 'Zürich', region: null, country: 'CH', neighborhood: null },
+    location: {
+      coords: null,
+      address: null,
+      postal_code: '8008',
+      city: 'Zürich',
+      region: null,
+      country: 'CH',
+      neighborhood: null,
+    },
     features: {},
     description: null,
     photos: [],
@@ -55,7 +63,10 @@ describe('upsertListing canonical-group merging', () => {
     const db = freshDb();
     upsertListing(db, makeListing({ id: 'a:1', source: 'source-flatfox', url: 'https://flatfox.ch/1' }));
     upsertListing(db, makeListing({ id: 'b:1', source: 'source-homegate', url: 'https://homegate.ch/1' }));
-    const rows = db._raw.prepare('SELECT id, seen_on_sources FROM listings ORDER BY id').all() as Array<{ id: string; seen_on_sources: string }>;
+    const rows = db._raw.prepare('SELECT id, seen_on_sources FROM listings ORDER BY id').all() as Array<{
+      id: string;
+      seen_on_sources: string;
+    }>;
     expect(rows).toHaveLength(2);
     for (const r of rows) {
       expect(JSON.parse(r.seen_on_sources).sort()).toEqual(['source-flatfox', 'source-homegate']);

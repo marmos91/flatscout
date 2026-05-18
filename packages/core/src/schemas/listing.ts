@@ -65,10 +65,16 @@ export type Listing = z.infer<typeof Listing>;
  * Listing shape emitted by source plugins before the orchestrator stamps
  * `id`/`first_seen_at`/`last_seen_at`. Sources MUST set `source` and `url`.
  */
+// NOTE: deviated from plan — Phase A's new pipeline-stamped fields (canonical_key,
+// source_priority, seen_on_sources) must be optional on RawListing for the same reason
+// id/first_seen_at/last_seen_at are: sources don't compute them, the pipeline does.
 export const RawListing = Listing.partial({
   id: true,
   first_seen_at: true,
   last_seen_at: true,
+  canonical_key: true,
+  source_priority: true,
+  seen_on_sources: true,
 }).extend({
   source: z.string(),
   url: z.string().url(),

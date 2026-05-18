@@ -40,9 +40,7 @@ export function canonicalKey(input: CanonicalKeyInput): string {
   const ab = roundAreaBucket(input.area_m2);
   const pb = roundPriceBucket(input.price_total);
   const allBucketsPresent = input.postal_code !== null && rb !== null && ab !== null && pb !== null;
-  const material = allBucketsPresent
-    ? `${input.postal_code}|${rb}|${ab}|${pb}`
-    : `url:${input.url}`;
+  const material = allBucketsPresent ? `${input.postal_code}|${rb}|${ab}|${pb}` : `url:${input.url}`;
   return createHash('sha256').update(material).digest('hex');
 }
 
