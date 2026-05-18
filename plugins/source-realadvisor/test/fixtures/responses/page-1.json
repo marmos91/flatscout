@@ -1,0 +1,420 @@
+{
+  "listings": [
+    {
+      "id": 22351028,
+      "created_at": "2026-05-14T11:49:45.216Z",
+      "portal": "realadvisor",
+      "title": "Moderne 5.5-Zimmer-Wohnung in Seenähe mit traumhafter Aussicht",
+      "translated_titles": {
+        "de": null,
+        "en": "Modern 5.5-room apartment near the lake with stunning views",
+        "fr": "Appartement moderne de 5,5 pièces près du lac avec vue imprenable",
+        "it": "Moderno appartamento di 5,5 stanze vicino al lago con vista mozzafiato"
+      },
+      "description": "Wohnen, einkaufen, arbeiten, LEBEN!<br><br> An der Promenade in Horgen vermieten wir per 01.05.2026 eine moderne 5.5-Zimmerwohnung.<br><br> Die Wohnung ist modern ausgestattet, nach ökologischem Minergiestandard erstellt und bietet folgende Annehmlichkeiten:<br><br> Offene Küche/Essbereich, mit Balkon seeseitig und viel Stauraum<br> Grosszügiges Wohnzimmer mit weiterem Balkon bergseitig<br> 4 Schlafzimmer, 2 Badezimmer (Badewanne + Dusche), eigener Waschturm<br> Dunkler Eichenparkett in allen Räumen, Nasszellen blau/graue Mosaikplättchen<br> Grosse Fenster für angenehme Lichtverhältnisse innerhalb der Wohnung<br> Kontrollierte Wohnungslüftung und pro Raum individuell einstellbare Fussbodenheizung<br> separates Kellerabteil und so viele Garagenplätze wie Sie privat benötigen, können dazu gemietet werden<br> Separater gemeinschaftlicher Veloraum vorhanden. Einstellplätze können ab CHF 165.00 dazu gemietet werden.<br><br> Auf der hauseigenen Flaniermeile, dem Promenadendeck, gibt es einige Läden zu erkunden. Es hat einen VOI-Supermarkt, eine Physiotherapie, eine Sprachschule und weiteres für Sport und Freizeit. In der Nähe finden sich auch noch eine Bäckerei und ein Denner-Markt.<br> In der Promenade selbst sind zudem ein Kindergarten und ein grosser Kinderhort einquartiert, was zusammen mit den grosszügigen Spielflächen, für Familien besondere Highlights sind.<br> Die Erschliessung mit dem öffentlichen Verkehr ist dank eigener Bushaltestelle ausgezeichnet. Die nahe Fährstation bringt Sie zur gegenüberliegenden Seeseite und mit dem Autobahnzubringer und dem Hirzel sind alle Himmelsrichtungen mit dem Individualverkehr schnell erreicht.<br> In wenigen Gehminuten erreichen Sie den schönen Zürichsee samt dem Seebad Käpfnach. Der sympathische Dorfkern von Horgen und das Naherholungsgebiet Horgenberg bieten weitere Freizeitmöglichkeiten.<br><br> Lassen Sie sich diese Gelegenheit für eine begehrte Wohnung in der bekanntesten Überbauung Horgens nicht entgehen und melden Sie sich für einen Besichtigungstermin.<br><br> Bemerkung: Bei den Fotos handelt es sich um Fotos vergleichbarer Objekte.<br><br> 022/8/1021\n",
+      "property_main_type": "APPT",
+      "property_type": "apartment",
+      "offer_type": "rent",
+      "currency": "CHF",
+      "sale_price": null,
+      "sale_price_per_living_surface": null,
+      "sale_price_per_land_surface": null,
+      "gross_rent_monthly": 4150,
+      "gross_rent_m2yearly": 377.27274,
+      "rent_net_monthly": 4150,
+      "rent_extra": 500,
+      "construction_year": null,
+      "renovation_year": null,
+      "number_of_rooms": 5.5,
+      "number_of_bathrooms": null,
+      "living_surface": 132,
+      "usable_surface": 132,
+      "land_surface": null,
+      "number_of_parking": null,
+      "address": "Seestrasse 274, 8810, Horgen",
+      "postcode": "8810",
+      "locality": "Horgen",
+      "sub_locality": "Horgen",
+      "route": "Seestrasse",
+      "street_number": "274",
+      "agency_portal_id": "zit",
+      "agency_reference": "22.8.1021",
+      "lot_reference": null,
+      "agency_name": "Ziegler Immobilien AG",
+      "agency_contact_address": "Schützenstrasse 1, 8800, Thalwil",
+      "agency_contact_phone_number": "+41447226182",
+      "visit_contact_phone_number": null,
+      "visit_contact_person": null,
+      "computed_surface": 132,
+      "lat": 47.254915,
+      "lng": 8.610993,
+      "bullet_points": {
+        "de": [
+          "Ökologischer Minergiestandard",
+          "Geräumiges Wohnzimmer mit Balkonen",
+          "Gute Anbindung an ÖV"
+        ],
+        "en": [
+          "Eco-friendly Minergie standard",
+          "Spacious living with balconies",
+          "Great public transport access"
+        ],
+        "fr": [
+          "Norme Minergie écologique",
+          "Grand salon avec balcons",
+          "Accès facile aux transports"
+        ],
+        "it": [
+          "Standard Minergie ecologico",
+          "Ampio soggiorno con balconi",
+          "Ottimo accesso ai mezzi pubblici"
+        ]
+      },
+      "agency_id": "632a750a-bfbe-11f0-a52a-0b6f08e37c7d",
+      "agency_logo_url": "https://storage.googleapis.com/img.realadvisor.ch/logo-agentur-ziegler_2025-11-12-115508.jpg",
+      "agency_rating": 5,
+      "agency_reviews_count": 4,
+      "state": "Zürich",
+      "clickout_url": {
+        "hostname": "realadvisor.ch",
+        "url": "6a07c2a57a00c01eb00aaf2394fce4f7:4dcfedc6a02852b7600547398aa32643f7ab283a3cb368b418daad981292351fd22d60d45a7aeb09de696abfcb5c02148eebfdcf411a2eb0218ceb4a4618ab736c6c7015b6ed7b9590b9a8e5cbb1253b"
+      },
+      "show_detail_page": true,
+      "show_contact_form": true,
+      "show_phone_number": true
+    },
+    {
+      "id": 22612524,
+      "created_at": "2026-05-14T11:49:15.623Z",
+      "portal": "realadvisor",
+      "title": "Erstbezug einzigartige 2,5-Zimmer-Wohnung nach Renovierung",
+      "translated_titles": {
+        "de": null,
+        "en": "First occupancy unique 2.5-room apartment after renovation",
+        "fr": "Première occupation appartement unique de 2,5 pièces après rénovation",
+        "it": "Prima occupazione appartamento unico di 2,5 stanze dopo ristrutturazione"
+      },
+      "description": "Träumen Sie von einer Wohnung, die rustikalen Charme mit modernem Komfort vereint? Dann haben wir die perfekte Immobilie für Sie! <br> Diese wunderschöne 2,5-Zimmer-Wohnung mit 70m² Wohnfläche im idyllischen Wasterkingen ist ab sofort oder nach Vereinbarung zu vermieten.<br><br> Highlights:<br>-Erstbezug nach Renovierung - frisch und modern!<br>-Geschirrspüler <br>-eigene Waschmaschine und Tumbler<br>-Gemütlicher Cheminéeofen <br>-Mix aus rustikalem Charme und modernen Akzenten - Wohlfühlatmosphäre garantiert<br>-Ruhige Lage - ideal für Naturliebhaber<br>-Einstellplatz für 140 CHF/Monat verfügbar<br>-2 Minuten zu Fuss zum Volg-Laden und Bushaltestelle<br><br> Im Obergeschoss des Hauses steht ebenfalls eine attraktive 4.5-Zimmer-Wohnung mit 120 m² Wohnfläche zur Vermietung.<br><br> Haben wir Ihr Interesse geweckt? Wir freuen uns über Ihre Kontaktaufnahme, vorzugsweise via Kontaktformular.<br><br>- Herzlichen Dank für Ihr Vertrauen - 30 Jahren für Sie da -<br> A & M Consulting GmbH<br><br><br><br><br><br>**Kaution**<br>\n* **Kaution erforderlich:** Ja\n* **Kautionshöhe:** CHF 4650<br><br>**Parkplätze**<br>\n* Tiefgarage für monatlich CHF 140.00\n",
+      "property_main_type": "APPT",
+      "property_type": "apartment_bachelor_flat",
+      "offer_type": "rent",
+      "currency": "CHF",
+      "sale_price": null,
+      "sale_price_per_living_surface": null,
+      "sale_price_per_land_surface": null,
+      "gross_rent_monthly": 1550,
+      "gross_rent_m2yearly": 265.7143,
+      "rent_net_monthly": 1550,
+      "rent_extra": 200,
+      "construction_year": null,
+      "renovation_year": 2026,
+      "number_of_rooms": 2.5,
+      "number_of_bathrooms": null,
+      "living_surface": 70,
+      "usable_surface": null,
+      "land_surface": null,
+      "number_of_parking": null,
+      "address": "Stiegstrasse 86, 8195, Wasterkingen",
+      "postcode": "8195",
+      "locality": "Wasterkingen",
+      "sub_locality": "Wasterkingen",
+      "route": "Stiegstrasse",
+      "street_number": "86",
+      "agency_portal_id": "A & M Consulting GmbH",
+      "agency_reference": "34143.198598",
+      "lot_reference": null,
+      "agency_name": "A & M Consulting GmbH",
+      "agency_contact_address": "Bahnhofstrasse 88, 8197, Rafz",
+      "agency_contact_phone_number": "044 879 19 01",
+      "visit_contact_phone_number": "044 879 19 01",
+      "visit_contact_person": "Steiner Vera",
+      "computed_surface": 70,
+      "lat": 47.590626,
+      "lng": 8.469007,
+      "bullet_points": {
+        "de": [
+          "Frisch renoviertes Interieur",
+          "Gemütliche Kaminatmosphäre",
+          "Ruhige Lage nahe der Natur"
+        ],
+        "en": [
+          "Freshly renovated interior",
+          "Cozy fireplace ambiance",
+          "Quiet location near nature"
+        ],
+        "fr": [
+          "Intérieur fraîchement rénové",
+          "Ambiance chaleureuse avec cheminée",
+          "Emplacement calme près de la nature"
+        ],
+        "it": [
+          "Interni appena ristrutturati",
+          "Atmosfera accogliente con camino",
+          "Posizione tranquilla vicino alla natura"
+        ]
+      },
+      "agency_id": "0727bdb0-1169-11f1-a973-eb85985e25be",
+      "agency_logo_url": "https://storage.googleapis.com/img.realadvisor.ch/Logo__k9wJl3jdV5jW43Xruts4t.png",
+      "agency_rating": 4.7777777,
+      "agency_reviews_count": 18,
+      "state": "Zürich",
+      "clickout_url": {
+        "hostname": "realadvisor.ch",
+        "url": "bde5ee111d11947e5dc4f679e494551a:331d7e082a75cc38baead6b0479d6f9f9fe823df9987e944b723ea6514383864585a6b9a2bc37eed92e279f8e2635c285982ab85e8341b0e0ba0b09117afe6f660e3c154b1307f5a01b4dfc266cc7af6162108b6b5394f652cb1e8142d1757b7"
+      },
+      "show_detail_page": true,
+      "show_contact_form": true,
+      "show_phone_number": true
+    },
+    {
+      "id": 22578891,
+      "created_at": "2026-05-14T11:43:52.432Z",
+      "portal": "realadvisor",
+      "title": "Moderne, helle 3.5 Zimmer-Wohnung im Erdgeschoss",
+      "translated_titles": {
+        "de": null,
+        "en": "Modern, bright 3.5 room apartment on the ground floor",
+        "fr": "Appartement moderne et lumineux de 3,5 pièces au rez-de-chaussée",
+        "it": "Appartamento moderno e luminoso di 3,5 stanze al piano terra"
+      },
+      "description": "Die Wohnung befindet sich im Erdgeschoss eines modernen Mehrfamilienhauses und überzeugt mit hellen, lichtdurchfluteten Räumen sowie einem grosszügigen Grundriss.\n\n-heller und geräumiger Wohn- und Essbereich\n-moderne, hochwertig ausgestattete Küche\n-grosse Zimmer mit viel Tageslicht\n-zeitloses Badezimmer und Gäste-WC mit modernem Ausbau\n-grosser Sitzplatz\n-Kellerabteil inklusive\n-2 Aussenabstellplätze können bei Bedarf für je CHF 35.- pro Monat dazu gemietet werden.\n-Alternativ steht 1 Einstellplatz in der Tiefgarage für je CHF 125.- pro Monat zur Verfügung. In der Tiefgarage besteht zudem die Möglichkeit, eine Wallbox für das Laden eines Elektroautos dazuzumieten (EKZ).\n\nHaben wir Ihr Interesse geweckt? Wir freuen uns über Ihre Kontaktaufnahme.\n\n\\- Herzlichen Dank für Ihr Vertrauen - seit 30 Jahren für Sie da -\n\nA & M Consulting GmbH\n\n**Kaution**\n\n* **Kaution erforderlich:** Ja\n* **Kautionshöhe:** CHF 5835\n\nMögliche Kautionen:\nMietzinsdepot:\n",
+      "property_main_type": "APPT",
+      "property_type": "apartment",
+      "offer_type": "rent",
+      "currency": "CHF",
+      "sale_price": null,
+      "sale_price_per_living_surface": null,
+      "sale_price_per_land_surface": null,
+      "gross_rent_monthly": 1945,
+      "gross_rent_m2yearly": 228.82353,
+      "rent_net_monthly": 1945,
+      "rent_extra": 320,
+      "construction_year": 2004,
+      "renovation_year": null,
+      "number_of_rooms": 3.5,
+      "number_of_bathrooms": null,
+      "living_surface": 102,
+      "usable_surface": null,
+      "land_surface": null,
+      "number_of_parking": null,
+      "address": "8197 Rafz",
+      "postcode": "8197",
+      "locality": "Rafz",
+      "sub_locality": "Rafz",
+      "route": null,
+      "street_number": null,
+      "agency_portal_id": "A & M Consulting GmbH",
+      "agency_reference": "31854.67848",
+      "lot_reference": null,
+      "agency_name": "A & M Consulting GmbH",
+      "agency_contact_address": null,
+      "agency_contact_phone_number": null,
+      "visit_contact_phone_number": null,
+      "visit_contact_person": null,
+      "computed_surface": 102,
+      "lat": 47.6114723,
+      "lng": 8.5402379,
+      "bullet_points": {
+        "de": [
+          "Heller Wohnbereich",
+          "Hochwertige Küche",
+          "Grosser Sitzplatz"
+        ],
+        "en": [
+          "Spacious living area",
+          "High-quality kitchen",
+          "Large outdoor seating"
+        ],
+        "fr": [
+          "Espace de vie spacieux",
+          "Cuisine de haute qualité",
+          "Grand espace extérieur"
+        ],
+        "it": [
+          "Ampio soggiorno",
+          "Cucina di alta qualità",
+          "Grande spazio esterno"
+        ]
+      },
+      "agency_id": "0727bdb0-1169-11f1-a973-eb85985e25be",
+      "agency_logo_url": "https://storage.googleapis.com/img.realadvisor.ch/Logo__k9wJl3jdV5jW43Xruts4t.png",
+      "agency_rating": 4.7777777,
+      "agency_reviews_count": 18,
+      "state": "Zürich",
+      "clickout_url": {
+        "hostname": "realadvisor.ch",
+        "url": "ce077999ecb05309a3dd871540e49880:ee521192cf2201a6d701606077e165f726d01d4cf58a25e67857c624f2a00c829d3c0b6402fb3d8e37dcd8aa8d3939e6dfee10f50aa75e1e76dfefd5435ddd89"
+      },
+      "show_detail_page": true,
+      "show_contact_form": true,
+      "show_phone_number": true
+    },
+    {
+      "id": 22598314,
+      "created_at": "2026-05-14T11:42:44.150Z",
+      "portal": "realadvisor",
+      "title": "Ein Wohntraum für Ihre Familie - Erstvermietung",
+      "translated_titles": {
+        "de": null,
+        "en": "A dream home for your family - First rental",
+        "fr": "Un rêve de maison pour votre famille - Première location",
+        "it": "Un sogno abitativo per la tua famiglia - Prima locazione"
+      },
+      "description": "Diese äusserst geschmackvoll gebaute und familienfreundliche Überbauung Hofwisen in Gattikon wird bis Ende Juni fertigstellt und auf 1. August 2026 vermietet. Es sind nur noch wenige Wohnungen verfügbar. Unter anderem diese geräumige und helle 5.5-Zimmerwohnung.<br><br> Zu den Annehmlichkeiten dieser Wohnung gehören geräumige Wohn- und Schlafzimmer, moderne und liebevoll ausgewählte Einrichtungen, ein Badezimmer mit Badewanne und eine separate Toilette mit Dusche, Anschlüsse für eigene Wasch- und Trocknungsgeräte, grosser Balkon u.v.m.<br><br> Ein Garagenplatz kann für monatlich CHF 140.00 und Motorradplätze für monatlich CHF 30.00 dazu gemietet werden.<br><br> Besuchen Sie die Projektwebseite www.hofwisen-gattikon.ch und überzeugen Sie sich selbst von Vorzügen, Bewohner der Überbauung Hofwisen zu werden. Auf der Seite finden Sie unter Mietobjekte auch den Grundrissplan zu dieser Wohnung.<br><br> Wir freuen uns bereits auf Ihre Anmeldung.<br><br><br> Ref.-Nr. 23b.01-01\n",
+      "property_main_type": "APPT",
+      "property_type": "apartment",
+      "offer_type": "rent",
+      "currency": "CHF",
+      "sale_price": null,
+      "sale_price_per_living_surface": null,
+      "sale_price_per_land_surface": null,
+      "gross_rent_monthly": 3450,
+      "gross_rent_m2yearly": 394.2857,
+      "rent_net_monthly": 3450,
+      "rent_extra": 450,
+      "construction_year": 2026,
+      "renovation_year": null,
+      "number_of_rooms": 5.5,
+      "number_of_bathrooms": null,
+      "living_surface": 105,
+      "usable_surface": 105,
+      "land_surface": null,
+      "number_of_parking": null,
+      "address": "Sihlhaldenstrasse 23b/c, 8136, Gattikon",
+      "postcode": "8136",
+      "locality": "Thalwil",
+      "sub_locality": "Gattikon",
+      "route": "Sihlhaldenstrasse",
+      "street_number": "23b",
+      "agency_portal_id": "zit",
+      "agency_reference": "79.38.1101",
+      "lot_reference": null,
+      "agency_name": "Ziegler Immobilien AG",
+      "agency_contact_address": "Schützenstrasse 1, 8800, Thalwil",
+      "agency_contact_phone_number": "+41447226166",
+      "visit_contact_phone_number": null,
+      "visit_contact_person": null,
+      "computed_surface": 105,
+      "lat": 47.285938,
+      "lng": 8.549413,
+      "bullet_points": {
+        "de": [
+          "Geräumige Wohnbereiche",
+          "Grosser sonniger Balkon",
+          "Moderne Ausstattung überall"
+        ],
+        "en": [
+          "Spacious living areas",
+          "Large sunny balcony",
+          "Modern fixtures throughout"
+        ],
+        "fr": [
+          "Espaces de vie spacieux",
+          "Grand balcon ensoleillé",
+          "Équipements modernes partout"
+        ],
+        "it": [
+          "Ampie aree soggiorno",
+          "Grande balcone soleggiato",
+          "Finiture moderne ovunque"
+        ]
+      },
+      "agency_id": "632a750a-bfbe-11f0-a52a-0b6f08e37c7d",
+      "agency_logo_url": "https://storage.googleapis.com/img.realadvisor.ch/logo-agentur-ziegler_2025-11-12-115508.jpg",
+      "agency_rating": 5,
+      "agency_reviews_count": 4,
+      "state": "Zürich",
+      "clickout_url": {
+        "hostname": "realadvisor.ch",
+        "url": "00206801b5faa834cf42b128a93621a6:df9c89069922145f55d317750bb469fa41cee910ab41ad3332709ce4d720dfc26f30da4d97702afc9455ed7c6f5a6e3614ce7ba242654b15139419dfcdb518484a2c088b3e66c54d2128b1fd943b0b816827918f57347ad5ae45ca04d5ab7ea1"
+      },
+      "show_detail_page": true,
+      "show_contact_form": true,
+      "show_phone_number": true
+    },
+    {
+      "id": 22598315,
+      "created_at": "2026-05-14T11:42:43.993Z",
+      "portal": "realadvisor",
+      "title": "Erstvermietung Hofwisen - Familienfreundlich mit Charme. Hier wächst Leben",
+      "translated_titles": {
+        "de": null,
+        "en": "First Rental Hofwisen - Family-Friendly with Charm. Here Life Grows",
+        "fr": "Première location Hofwisen - Familial et charmant. Ici, la vie grandit",
+        "it": "Prima locazione Hofwisen - Adatto alle famiglie e con charme. Qui cresce la vita"
+      },
+      "description": "Hofwisen - Wo Lebensqualität auf Natur trifft. Suchen Sie Freiraum für sich und Ihre Liebsten? Es sind nur noch wenige Wohnungen verfügbar. Unter anderem diese geräumige und helle 4.5-Zimmer-Maisonettewohnung, welche sich über drei Etagen verteilt und einen eignen Wohnungszugang von aussen verfügt. Dementsprechend erleben Sie hier ein Einfamilienhaus-Feeling in einer sehr geschmackvoll gebauten und familienfreundlichen Überbauung.<br><br> Zu den Annehmlichkeiten dieser Wohnung gehören eine grosse und abgeschlossene Wohnküche mit über 20m2, allgemein äusserst geräumige Wohn- und Schlafzimmer, viel Staumöglichkeiten dank eines Reduits und zwei Estrichabteilen (eines davon mit knapp 29m2), Nasszellen in jedem Geschoss, ein Gartensitzplatz uvm.<br><br> Ein Garagenplatz kann für monatlich CHF 140.00 und Motorradplätze für monatlich CHF 30.00 dazu gemietet werden.<br><br> Besuchen Sie die Projektwebseite www.hofwisen-gattikon.ch und überzeugen Sie sich selbst von Vorzügen, Bewohner der Überbauung Hofwisen zu werden. Auf der Seite finden Sie unter Mietobjekte auch den Grundrissplan zu dieser Wohnung.<br><br> Wir freuen uns bereits auf Ihre Anmeldung.<br><br><br> Ref.-Nr. 23c.00-01\n",
+      "property_main_type": "APPT",
+      "property_type": "apartment_duplex",
+      "offer_type": "rent",
+      "currency": "CHF",
+      "sale_price": null,
+      "sale_price_per_living_surface": null,
+      "sale_price_per_land_surface": null,
+      "gross_rent_monthly": 4300,
+      "gross_rent_m2yearly": 341.72186,
+      "rent_net_monthly": 4300,
+      "rent_extra": 600,
+      "construction_year": 2026,
+      "renovation_year": null,
+      "number_of_rooms": 4.5,
+      "number_of_bathrooms": null,
+      "living_surface": 151,
+      "usable_surface": 151,
+      "land_surface": null,
+      "number_of_parking": null,
+      "address": "Sihlhaldenstrasse 23b/c, 8136, Gattikon",
+      "postcode": "8136",
+      "locality": "Thalwil",
+      "sub_locality": "Gattikon",
+      "route": "Sihlhaldenstrasse",
+      "street_number": "23b",
+      "agency_portal_id": "zit",
+      "agency_reference": "79.38.1001",
+      "lot_reference": null,
+      "agency_name": "Ziegler Immobilien AG",
+      "agency_contact_address": "Schützenstrasse 1, 8800, Thalwil",
+      "agency_contact_phone_number": "+41447226166",
+      "visit_contact_phone_number": null,
+      "visit_contact_person": null,
+      "computed_surface": 151,
+      "lat": 47.285938,
+      "lng": 8.549413,
+      "bullet_points": {
+        "de": [
+          "Geräumige 20m² Küche",
+          "Privater Gartensitzplatz",
+          "Einzigartiges Layout über drei Etagen"
+        ],
+        "en": [
+          "Spacious 20m² kitchen",
+          "Private garden seating",
+          "Unique three-level layout"
+        ],
+        "fr": [
+          "Cuisine spacieuse de 20m²",
+          "Espace jardin privé",
+          "Agencement unique sur trois niveaux"
+        ],
+        "it": [
+          "Cucina spaziosa di 20m²",
+          "Giardino privato",
+          "Layout unico su tre livelli"
+        ]
+      },
+      "agency_id": "632a750a-bfbe-11f0-a52a-0b6f08e37c7d",
+      "agency_logo_url": "https://storage.googleapis.com/img.realadvisor.ch/logo-agentur-ziegler_2025-11-12-115508.jpg",
+      "agency_rating": 5,
+      "agency_reviews_count": 4,
+      "state": "Zürich",
+      "clickout_url": {
+        "hostname": "realadvisor.ch",
+        "url": "5e0e9c215355877b8ffbab3f9fb4d635:a5c81b9eeeb095fdf10d68d46416b85a5ef4f96cc8845db7518433dd4612757d91eda5da12f9b94623dbe0f2d58bbdb84755b178da585c7b4c06d8f0cea6ee670f2a63927a6dfc8c9b633401d739c46d8d88e1761dc8462bbdcc0018b8b2bce3"
+      },
+      "show_detail_page": true,
+      "show_contact_form": true,
+      "show_phone_number": true
+    }
+  ],
+  "total_count": 4995
+}

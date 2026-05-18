@@ -13,22 +13,48 @@ export interface ClientOpts {
   signal: AbortSignal;
 }
 
+/**
+ * Subset of the realadvisor `/api/listings` listing shape that this plugin
+ * consumes. The live API returns many more fields (agency, bullet points,
+ * images, …) which we intentionally ignore.
+ */
 export interface RawHit {
-  id: string;
-  url?: string;
-  clickout_url?: { hostname?: string; pathname?: string };
-  rooms?: number | null;
-  surface_livable?: number | null;
-  price?: { value?: number | null; currency?: string | null } | null;
-  postal_code?: string | null;
+  id: number | string;
+  portal?: string | null;
+  title?: string | null;
+  description?: string | null;
+  clickout_url?: { hostname?: string | null; url?: string | null } | null;
+  offer_type?: string | null;
+  property_main_type?: string | null;
+  property_type?: string | null;
+  number_of_rooms?: number | null;
+  living_surface?: number | null;
+  usable_surface?: number | null;
+  computed_surface?: number | null;
+  gross_rent_monthly?: number | null;
+  rent_net_monthly?: number | null;
+  rent_extra?: number | null;
+  sale_price?: number | null;
+  currency?: string | null;
+  address?: string | null;
+  route?: string | null;
+  street_number?: string | null;
+  postcode?: string | null;
   locality?: string | null;
-  canton?: string | null;
+  sub_locality?: string | null;
+  state?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  construction_year?: number | null;
+  renovation_year?: number | null;
   created_at?: string | null;
+  agency_name?: string | null;
+  agency_contact_phone_number?: string | null;
 }
 
 export interface RealAdvisorPage {
   total_count: number;
-  hits: RawHit[];
+  listings: RawHit[];
 }
 
 export async function sleep(ms: number, signal: AbortSignal): Promise<void> {
@@ -50,7 +76,7 @@ export async function fetchPage(cfg: SearchConfig, page: number, opts: ClientOpt
     const res = await request(url, { signal: opts.signal, method: 'GET', headers: { accept: 'application/json' } });
     if (res.statusCode >= 200 && res.statusCode < 300) {
       const body = (await res.body.json()) as RealAdvisorPage;
-      return body;
+      return { total_count: body.total_count ?? 0, listings: body.listings ?? [] };
     }
     if (opts.backoff.on.includes(res.statusCode) && attempt < opts.backoff.retries) {
       const delay = opts.backoff.base_ms * 2 ** attempt;

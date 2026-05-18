@@ -36,11 +36,11 @@ const plugin: Source = {
         backoff: cfg.fetch.backoff,
         signal: ctx.signal,
       });
-      for (const hit of res.hits) {
+      for (const hit of res.listings) {
         const mapped = mapHit(hit);
         if (mapped) yield mapped;
       }
-      if (res.hits.length < 36) break;
+      if (res.listings.length < 36) break;
       if (page < cfg.fetch.max_pages) await sleep(cfg.fetch.pace_ms, ctx.signal);
     }
   },
