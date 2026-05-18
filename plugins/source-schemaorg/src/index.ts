@@ -27,6 +27,10 @@ type Config = z.infer<typeof ConfigSchema>;
 
 async function sleep(ms: number, signal: AbortSignal): Promise<void> {
   if (ms <= 0) return;
+  // Bail immediately if already aborted — `addEventListener('abort')` only fires
+  // on *future* abort events, so a controller aborted before sleep() is entered
+  // would otherwise stall for the full duration.
+  if (signal.aborted) throw new Error('aborted');
   await new Promise<void>((resolve, reject) => {
     const t = setTimeout(resolve, ms);
     signal.addEventListener('abort', () => {
@@ -57,7 +61,13 @@ const plugin: Source = {
       } catch (err) {
         ctx.logger.warn({ url: e.loc, err: (err as Error).message }, 'schemaorg detail failed');
       }
-      await sleep(cfg.pace_ms, ctx.signal);
+      if (ctx.signal.aborted) return;
+      try {
+        await sleep(cfg.pace_ms, ctx.signal);
+      } catch {
+        // sleep rejects on abort; treat as graceful termination of the scan loop.
+        return;
+      }
     }
   },
 };
