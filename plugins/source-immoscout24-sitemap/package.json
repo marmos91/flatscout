@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@wabe/browser-bridge": "workspace:*",
     "@wabe/core": "workspace:*",
     "@wabe/db": "workspace:*",
     "@wabe/plugin-sdk": "workspace:*",

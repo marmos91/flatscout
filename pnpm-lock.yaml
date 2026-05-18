@@ -452,6 +452,9 @@ importers:
 
   plugins/source-immoscout24-sitemap:
     dependencies:
+      '@wabe/browser-bridge':
+        specifier: workspace:*
+        version: link:../../packages/browser-bridge
       '@wabe/core':
         specifier: workspace:*
         version: link:../../packages/core
