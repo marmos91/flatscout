@@ -1,3 +1,5 @@
+export {};
+
 /**
  * Wabe Bridge — service worker.
  *
