@@ -217,6 +217,15 @@ importers:
       '@wabe/source-homegate':
         specifier: workspace:*
         version: link:../../plugins/source-homegate
+      '@wabe/source-immobilier-ch':
+        specifier: workspace:*
+        version: link:../../plugins/source-immobilier-ch
+      '@wabe/source-immoscout24-sitemap':
+        specifier: workspace:*
+        version: link:../../plugins/source-immoscout24-sitemap
+      '@wabe/source-realadvisor':
+        specifier: workspace:*
+        version: link:../../plugins/source-realadvisor
       node-cron:
         specifier: ^3.0.3
         version: 3.0.3
