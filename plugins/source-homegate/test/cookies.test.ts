@@ -1,9 +1,28 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BootstrapResult } from '@wabe/browser-runtime';
 import { isCookieFresh, loadCookies, saveCookies } from '../src/cookies.js';
+
+// Failure mode for the atomicity test. When set, the mocked `rename` rejects
+// once with this error and then defers to the real implementation.
+let renameFailure: NodeJS.ErrnoException | null = null;
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>();
+  return {
+    ...actual,
+    rename: async (...args: Parameters<typeof actual.rename>) => {
+      if (renameFailure) {
+        const err = renameFailure;
+        renameFailure = null;
+        throw err;
+      }
+      return actual.rename(...args);
+    },
+  };
+});
 
 function makeResult(capturedAt: number): BootstrapResult {
   return {
@@ -40,6 +59,30 @@ describe('saveCookies + loadCookies', () => {
     expect(loaded?.cookieHeader).toBe(original.cookieHeader);
     expect(loaded?.cookies).toHaveLength(2);
     expect(loaded?.capturedAt).toBe(original.capturedAt);
+  });
+
+  it('leaves the existing file untouched when the rename step fails', async () => {
+    const first = makeResult(1_700_000_000_000);
+    await saveCookies(dir, first);
+
+    // The on-disk file at this point is the canonical "known good" copy.
+    const path = join(dir, 'homegate-cookies.json');
+    const goodOnDisk = readFileSync(path, 'utf8');
+
+    // Simulate a rename failure during the *next* save. tmp file may be
+    // written, but the rename must not be observed atomically and the
+    // original file must remain intact.
+    renameFailure = Object.assign(new Error('EPERM: simulated rename failure'), {
+      code: 'EPERM',
+    }) as NodeJS.ErrnoException;
+
+    const second = makeResult(1_800_000_000_000);
+    await expect(saveCookies(dir, second)).rejects.toThrow(/simulated rename failure/);
+
+    // Original cookies still on disk, byte-for-byte.
+    expect(readFileSync(path, 'utf8')).toBe(goodOnDisk);
+    const reloaded = await loadCookies(dir);
+    expect(reloaded?.capturedAt).toBe(first.capturedAt);
   });
 });
 

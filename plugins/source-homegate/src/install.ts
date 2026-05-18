@@ -34,9 +34,12 @@ export function getInstall(dataDir: string): InstallIdentity {
       return { xUdid: parsed.xUdid, userAgent: USER_AGENT, xAppVersion: X_APP_VERSION };
     }
   } catch (err) {
-    // ENOENT or malformed JSON → regenerate below.
-    if ((err as NodeJS.ErrnoException).code && (err as NodeJS.ErrnoException).code !== 'ENOENT') {
-      // Malformed file: fall through and overwrite.
+    // ENOENT → file doesn't exist yet, fall through and generate a fresh
+    // install. Any other read failure (EACCES, EIO, …) must propagate so we
+    // never silently clobber an existing identity the user can't read.
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code && code !== 'ENOENT') {
+      throw err;
     }
   }
   const xUdid = crypto.randomUUID().toUpperCase();

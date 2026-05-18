@@ -1,9 +1,32 @@
 import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getInstall } from '../src/install.js';
 import { USER_AGENT, X_APP_VERSION } from '../src/headers.js';
+
+// Toggle to inject a non-ENOENT read failure into the next `readFileSync` call
+// inside `getInstall`. Other call sites (e.g. test assertions) are unaffected
+// because we only trip when the path ends with the install file name.
+let readFailure: NodeJS.ErrnoException | null = null;
+
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>();
+  return {
+    ...actual,
+    readFileSync: ((
+      path: Parameters<typeof actual.readFileSync>[0],
+      options?: Parameters<typeof actual.readFileSync>[1],
+    ) => {
+      if (readFailure && typeof path === 'string' && path.endsWith('homegate-install.json')) {
+        const err = readFailure;
+        readFailure = null;
+        throw err;
+      }
+      return actual.readFileSync(path, options);
+    }) as typeof actual.readFileSync,
+  };
+});
 
 describe('getInstall', () => {
   let dir: string;
@@ -36,5 +59,25 @@ describe('getInstall', () => {
     const first = getInstall(dir);
     const second = getInstall(dir);
     expect(second.xUdid).toBe(first.xUdid);
+  });
+
+  it('propagates non-ENOENT read failures instead of clobbering the install file', () => {
+    // Seed an install so the file genuinely exists.
+    const first = getInstall(dir);
+    const path = join(dir, 'homegate-install.json');
+    const goodOnDisk = readFileSync(path, 'utf8');
+
+    // Next read fails with EACCES (e.g. user lost permission). We must NOT
+    // silently regenerate — the existing identity could still be valid and
+    // an overwrite would lose the persistent xUdid.
+    readFailure = Object.assign(new Error('EACCES: permission denied'), {
+      code: 'EACCES',
+    }) as NodeJS.ErrnoException;
+
+    expect(() => getInstall(dir)).toThrow(/permission denied/);
+
+    // File on disk is untouched: same bytes, same xUdid.
+    expect(readFileSync(path, 'utf8')).toBe(goodOnDisk);
+    expect(JSON.parse(goodOnDisk).xUdid).toBe(first.xUdid);
   });
 });
