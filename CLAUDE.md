@@ -48,6 +48,8 @@ pnpm wabe <command>        # run the CLI from built output
 - **NEVER auto-submit applications.** Final send is always a human tap. (This is enforced in the spec; do not weaken it.)
 - Commit messages are concise. No mention of Claude / AI / co-authored-by tags.
 - Sign commits when possible (`git commit -S`).
+- Slice-only: `@wabe/server`'s `dependencies` lists the three shipping plugins (`source-flatfox`, `source-homegate`, `notifier-telegram`) so the loader's dynamic `import()` resolves them at runtime from `packages/server/node_modules/` out-of-the-box.
+- Published-package distribution (users `npm install @wabe/<plugin>` separately) is deferred to a later spec.
 
 ## License compliance
 
