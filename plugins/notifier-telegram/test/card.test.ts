@@ -28,6 +28,8 @@ const baseListing: Listing = {
   description: null,
   photos: ['https://cdn/i.jpg'],
   available_from: null,
+  lease_until: null,
+  rental_term: 'unknown',
   agency: 'Wincasa',
   contact: {},
   enriched: {},
@@ -62,5 +64,41 @@ describe('renderCard', () => {
     expect(r.text).toContain('Zürich');
     expect(r.buttons).toHaveLength(1);
     expect(r.buttons[0]?.text).toBe('🔗 Open listing');
+  });
+
+  it('shows short-term row with lease end date', () => {
+    const l: Listing = {
+      ...baseListing,
+      rental_term: 'short',
+      lease_until: new Date('2026-08-31T00:00:00Z'),
+    };
+    const r = renderCard(
+      { listing: l, score: { final: 80, breakdown: {} } },
+      new Date('2026-05-17T10:14:00Z'),
+    );
+    expect(r.text).toContain('🗓 short-term · until 31.08.2026');
+  });
+
+  it('shows short-term row without date when lease_until missing', () => {
+    const l: Listing = { ...baseListing, rental_term: 'short', lease_until: null };
+    const r = renderCard(
+      { listing: l, score: { final: 80, breakdown: {} } },
+      new Date('2026-05-17T10:14:00Z'),
+    );
+    const lines = r.text.split('\n');
+    expect(lines).toContain('🗓 short-term');
+    expect(r.text).not.toContain('until');
+  });
+
+  it('does NOT show short-term row for long/unknown', () => {
+    expect(renderCard({ listing: baseListing, score: { final: 80, breakdown: {} } }).text).not.toContain(
+      'short-term',
+    );
+    expect(
+      renderCard({
+        listing: { ...baseListing, rental_term: 'long' },
+        score: { final: 80, breakdown: {} },
+      }).text,
+    ).not.toContain('short-term');
   });
 });
