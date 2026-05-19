@@ -138,8 +138,7 @@ const Listing = z
 export const HomegateApiSchema = z
   .object({
     id: z.string(),
-    /** Was a string in older API responses; current API ships an object with translations. Accept either. */
-    listingType: z.union([z.string(), z.record(z.string(), z.unknown()), z.unknown()]).optional(),
+    listingType: z.record(z.string(), z.unknown()).optional(),
     listing: Listing,
   })
   .passthrough();
@@ -166,8 +165,9 @@ export function mapHomegateResult(envelope: HomegateResultEnvelope): RawListing 
   const chars = r.characteristics ?? {};
 
   const geo = r.address?.geoCoordinates;
+  // GeoJSON order: [lng, lat] (matches Listing.location.coords convention).
   const coords: [number, number] | null =
-    geo?.latitude != null && geo.longitude != null ? [geo.latitude, geo.longitude] : null;
+    geo?.latitude != null && geo.longitude != null ? [geo.longitude, geo.latitude] : null;
 
   const loc = r.localization;
   const primaryLang = (loc?.primary ?? 'de') as 'de' | 'en' | 'fr' | 'it';

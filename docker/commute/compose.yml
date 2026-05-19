@@ -1,0 +1,52 @@
+services:
+  ors:
+    image: openrouteservice/openrouteservice:v8.0.0
+    ports:
+      - "8080:8082"
+    volumes:
+      - ./ors-data:/home/ors/files
+      - ./ors-config.yml:/home/ors/ors-config.yml:ro
+      - ./ors-graphs:/home/ors/graphs
+    environment:
+      ORS_CONFIG_LOCATION: /home/ors/ors-config.yml
+      # CH-extract needs >2GB heap for graph build.
+      XMS: 2g
+      XMX: 8g
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/ors/v2/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  motis:
+    image: ghcr.io/motis-project/motis:latest
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./motis-data:/data
+    # Default CMD `/motis server /data` is fine; Motis auto-detects GTFS + OSM in /data.
+    restart: unless-stopped
+
+  pelias-elasticsearch:
+    image: pelias/elasticsearch:7.16.3
+    volumes:
+      - ./pelias-es-data:/usr/share/elasticsearch/data
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    restart: unless-stopped
+
+  pelias:
+    image: pelias/api:latest
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./pelias-config.json:/code/pelias.json:ro
+    depends_on:
+      - pelias-elasticsearch
+    restart: unless-stopped

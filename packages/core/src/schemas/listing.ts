@@ -24,7 +24,10 @@ export const Listing = z.object({
   built_year: z.number().nullable(),
   renovated_year: z.number().nullable(),
   location: z.object({
-    coords: z.tuple([z.number(), z.number()]).nullable(),
+    coords: z
+      .tuple([z.number(), z.number()])
+      .describe('[lng, lat] — GeoJSON order. Source mappers MUST emit lng first.')
+      .nullable(),
     address: z.string().nullable(),
     postal_code: z.string().nullable(),
     city: z.string().nullable(),

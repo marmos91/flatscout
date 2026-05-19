@@ -22,6 +22,7 @@ export interface RunOptions {
   logger: Logger;
   signal: AbortSignal;
   sources: LoadedPlugin<'source'>[];
+  enrichers: LoadedPlugin<'enricher'>[];
   notifiers: LoadedPlugin<'notifier'>[];
   breakers: Map<string, CircuitBreaker>;
   quota: Quota;
@@ -102,7 +103,7 @@ async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise
         typeof cfgPriority === 'number'
           ? cfgPriority
           : (SOURCE_PRIORITY_DEFAULTS[src.plugin.name] ?? DEFAULT_SOURCE_PRIORITY);
-      const enriched: Listing = Listing.parse({
+      const parsed: Listing = Listing.parse({
         ...raw,
         id: raw.id ?? `${raw.source}:unknown:${Date.now()}`,
         first_seen_at: raw.first_seen_at ?? new Date(),
@@ -110,41 +111,60 @@ async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise
         canonical_key: ck,
         source_priority: priority,
       });
-      const { changed, isNew } = upsertListing(opts.db, enriched);
+      const { changed, isNew } = upsertListing(opts.db, parsed);
       if (!changed) continue;
-      const termVerdict = rentalTermPasses(enriched, opts.cfg.rentalTerm);
+      // --- enricher stage ---
+      let current: Listing = parsed;
+      for (const e of opts.enrichers) {
+        try {
+          const before = JSON.stringify(current.enriched);
+          current = await e.plugin.enrich(current, {
+            logger: log.child({ enricher: e.plugin.name }),
+            config: e.config,
+            signal: opts.signal,
+            db: opts.db,
+          });
+          if (JSON.stringify(current.enriched) !== before) {
+            upsertListing(opts.db, current);
+          }
+        } catch (err) {
+          log.warn({ err, enricher: e.plugin.name, listing_id: current.id }, 'enricher failed; continuing');
+        }
+      }
+      // --- end enricher stage ---
+      const termVerdict = rentalTermPasses(current, opts.cfg.rentalTerm);
       if (!termVerdict.ok) {
-        log.debug({ listing_id: enriched.id, reason: termVerdict.reason }, 'rental_term gate rejected');
+        log.debug({ listing_id: current.id, reason: termVerdict.reason }, 'rental_term gate rejected');
         continue;
       }
-      const filterResult = await evaluateFilters(opts.cfg.filters.filters, enriched);
+      const filterResult = await evaluateFilters(opts.cfg.filters.filters, current);
       if (!filterResult.passed) {
-        log.debug({ listing_id: enriched.id, reason: filterResult.reason }, 'filtered out');
+        log.debug({ listing_id: current.id, reason: filterResult.reason }, 'filtered out');
         continue;
       }
-      const score = await scoreListing(opts.cfg.scoring.scoring, enriched);
+      const score = await scoreListing(opts.cfg.scoring.scoring, current);
       opts.db._raw
         .prepare('INSERT INTO scores (listing_id, scored_at, final, breakdown) VALUES (?,?,?,?)')
-        .run(enriched.id, Date.now(), score.final, JSON.stringify(score.breakdown));
+        .run(current.id, Date.now(), score.final, JSON.stringify(score.breakdown));
       if (score.final < opts.cfg.scoring.notify.threshold) {
-        log.debug({ listing_id: enriched.id, score: score.final }, 'below threshold');
+        log.debug({ listing_id: current.id, score: score.final }, 'below threshold');
         continue;
       }
-      const verdict = shouldNotify(opts.db, enriched);
+      const verdict = shouldNotify(opts.db, current);
       if (verdict.suppress) {
         log.debug(
-          { listing_id: enriched.id, canonical_key: enriched.canonical_key },
+          { listing_id: current.id, canonical_key: current.canonical_key },
           'cross-source dedup suppressed',
         );
         continue;
       }
       if (!opts.quota.tryConsume()) {
-        log.info({ listing_id: enriched.id, score: score.final }, 'quota exhausted; skipping notify');
+        log.info({ listing_id: current.id, score: score.final }, 'quota exhausted; skipping notify');
         continue;
       }
-      const event = { listing: enriched, score, also_seen_on: verdict.also_seen_on };
+      const event = { listing: current, score, also_seen_on: verdict.also_seen_on };
       for (const n of opts.notifiers) await notifySafely(n, event, opts);
-      log.info({ listing_id: enriched.id, score: score.final, isNew }, 'notified');
+      log.info({ listing_id: current.id, score: score.final, isNew }, 'notified');
     }
     breaker?.recordSuccess();
   } catch (err) {

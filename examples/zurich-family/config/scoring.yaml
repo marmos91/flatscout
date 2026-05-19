@@ -2,22 +2,34 @@
 scoring:
   - type: rule
     name: rent_value
-    weight: 50
+    weight: 40
     metric: price.total
     on_missing: zero
     normalize: {type: linear, best: 2000, worst: 4000, invert: true}
   - type: rule
     name: size
-    weight: 30
+    weight: 20
     metric: area_m2
     on_missing: zero
     normalize: {type: linear, best: 120, worst: 60, invert: false}
   - type: rule
     name: rooms_score
-    weight: 20
+    weight: 10
     metric: rooms
     on_missing: zero
     normalize: {type: linear, best: 4.5, worst: 2.5, invert: false}
+  - type: rule
+    name: commute-work
+    weight: 20
+    metric: {kind: commute, target: work, mode: transit}
+    on_missing: zero
+    normalize: {type: linear, best: 0, worst: 60, invert: true}
+  - type: rule
+    name: commute-partner
+    weight: 10
+    metric: {kind: commute, target: partner-work, mode: transit}
+    on_missing: zero
+    normalize: {type: linear, best: 0, worst: 70, invert: true}
 notify:
   threshold: 70
   daily_quota: 5

@@ -9,7 +9,15 @@
 
 **Wabe** (German for *honeycomb cell*) is a self-hosted apartment hunting agent. It continuously polls listing sources, normalizes every listing into a canonical schema, scores each one against a user-defined fit profile, and pings you on Telegram when something matches.
 
-This repo implements **Phase 1 + 2** — the skeleton plus a minimal vertical slice with one real Swiss portal source (Flatfox) and a Telegram notifier. A Homegate source plugin was scoped originally but is deferred to its own future spec — Homegate's API moved to Auth0 + Google SSO behind a DataDome/Cloudflare anti-bot stack, which is out of scope for this slice. See `docs/research/2026-05-18-homegate-investigation.md`. Subsequent phases add LLM scoring, enrichers (geocoding, commute), a dossier vault, application drafting, and agency-portal applicators.
+Phases 1 + 2 (skeleton + Flatfox + Telegram notifier) are shipped. Subsequent shipped milestones:
+
+- **Phase A — multi-source + dedup.** Five live sources (Flatfox, Homegate, ImmoScout24 sitemap, RealAdvisor, Immobilier.ch) behind a cross-source canonical-key deduper.
+- **Phase B — browser bridge.** Opt-in WebExtension (Chrome + Firefox) that proxies DataDome-walled requests through a hidden tab in the user's browser, bypassing TLS/HTTP/2 + JS-challenge fingerprinting on `api.homegate.ch` and `api.immoscout24.ch`.
+- **Phase B follow-up — bridge keepalive + cross-process fan-out.** Chrome offscreen-document keepalive keeps the WS warm; sibling processes (`wabe scan --source X`) dispatch through the daemon via `/dispatch` instead of failing fast.
+- **Phase C — agency registry + schema.org adapter.** User-owned YAML registry of agency portals; each enabled row expands into a synthetic source plugin keyed `agency:<platform>:<id>`. Generic `@wabe/source-schemaorg` adapter handles JSON-LD-bearing sites; `wabe agencies probe|probe-portal|validate|stats` for inspection.
+- **Enricher stage shipped.** Pipeline now invokes enrichers between upsert and the rental-term gate. First enricher: `@wabe/enricher-commute` — per-target × per-mode commute time via self-hosted ORS + Motis + Pelias, results consumable by filters and scoring through a new `commute(target, mode)` DSL primitive. Docker compose recipe in `docker/commute/`.
+
+Upcoming phases (not yet implemented): LLM "vibe" scoring, a dossier vault, application drafting, and agency-portal applicators.
 
 ## The problem
 
@@ -17,7 +25,7 @@ Apartment hunting in Zurich is brutal: best listings get hundreds of application
 
 ## Status
 
-Phase 1 + 2 slice. Architecture-validation milestone — proves the plugin SDK + scoring DSL + Telegram notifier loop end-to-end against two real Swiss portal APIs. Not yet a production scout; see [the spec](./.planning/notes/spec.md) for what's in vs out of scope.
+Phases 1, 2, A, B, B-followup, and C shipped, plus the first enricher (commute calc). Five live sources + agency registry + browser bridge + ORS/Motis/Pelias-backed commute scoring proven end-to-end against real Swiss portals. Not yet a production scout — LLM scoring and applicators are next.
 
 ## Install
 
@@ -74,22 +82,23 @@ bot token and a chat id before `wabe scan` will do anything useful.
 ### Run the pipeline
 
 ```bash
-pnpm wabe scan       # one-shot scan; pings Telegram on matches
-pnpm wabe start      # daemon mode; runs cron-driven scans
-pnpm wabe list       # browse persisted listings (TERM / UNTIL columns indicate rental-term classification)
-pnpm wabe doctor     # diagnose config / DB / plugin health
-pnpm wabe purge      # clear listings / scores / notifications / quota
-pnpm wabe login homegate   # OAuth2 + PKCE login for user-bound Homegate features
-pnpm wabe logout homegate  # revoke local Homegate credentials
+pnpm wabe scan                # one-shot scan; pings Telegram on matches
+pnpm wabe start               # daemon mode; runs cron-driven scans (hosts the bridge)
+pnpm wabe list                # browse persisted listings
+pnpm wabe doctor              # diagnose config / DB / plugin / bridge health
+pnpm wabe purge               # clear listings / scores / notifications / quota
+pnpm wabe bridge pair         # print URL + token to paste into the extension
+pnpm wabe bridge status       # bridge connection state (reads bridge.status.json)
+pnpm wabe agencies probe URL  # classify an agency portal (platform fingerprint)
+pnpm wabe agencies validate   # validate agencies.yaml against the schema
+pnpm wabe login homegate      # OAuth2 + PKCE login for user-bound Homegate features
+pnpm wabe logout homegate     # revoke local Homegate credentials
 ```
 
-> **Homegate notes.** The `@wabe/source-homegate` plugin needs a one-time
-> ~300MB Chromium download via Playwright (used to harvest DataDome cookies).
-> Pre-install with `pnpm install:browsers`, or let the first scan trigger
-> the lazy download. Anonymous public search works without credentials.
-> Optional: run `wabe login homegate` to wire user-bound features (favourites,
-> applicator) — the flow uses out-of-band OAuth2 + PKCE; tokens are stored
-> 0600 under your data dir.
+> **Homegate / ImmoScout24 notes.** These portals sit behind DataDome and
+> require the browser bridge (see below). Without a paired extension the
+> sources fail fast at plugin init. Anonymous public Flatfox / RealAdvisor /
+> Immobilier.ch scans do not need the bridge.
 
 ### Rental-term filtering
 
@@ -133,15 +142,20 @@ or expired offers without forcing a config decision on first run. The
 ## Architecture
 
 ```
-config.yaml  →  loader  →  pipeline
-                              ├─ Source (flatfox)
-                              ├─ Rental-term gate (long/short, expiry)
-                              ├─ Filter (hard, AND-combined)
-                              ├─ Scorer (rule DSL, 0..100)
-                              ├─ Quota gate (daily UTC)
-                              └─ Notifier (telegram)
+config.yaml + commute.yaml + agencies.yaml  →  loader  →  pipeline
+                                                              ├─ Sources (flatfox, homegate, immoscout24-sitemap,
+                                                              │          realadvisor, immobilier-ch, schemaorg ×N)
+                                                              ├─ Canonical-key dedup (cross-source)
+                                                              ├─ Enrichers (commute, …)
+                                                              ├─ Rental-term gate (long/short, expiry)
+                                                              ├─ Filter (hard, AND-combined)
+                                                              ├─ Scorer (rule DSL, 0..100)
+                                                              ├─ Quota gate (daily UTC)
+                                                              └─ Notifier (telegram)
 
-SQLite (Drizzle, FTS5) ←──── persists listings + scores + sends
+SQLite (Drizzle, FTS5) ←──── persists listings + scores + sends + commute cache
+Browser bridge (127.0.0.1 WS) ←── extension-wabe proxies DataDome-walled requests
+ORS + Motis + Pelias (docker) ←── @wabe/enricher-commute
 ```
 
 Five plugin interfaces (`Source`, `Enricher`, `Scorer`, `Notifier`, `Applicator`); plugins are normal npm packages loaded dynamically by name from `config.yaml`'s `enabled:` list. Each plugin owns its own Zod-validated config slice.
@@ -154,9 +168,9 @@ Some Swiss portals (Homegate, ImmoScout24) sit behind DataDome / Cloudflare anti
 
 Architecture:
 
-- `@wabe/browser-bridge` — a `127.0.0.1`-only WebSocket server inside `wabe start`. Pairs with one extension via a 64-hex shared secret. A heartbeat file at `${dataDir}/bridge.status.json` lets sibling commands (`wabe bridge status`, `wabe doctor`) read connection state without opening a second WS client.
-- `apps/extension-wabe` — manifest v3 WebExtension (Chrome + Firefox via separate `dist/chrome/` and `dist/firefox/` builds, since Firefox MV3 still ships with `background.service_worker` disabled and needs `background.scripts` instead). On a bridge request the extension opens (or reuses) a hidden tab loaded at the target's homepage and runs `chrome.scripting.executeScript({ world: 'MAIN' })` to perform `fetch()` inside the page's own context. This is critical: DataDome injects a JS hook on `window.fetch` that adds a fingerprint-derived header to every outgoing request — the page-context fetch picks that hook up automatically, so the request hitting api.homegate.ch looks identical to one initiated by the legitimate web app. A `declarative_net_request` rule additionally rewrites `Origin` / `Referer` at the network layer.
-- `source-homegate` and `source-immoscout24-sitemap` select their transport at startup: **bridge** (when the paired extension is connected to the bridge running in *this* process) → **playwright** (headless fallback) → **undici** (anonymous last resort). Bridge mode is daemon-only — one-shot commands like `wabe scan --source X` cannot dispatch through the daemon's bridge and will fall through to Playwright. IS24 additionally promotes from URL-only sitemap entries to full-detail listings (rooms / price / photos / description) when the bridge is connected.
+- `@wabe/browser-bridge` — a `127.0.0.1`-only WebSocket server inside `wabe start`. Pairs with one extension via a 64-hex shared secret. A heartbeat file at `${dataDir}/bridge.status.json` lets sibling commands (`wabe bridge status`, `wabe doctor`) read connection state without opening a second WS client. The same server also exposes `/dispatch` so sibling processes (`wabe scan --source X`) can fan their requests through the daemon → extension instead of needing their own paired extension.
+- `apps/extension-wabe` — manifest v3 WebExtension (Chrome + Firefox via separate `dist/chrome/` and `dist/firefox/` builds, since Firefox MV3 still ships with `background.service_worker` disabled and needs `background.scripts` instead). On a bridge request the extension opens (or reuses) a hidden tab loaded at the target's homepage and runs `chrome.scripting.executeScript({ world: 'MAIN' })` to perform `fetch()` inside the page's own context. This is critical: DataDome injects a JS hook on `window.fetch` that adds a fingerprint-derived header to every outgoing request — the page-context fetch picks that hook up automatically, so the request hitting api.homegate.ch looks identical to one initiated by the legitimate web app. A `declarative_net_request` rule additionally rewrites `Origin` / `Referer` at the network layer. An offscreen document (Chrome) keeps the WS warm across MV3 service-worker idle.
+- `source-homegate` and `source-immoscout24-sitemap` require the bridge — either the in-process singleton (when running inside `wabe start`) or the daemon's `/dispatch` (when run as `wabe scan --source X` in a sibling process). If neither is reachable the plugin fails fast at init. IS24 additionally promotes URL-only sitemap entries to full-detail listings (rooms / price / photos / description) when the bridge is connected.
 
 Setup:
 
@@ -186,13 +200,18 @@ pnpm wabe bridge status     # expect: connected on port 8431 …
 pnpm wabe doctor            # expect: [OK ] browser bridge — connected …
 ```
 
-Headless deployments (no GUI) can leave `bridge.enabled` off — `source-homegate` falls back to the Playwright transport automatically. The extension is only useful where you'd otherwise be fighting DataDome from a server.
+<p align="center">
+  <img alt="Wabe extension popup — paired" src="assets/wabe-extension.png" width="360">
+</p>
+
+Headless deployments without a GUI cannot use Homegate or ImmoScout24 — both require the paired extension. The other shipped sources (Flatfox, RealAdvisor, Immobilier.ch, schema.org agencies) work over plain undici and need no bridge.
 
 ### Known limitations
 
-- **Firefox suspends background event pages on idle** (and Chrome service workers behave the same way under MV3). With DevTools open on the extension's background script the page stays warm; without it, the WebSocket is allowed to die and reconnects on the next `chrome.alarms` tick (~30 s). Offscreen-document keepalive is a deferred follow-up.
+- **Chrome** uses an offscreen document to keep the WS warm across MV3 service-worker idle. **Firefox** has no offscreen API; the background event page still suspends after ~30 s and reconnects on the next `chrome.alarms` tick. For unattended Firefox runs, keep DevTools open on the background page — a Firefox-side keepalive is a deferred follow-up.
 - **First request to each origin opens a new tab.** The tab is hidden (`active: false`) but visible in the tab strip. The page must reach `complete` and run any DataDome JS challenge before the bridge can dispatch; subsequent requests reuse the same tab via `chrome.tabs.query`.
 - **The bridge is single-tenant.** One extension at a time per Wabe agent; a newer pairing preempts an older one server-side.
+- **Distribution is unpacked-load only.** Chrome Web Store / AMO submission is a deferred follow-up.
 
 ### Cross-source lister normalisation
 
@@ -227,8 +246,8 @@ export default { kind: 'source' as const, plugin };
 ```
 
 See `plugins/source-flatfox/` for a complete reference implementation, and
-`plugins/source-homegate/` for a more involved one (Playwright-driven cookie
-harvest, iOS-style headers, Auth0 + PKCE login).
+`plugins/source-homegate/` for a more involved one (bridge-driven transport,
+iOS-style headers, Auth0 + PKCE login for user-bound features).
 
 ## Roadmap
 

@@ -118,6 +118,7 @@ describe('E2E pipeline with real plugins', () => {
       logger: createLogger('silent'),
       signal: new AbortController().signal,
       sources: loaded.sources,
+      enrichers: loaded.enrichers,
       notifiers: loaded.notifiers,
       breakers,
       quota,

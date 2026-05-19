@@ -1,6 +1,6 @@
 {
   "id": "4003200001",
-  "listingType": "STANDARD",
+  "listingType": { "type": "STANDARD" },
   "listing": {
     "id": "4003200001",
     "offerType": "RENT",

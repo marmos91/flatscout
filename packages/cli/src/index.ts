@@ -12,6 +12,7 @@ import { registerLogin } from './commands/login.js';
 import { registerLogout } from './commands/logout.js';
 import { registerAgencies } from './commands/agencies/index.js';
 import { registerBridge } from './commands/bridge/index.js';
+import { registerCache } from './commands/cache.js';
 import { splash } from './splash.js';
 
 const program = new Command();
@@ -41,6 +42,7 @@ registerLogin(program);
 registerLogout(program);
 registerAgencies(program);
 registerBridge(program);
+registerCache(program);
 
 program.parseAsync().catch((err) => {
   console.error(err);

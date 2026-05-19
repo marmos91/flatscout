@@ -35,7 +35,17 @@ export function registerScan(prog: Command): void {
       const quota = new Quota(db, cfg.scoring.notify.daily_quota);
       const ctrl = new AbortController();
       process.once('SIGINT', () => ctrl.abort());
-      await runOnce({ cfg, db, logger, signal: ctrl.signal, sources, notifiers, breakers, quota });
+      await runOnce({
+        cfg,
+        db,
+        logger,
+        signal: ctrl.signal,
+        sources,
+        enrichers: loaded.enrichers,
+        notifiers,
+        breakers,
+        quota,
+      });
       logger.info('scan complete');
     });
 }

@@ -38,6 +38,10 @@ export default defineConfig(() => {
   >;
   const manifest = { ...baseManifest } as Record<string, unknown>;
   if (browser === 'firefox') {
+    // Firefox MV3 dropped support for `persistent: true` (warns on load).
+    // Background suspends after ~30s idle; rely instead on server-side
+    // application-level keepalive (JSON message every 10s) — see
+    // `@wabe/browser-bridge`'s server.ts PING_INTERVAL_MS.
     manifest.background = { scripts: ['src/background.ts'] };
   } else {
     // Chrome: offscreen API is supported; add the permission so the SW can spawn

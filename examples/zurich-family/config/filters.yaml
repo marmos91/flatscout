@@ -3,3 +3,4 @@ filters:
   - {kind: field, field: rooms,                 op: ">=", value: 3,    on_missing: skip}
   - {kind: field, field: price.total,           op: "<=", value: 5000, on_missing: skip}
   - {kind: field, field: location.country,      op: "==", value: CH}
+  - {kind: commute, target: work, mode: transit, op: "<=", value: 45, on_missing: pass}

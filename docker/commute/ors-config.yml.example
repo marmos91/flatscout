@@ -1,0 +1,18 @@
+ors:
+  engine:
+    source_file: /home/ors/files/switzerland-latest.osm.pbf
+    profiles:
+      car:
+        enabled: true
+        profile: driving-car
+      bike-regular:
+        enabled: true
+        profile: cycling-regular
+      foot-walking:
+        enabled: true
+        profile: foot-walking
+  cors:
+    allowed_origins: "*"
+  endpoints:
+    routing:
+      enabled: true

@@ -88,7 +88,8 @@ export function mapFlatfoxListing(r: FlatfoxApiResult): RawListing {
     built_year: null,
     renovated_year: null,
     location: {
-      coords: r.latitude != null && r.longitude != null ? [r.latitude, r.longitude] : null,
+      // GeoJSON order: [lng, lat] (matches Listing.location.coords convention).
+      coords: r.latitude != null && r.longitude != null ? [r.longitude, r.latitude] : null,
       address: null,
       postal_code: r.zipcode != null ? String(r.zipcode) : null,
       city: r.city ?? null,

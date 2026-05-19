@@ -8,7 +8,7 @@ const SEARCH_PATH = '/search/listings';
 
 export interface SearchResult {
   id: string;
-  listingType?: string;
+  listingType?: Record<string, unknown>;
   listing: unknown;
 }
 

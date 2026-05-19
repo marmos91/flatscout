@@ -50,6 +50,7 @@ export function registerStart(prog: Command): void {
           logger,
           signal: ctrl.signal,
           sources: [s],
+          enrichers: loaded.enrichers,
           notifiers: loaded.notifiers,
           breakers,
           quota,

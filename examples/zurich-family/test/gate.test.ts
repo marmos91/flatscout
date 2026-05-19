@@ -40,6 +40,7 @@ function fieldsReferencedByScoring(): string[] {
   const out: string[] = [];
   for (const d of parsed.scoring) {
     if (d.type !== 'rule') continue;
+    if (typeof d.metric !== 'string') continue; // commute primitive — not a source field
     if (!d.metric.startsWith('=')) out.push(d.metric);
   }
   return out;
