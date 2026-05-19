@@ -34,3 +34,5 @@ export {
   type TransportRequestInit,
   type TransportResponse,
 } from './transport.js';
+
+export { DaemonBridgeTransport } from './daemon-transport.js';

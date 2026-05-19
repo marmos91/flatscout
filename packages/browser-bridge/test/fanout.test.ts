@@ -1,8 +1,9 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
+import { DaemonBridgeTransport } from '../src/daemon-transport.js';
 import { loadOrGenerateSecret } from '../src/secret.js';
 import { type BridgeServer, startBridgeServer } from '../src/server.js';
 
@@ -220,8 +221,68 @@ describe('fan-out routing', () => {
     r.close();
     await new Promise<void>((res) => setTimeout(res, 50));
     expect(bridge.status().inflight).toBe(0);
-    ext.send(
-      JSON.stringify({ type: 'response', id: 'orphan', status: 200, headers: {}, body: '' }),
-    );
+    ext.send(JSON.stringify({ type: 'response', id: 'orphan', status: 200, headers: {}, body: '' }));
+  });
+});
+
+describe('DaemonBridgeTransport', () => {
+  it('connects on /dispatch and round-trips a request', async () => {
+    const ext = await pairExtension();
+    ext.on('message', (raw) => {
+      const p = JSON.parse(String(raw)) as Partial<BridgeRequest>;
+      if (p.type !== 'request') return;
+      ext.send(JSON.stringify({ type: 'response', id: p.id, status: 200, headers: { x: 'y' }, body: 'hi' }));
+    });
+    const status = {
+      connected: true,
+      inflight: 0,
+      port,
+      last_seen_at: Date.now(),
+      written_at: Date.now(),
+    };
+    writeFileSync(join(dir, 'bridge.status.json'), JSON.stringify(status));
+    const t = await DaemonBridgeTransport.tryConnect(dir);
+    expect(t).not.toBeNull();
+    const resp = await t!.request({
+      method: 'GET',
+      url: 'https://www.homegate.ch/',
+    });
+    expect(resp.status).toBe(200);
+    expect(resp.body).toBe('hi');
+    expect(resp.headers.x).toBe('y');
+    await t!.close();
+  });
+
+  it('returns null when heartbeat file is missing', async () => {
+    const tmp2 = mkdtempSync(join(tmpdir(), 'wabe-bridge-noheart-'));
+    const t = await DaemonBridgeTransport.tryConnect(tmp2);
+    expect(t).toBeNull();
+    rmSync(tmp2, { recursive: true, force: true });
+  });
+
+  it('returns null when heartbeat is stale', async () => {
+    const status = {
+      connected: true,
+      inflight: 0,
+      port,
+      last_seen_at: 0,
+      written_at: Date.now() - 30_000,
+    };
+    writeFileSync(join(dir, 'bridge.status.json'), JSON.stringify(status));
+    const t = await DaemonBridgeTransport.tryConnect(dir);
+    expect(t).toBeNull();
+  });
+
+  it('returns null when heartbeat reports connected:false', async () => {
+    const status = {
+      connected: false,
+      inflight: 0,
+      port,
+      last_seen_at: 0,
+      written_at: Date.now(),
+    };
+    writeFileSync(join(dir, 'bridge.status.json'), JSON.stringify(status));
+    const t = await DaemonBridgeTransport.tryConnect(dir);
+    expect(t).toBeNull();
   });
 });
