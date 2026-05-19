@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { Command } from 'commander';
 import { request } from 'undici';
+import { parse as parseYaml } from 'yaml';
 import { loadConfig, loadPlugins, loadSecrets, readHeartbeat } from '@wabe/server';
 import { openDb } from '@wabe/db';
 import { resolvePaths } from '../paths.js';
@@ -103,6 +106,13 @@ export function registerDoctor(prog: Command): void {
         }
       }
 
+      // Commute endpoints — only probed when enricher-commute is enabled. Informational only.
+      const commuteEntry = loadedCfg?.top.enabled.enrichers.find((e) => e.plugin === 'enricher-commute');
+      if (commuteEntry) {
+        const commuteCfgPath = join(paths.configDir, commuteEntry.config);
+        await probeCommuteEndpoints(commuteCfgPath, result);
+      }
+
       // Hard-fail: DataDome-protected sources require a paired + connected bridge.
       // Without it, those sources will error on every scan, so surface the misconfiguration
       // early via a non-zero doctor exit.
@@ -130,4 +140,44 @@ export function registerDoctor(prog: Command): void {
 
       process.exit(ok ? 0 : 1);
     });
+}
+
+/**
+ * Probes the three commute-stack endpoints (ORS, Motis, Pelias) referenced
+ * by an enricher-commute config. Informational: results are logged but do
+ * not affect the doctor's overall exit code.
+ */
+async function probeCommuteEndpoints(
+  commuteCfgPath: string,
+  result: (label: string, pass: boolean, detail?: string) => void,
+): Promise<void> {
+  type CommuteEndpoints = { endpoints: { ors_url: string; motis_url: string; pelias_url: string } };
+  let cfg: CommuteEndpoints;
+  try {
+    cfg = parseYaml(readFileSync(commuteCfgPath, 'utf8')) as CommuteEndpoints;
+  } catch (err) {
+    result('commute config parse', false, (err as Error).message);
+    return;
+  }
+  if (!cfg.endpoints?.ors_url || !cfg.endpoints?.motis_url || !cfg.endpoints?.pelias_url) {
+    result('commute config endpoints', false, 'missing ors_url/motis_url/pelias_url');
+    return;
+  }
+  const probes = [
+    ['commute-ors', `${cfg.endpoints.ors_url.replace(/\/$/, '')}/v2/health`],
+    ['commute-motis', `${cfg.endpoints.motis_url.replace(/\/$/, '')}/`],
+    ['commute-pelias', `${cfg.endpoints.pelias_url.replace(/\/$/, '')}/v1/status`],
+  ] as const;
+  for (const [label, url] of probes) {
+    try {
+      const r = await request(url, { headersTimeout: 2000, bodyTimeout: 2000 });
+      // Drain body so the connection releases.
+      await r.body.dump();
+      // Pass informationally for any non-5xx; >=500 surfaces as a warning but
+      // still informational (does not toggle the overall exit code).
+      result(label, true, `HTTP ${r.statusCode}`);
+    } catch (err) {
+      result(label, true, `unreachable: ${(err as Error).message}`);
+    }
+  }
 }
