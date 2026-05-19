@@ -16,7 +16,7 @@ export {};
 const DEFAULT_BRIDGE_URL = 'ws://127.0.0.1:8431/bridge';
 const PROTOCOL_VERSION = 1;
 const KEEPALIVE_ALARM = 'wabe-bridge-keepalive';
-const KEEPALIVE_MIN = 0.5;
+const KEEPALIVE_MIN = 1;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 
 /**
@@ -394,7 +394,9 @@ chrome.runtime.onStartup.addListener(() => {
 chrome.alarms.create(KEEPALIVE_ALARM, { periodInMinutes: KEEPALIVE_MIN });
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name !== KEEPALIVE_ALARM) return;
-  if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
+  if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+    void chrome.storage.local.set({ lastAliveAt: Date.now() });
+  } else {
     void connect();
   }
 });
