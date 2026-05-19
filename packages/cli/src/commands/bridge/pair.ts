@@ -4,13 +4,16 @@ import { resolvePaths } from '../../paths.js';
 import { loadConfig } from '@wabe/server';
 
 const DEFAULT_PORT = 8431;
-const DEFAULT_HOST = '127.0.0.1';
+const BRIDGE_HOST = '127.0.0.1';
 
 /**
  * `wabe bridge pair` — prints the pairing URL + 64-char hex token. The user
  * pastes both into the Wabe Bridge extension popup. The token is the same
  * shared secret consumed by the WS handshake; it's persisted at
  * `${dataDir}/bridge-secret` (mode 0600) by `loadOrGenerateSecret`.
+ *
+ * The bridge server always binds to 127.0.0.1 (loopback is hard-enforced
+ * in `@wabe/browser-bridge`); only the port is configurable.
  */
 export function registerPair(parent: Command): void {
   parent
@@ -20,20 +23,18 @@ export function registerPair(parent: Command): void {
       const globalOpts = parent.parent?.opts<{ config?: string; dataDir?: string }>() ?? {};
       const paths = resolvePaths({ config: globalOpts.config, dataDir: globalOpts.dataDir });
 
-      // Prefer the configured port/host if the user customised them. Falls back to defaults
-      // (and to defaults again on any config error — pairing should work even with no config yet).
+      // Prefer the configured port if the user customised it. Falls back to the default
+      // (and to the default again on any config error — pairing should work even with no config yet).
       let port = DEFAULT_PORT;
-      let host = DEFAULT_HOST;
       try {
         const cfg = await loadConfig(paths.configDir);
         port = cfg.top.bridge.port;
-        host = cfg.top.bridge.host;
       } catch {
         // ignore — pre-init pairing is fine
       }
 
       const token = loadOrGenerateSecret(paths.dataDir);
-      const url = `ws://${host}:${port}/bridge`;
+      const url = `ws://${BRIDGE_HOST}:${port}/bridge`;
 
       console.log('Paste the following into the Wabe Bridge extension popup:');
       console.log('');

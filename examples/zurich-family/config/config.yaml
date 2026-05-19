@@ -22,4 +22,3 @@ log:
 bridge:
   enabled: false
   port: 8431
-  host: 127.0.0.1
