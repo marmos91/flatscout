@@ -27,7 +27,10 @@ export {};
 const DEFAULT_BRIDGE_URL = 'ws://127.0.0.1:8431/bridge';
 const PROTOCOL_VERSION = 1;
 const KEEPALIVE_ALARM = 'wabe-bridge-keepalive';
-const KEEPALIVE_MIN = 1;
+// 30s ticks — Firefox alarm minimum for unpacked/dev extensions. Belt-and-suspenders
+// to `persistent: true` in the Firefox manifest: even if the event page sleeps,
+// the alarm wakes it inside the bridge daemon's 15s heartbeat stale-window.
+const KEEPALIVE_MIN = 0.5;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 const OFFSCREEN_URL = 'src/offscreen.html';
 
