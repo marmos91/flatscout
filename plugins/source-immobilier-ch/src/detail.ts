@@ -53,7 +53,10 @@ export function extractJsonLd(html: string): DetailPayload {
     const block = m[1];
     if (!block) continue;
     try {
-      const obj = JSON.parse(block) as unknown;
+      // immobilier.ch HTML-escapes characters inside JSON-LD strings (e.g. `Z&#xFC;rich`).
+      // JSON.parse doesn't decode HTML entities, so values would otherwise round-trip
+      // as literal `Z&#xFC;rich`. Decode numeric + common-named entities first.
+      const obj = JSON.parse(decodeHtmlEntities(block)) as unknown;
       collect(obj, out);
     } catch {
       // ignore malformed blocks
@@ -69,8 +72,41 @@ function collect(obj: unknown, out: DetailPayload): void {
     return;
   }
   const type = (obj as { '@type'?: string })['@type'];
-  if (type === 'Product') out.product = obj as JsonLdProduct;
-  if (type === 'Residence') out.residence = obj as JsonLdResidence;
+  // immobilier.ch's JSON-LD uses PascalCase property names (`Address`, `Offers`, ...)
+  // even though schema.org and the JSON-LD spec mandate camelCase. Normalize to
+  // lower-camelCase before storing, but preserve the discriminator key `@type`.
+  if (type === 'Product')
+    out.product = lowercaseKeys(obj as Record<string, unknown>) as unknown as JsonLdProduct;
+  if (type === 'Residence')
+    out.residence = lowercaseKeys(obj as Record<string, unknown>) as unknown as JsonLdResidence;
   // walk nested values
   for (const v of Object.values(obj as Record<string, unknown>)) collect(v, out);
+}
+
+function decodeHtmlEntities(s: string): string {
+  return s
+    .replace(/&#x([\da-f]+);/gi, (_, h: string) => String.fromCodePoint(Number.parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(Number.parseInt(d, 10)))
+    .replace(/&amp;/g, '&')
+    .replace(/&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
+function lowercaseKeys<T extends Record<string, unknown>>(obj: T): T {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    const nk = k.startsWith('@') ? k : k[0]!.toLowerCase() + k.slice(1);
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      out[nk] = lowercaseKeys(v as Record<string, unknown>);
+    } else if (Array.isArray(v)) {
+      out[nk] = v.map((item) =>
+        item && typeof item === 'object' ? lowercaseKeys(item as Record<string, unknown>) : item,
+      );
+    } else {
+      out[nk] = v;
+    }
+  }
+  return out as T;
 }
