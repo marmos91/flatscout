@@ -102,6 +102,39 @@ function scheduleReconnect(): void {
   state.reconnectDelayMs = Math.min(state.reconnectDelayMs * 2, MAX_RECONNECT_DELAY_MS);
 }
 
+function safeSend(ws: WebSocket, payload: string): boolean {
+  if (ws.readyState !== WebSocket.OPEN) {
+    console.warn('[wabe-bridge:offscreen] dropping send: WS not OPEN');
+    forceReconnect();
+    return false;
+  }
+  try {
+    ws.send(payload);
+    return true;
+  } catch (err) {
+    console.warn(`[wabe-bridge:offscreen] ws.send threw: ${(err as Error).message}`);
+    forceReconnect();
+    return false;
+  }
+}
+
+function forceReconnect(): void {
+  if (state.ws) {
+    try {
+      state.ws.close();
+    } catch {
+      /* ignore */
+    }
+    state.ws = null;
+  }
+  if (state.reconnectTimer !== null) {
+    clearTimeout(state.reconnectTimer);
+    state.reconnectTimer = null;
+  }
+  state.reconnectDelayMs = 1_000;
+  void connect();
+}
+
 async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<void> {
   const t0 = Date.now();
   console.log(`[wabe-bridge:offscreen] proxy ${msg.method} ${msg.url.slice(0, 80)}`);
@@ -114,7 +147,8 @@ async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<v
       console.log(
         `[wabe-bridge:offscreen] proxy ok ${reply.result.status} (${Date.now() - t0}ms) ${msg.id.slice(0, 8)}`,
       );
-      ws.send(
+      safeSend(
+        ws,
         JSON.stringify({
           type: 'response',
           id: msg.id,
@@ -128,7 +162,8 @@ async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<v
       console.warn(
         `[wabe-bridge:offscreen] proxy fail ${reply?.message ?? '(no message)'} (${Date.now() - t0}ms)`,
       );
-      ws.send(
+      safeSend(
+        ws,
         JSON.stringify({
           type: 'error',
           id: msg.id,
@@ -138,7 +173,8 @@ async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<v
     }
   } catch (err) {
     console.warn(`[wabe-bridge:offscreen] proxy threw: ${(err as Error).message}`);
-    ws.send(
+    safeSend(
+      ws,
       JSON.stringify({
         type: 'error',
         id: msg.id,

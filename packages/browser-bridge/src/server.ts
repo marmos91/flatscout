@@ -79,6 +79,31 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
   const inflight = new Map<string, Inflight>();
   const requesters = new Set<WebSocket>();
 
+  // Heartbeat: ping every client every 20s. Browsers auto-pong, keeping TCP
+  // alive across NAT/idle-timeout boundaries. Without this, the connection
+  // can silently die after several minutes of idle and ws.send on either
+  // side throws "WebSocket is already in CLOSING or CLOSED state".
+  const PING_INTERVAL_MS = 20_000;
+  const pingTimer = setInterval(() => {
+    if (activeSocket && activeSocket.readyState === activeSocket.OPEN) {
+      try {
+        activeSocket.ping();
+      } catch {
+        /* ignore — close will surface separately */
+      }
+    }
+    for (const r of requesters) {
+      if (r.readyState === r.OPEN) {
+        try {
+          r.ping();
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  }, PING_INTERVAL_MS);
+  pingTimer.unref?.();
+
   wss.on('connection', (ws, req) => {
     const peer = `${req.socket.remoteAddress}:${req.socket.remotePort}`;
     const role: 'extension' | 'requester' =
@@ -296,6 +321,7 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
   }
 
   async function stop(): Promise<void> {
+    clearInterval(pingTimer);
     for (const ifl of inflight.values()) {
       clearTimeout(ifl.timer);
       ifl.reject(new Error('bridge server stopping'));
