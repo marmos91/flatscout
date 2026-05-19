@@ -102,6 +102,7 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
             }
             helloReceived = true;
             ws.send(JSON.stringify({ type: 'welcome', protocol_version: PROTOCOL_VERSION }));
+            return;
           } catch {
             ws.close();
           }

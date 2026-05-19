@@ -52,12 +52,16 @@ describe('two-path bridge server', () => {
 
   it('rejects connections on unknown paths', async () => {
     const w = new WebSocket(`ws://127.0.0.1:${port}/wat`);
-    await expect(
-      new Promise<void>((_resolve, reject) => {
-        w.once('open', () => reject(new Error('should not have opened')));
-        w.once('error', () => reject(new Error('error')));
-        w.once('close', () => reject(new Error('closed')));
-      }),
-    ).rejects.toBeDefined();
+    let opened = false;
+    await new Promise<void>((resolve) => {
+      w.once('open', () => {
+        opened = true;
+        resolve();
+      });
+      w.once('error', () => resolve());
+      w.once('close', () => resolve());
+    });
+    expect(opened).toBe(false);
+    expect(w.readyState).toBe(WebSocket.CLOSED);
   });
 });
