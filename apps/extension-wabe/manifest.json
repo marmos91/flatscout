@@ -22,15 +22,13 @@
     ]
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src ws://127.0.0.1:8431 ws://localhost:8431 https: wss:"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src ws://127.0.0.1:* ws://localhost:* https: wss:"
   },
   "host_permissions": [
     "*://*.homegate.ch/*",
     "*://api.homegate.ch/*",
     "*://*.immoscout24.ch/*",
-    "*://api.immoscout24.ch/*",
-    "ws://127.0.0.1/*",
-    "http://127.0.0.1/*"
+    "*://api.immoscout24.ch/*"
   ],
   "browser_specific_settings": {
     "gecko": {
