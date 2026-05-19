@@ -56,6 +56,65 @@ describe('mapHomegateResult', () => {
     expect(r.lease_until?.toISOString()).toBe('2027-12-31T00:00:00.000Z');
   });
 
+  it('extracts lister into agency + contact + enriched.lister', () => {
+    const fixture = {
+      id: 'L1',
+      listingType: { type: 'STANDARD' },
+      listing: {
+        id: 'L1',
+        availableFrom: '2026-07-01T00:00:00.000Z',
+        address: {
+          locality: 'Zürich',
+          region: 'ZH',
+          postalCode: '8008',
+          street: 'Dufourstrasse 55',
+          geoTags: ['geo-citydistrict-seefeld', 'geo-city-zurich', 'geo-zipcode-8008'],
+        },
+        characteristics: { numberOfRooms: 3.5 },
+        lister: {
+          legalName: 'Apleona Schweiz AG',
+          phone: '+41 44 878 77 44',
+          logoUrl: 'https://media2.homegate.ch/logos/abc.png',
+          website: { value: 'https://realestate-ch.apleona.com/' },
+          contacts: {
+            inquiry: { familyName: 'Paulo Dias Lopes', phone: '+41 44 878 77 44', gender: 'OTHER' },
+            viewing: { gender: 'OTHER' },
+          },
+          address: { locality: 'Wallisellen', country: 'CH', postalCode: '8304' },
+        },
+      },
+    };
+    const r = mapHomegateResult(HomegateApiSchema.parse(fixture));
+    expect(r.agency).toBe('Apleona Schweiz AG');
+    expect(r.contact.phone).toBe('+41 44 878 77 44');
+    expect(r.location.region).toBe('ZH');
+    expect(r.location.neighborhood).toBe('seefeld');
+    expect(r.available_from?.toISOString()).toBe('2026-07-01T00:00:00.000Z');
+    const enrichedLister = r.enriched.lister as Record<string, unknown> | undefined;
+    expect(enrichedLister).toBeDefined();
+    expect(enrichedLister?.legal_name).toBe('Apleona Schweiz AG');
+    expect(enrichedLister?.website).toBe('https://realestate-ch.apleona.com/');
+    expect(enrichedLister?.logo_url).toBe('https://media2.homegate.ch/logos/abc.png');
+    expect(enrichedLister?.inquiry_contact).toBe('Paulo Dias Lopes');
+    expect(enrichedLister?.viewing_contact).toBeUndefined();
+    expect(enrichedLister?.address_locality).toBe('Wallisellen');
+  });
+
+  it('handles missing lister + missing address gracefully', () => {
+    const fixture = {
+      id: 'EMPTY',
+      listingType: { type: 'STANDARD' },
+      listing: { id: 'EMPTY' },
+    };
+    const r = mapHomegateResult(HomegateApiSchema.parse(fixture));
+    expect(r.agency).toBeNull();
+    expect(r.contact).toEqual({});
+    expect(r.enriched).toEqual({});
+    expect(r.location.region).toBeNull();
+    expect(r.location.neighborhood).toBeNull();
+    expect(r.available_from).toBeNull();
+  });
+
   it('passthrough preserves unknown keys without throwing', () => {
     const exotic = {
       id: 'XYZ',

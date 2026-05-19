@@ -27,9 +27,51 @@ const Localization = z
   })
   .passthrough();
 
+const ListerContactEntry = z
+  .object({
+    phone: z.string().optional(),
+    email: z.string().optional(),
+    givenName: z.string().optional(),
+    familyName: z.string().optional(),
+    gender: z.string().optional(),
+  })
+  .partial()
+  .passthrough();
+
+const Lister = z
+  .object({
+    id: z.string().optional(),
+    legalName: z.string().optional(),
+    phone: z.string().optional(),
+    logoUrl: z.string().optional(),
+    website: z.object({ value: z.string().optional() }).partial().passthrough().optional(),
+    contacts: z
+      .object({
+        viewing: ListerContactEntry.optional(),
+        inquiry: ListerContactEntry.optional(),
+      })
+      .partial()
+      .passthrough()
+      .optional(),
+    address: z
+      .object({
+        locality: z.string().optional(),
+        country: z.string().optional(),
+        postalCode: z.string().optional(),
+        street: z.string().optional(),
+      })
+      .partial()
+      .passthrough()
+      .optional(),
+  })
+  .partial()
+  .passthrough();
+
 const Listing = z
   .object({
     id: z.string(),
+    availableFrom: z.string().optional(),
+    lister: Lister.optional(),
     address: z
       .object({
         geoCoordinates: z
@@ -43,6 +85,8 @@ const Listing = z
         locality: z.string().optional(),
         postalCode: z.string().optional(),
         street: z.string().optional(),
+        region: z.string().optional(),
+        geoTags: z.array(z.string()).optional(),
       })
       .partial()
       .passthrough()
@@ -94,7 +138,8 @@ const Listing = z
 export const HomegateApiSchema = z
   .object({
     id: z.string(),
-    listingType: z.string().optional(),
+    /** Was a string in older API responses; current API ships an object with translations. Accept either. */
+    listingType: z.union([z.string(), z.record(z.string(), z.unknown()), z.unknown()]).optional(),
     listing: Listing,
   })
   .passthrough();
@@ -153,6 +198,42 @@ export function mapHomegateResult(envelope: HomegateResultEnvelope): RawListing 
   if (chars.hasGarage != null) features.has_garage = chars.hasGarage;
   if (chars.arePetsAllowed != null) features.pets_allowed = chars.arePetsAllowed;
 
+  const lister = r.lister;
+  const inquiry = lister?.contacts?.inquiry;
+  const viewing = lister?.contacts?.viewing;
+
+  // Strict canonical contact (RawListing schema only accepts phone/email/form_url).
+  const contact: Record<string, unknown> = {};
+  const inquiryPhone = inquiry?.phone ?? lister?.phone;
+  if (inquiryPhone) contact.phone = inquiryPhone;
+  if (inquiry?.email) contact.email = inquiry.email;
+
+  // Richer lister metadata goes under `enriched.lister` so it survives schema validation
+  // while remaining available for source-aware downstream tooling (UI, dedup hints).
+  const inquiryName = [inquiry?.givenName, inquiry?.familyName].filter(Boolean).join(' ').trim();
+  const viewingName = [viewing?.givenName, viewing?.familyName].filter(Boolean).join(' ').trim();
+  const listerExtra: Record<string, unknown> = {};
+  if (lister?.legalName) listerExtra.legal_name = lister.legalName;
+  if (lister?.website?.value) listerExtra.website = lister.website.value;
+  if (lister?.logoUrl) listerExtra.logo_url = lister.logoUrl;
+  if (inquiryName) listerExtra.inquiry_contact = inquiryName;
+  if (viewingName && viewingName !== inquiryName) listerExtra.viewing_contact = viewingName;
+  if (lister?.address?.locality) listerExtra.address_locality = lister.address.locality;
+  const enriched: Record<string, unknown> = {};
+  if (Object.keys(listerExtra).length > 0) enriched.lister = listerExtra;
+
+  const neighborhood =
+    (r.address?.geoTags ?? [])
+      .find((t) => t.startsWith('geo-citydistrict-'))
+      ?.replace('geo-citydistrict-', '') ?? null;
+
+  const availableFrom = (() => {
+    const raw = r.availableFrom;
+    if (!raw) return null;
+    const d = new Date(raw);
+    return Number.isFinite(d.getTime()) ? d : null;
+  })();
+
   return {
     id: `homegate:${id}`,
     source: 'homegate',
@@ -175,21 +256,19 @@ export function mapHomegateResult(envelope: HomegateResultEnvelope): RawListing 
       address: r.address?.street ?? null,
       postal_code: r.address?.postalCode ?? null,
       city: r.address?.locality ?? null,
-      region: null,
+      region: r.address?.region ?? null,
       country: 'CH',
-      neighborhood: null,
+      neighborhood,
     },
     description,
     photos,
-    // TODO: not in srp-list fieldset — a future pdp-full capture will close this gap.
-    available_from: null,
+    available_from: availableFrom,
     lease_until: classified.lease_until,
     rental_term: classified.rental_term,
-    // TODO: lister name not exposed in current capture; future pdp-full will carry it.
-    agency: null,
+    agency: lister?.legalName ?? null,
     features,
-    contact: {},
-    enriched: {},
+    contact,
+    enriched,
     extra: {},
   };
 }
