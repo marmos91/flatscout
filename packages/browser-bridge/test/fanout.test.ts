@@ -189,6 +189,18 @@ describe('fan-out routing', () => {
     expect(msg.message).toMatch(/not connected/i);
   });
 
+  it('replies with error envelope on malformed request payload', async () => {
+    await pairExtension();
+    const r = await pairRequester();
+    r.send(JSON.stringify({ type: 'request', id: 'malformed', method: 'INVALID', url: 'not-a-url' }));
+    const msg = (await recvJson(r, (m) => (m as { id?: string }).id === 'malformed')) as {
+      type: string;
+      message?: string;
+    };
+    expect(msg.type).toBe('error');
+    expect(msg.message).toMatch(/bad request/i);
+  });
+
   it('drops inflight entries owned by a requester that disconnects mid-flight', async () => {
     const ext = await pairExtension();
     const r = await pairRequester();

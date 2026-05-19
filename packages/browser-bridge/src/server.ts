@@ -89,7 +89,6 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
       );
     if (role === 'requester') {
       let helloReceived = false;
-      requesters.add(ws);
       ws.on('message', (raw) => {
         let parsed: unknown;
         try {
@@ -111,11 +110,28 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
             return;
           }
           helloReceived = true;
+          requesters.add(ws);
           ws.send(JSON.stringify({ type: 'welcome', protocol_version: PROTOCOL_VERSION }));
           return;
         }
         const reqMsg = BridgeRequest.safeParse(parsed);
-        if (!reqMsg.success) return;
+        if (!reqMsg.success) {
+          const rawObj = parsed as Record<string, unknown> | null;
+          const id =
+            rawObj && typeof rawObj.id === 'string' ? (rawObj.id as string) : 'unknown';
+          try {
+            ws.send(
+              JSON.stringify({
+                type: 'error',
+                id,
+                message: `bad request: ${reqMsg.error.message}`,
+              }),
+            );
+          } catch {
+            // ignore
+          }
+          return;
+        }
         if (!activeSocket || activeSocket.readyState !== activeSocket.OPEN) {
           ws.send(
             JSON.stringify({
@@ -163,6 +179,7 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
         activeSocket.send(JSON.stringify(reqMsg.data));
       });
       ws.on('close', () => {
+        if (!helloReceived) return;
         requesters.delete(ws);
         for (const [id, ifl] of inflight) {
           if (ifl.origin === ws) {
