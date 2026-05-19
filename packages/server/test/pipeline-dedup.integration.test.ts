@@ -128,6 +128,7 @@ describe('cross-source dedup — end-to-end pipeline', () => {
         { name: 'immobilier', kind: 'source', plugin: immobilier, config: {} },
         { name: 'realadvisor', kind: 'source', plugin: realadvisor, config: {} },
       ],
+      enrichers: [],
       notifiers: [{ name: 'capture', kind: 'notifier', plugin: notifier, config: {} }],
       breakers: new Map([
         ['flatfox', new CircuitBreaker({ failuresBeforeOpen: 3, cooldownMs: 10_000 })],
