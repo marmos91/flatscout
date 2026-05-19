@@ -22,6 +22,13 @@ export const CommuteConfig = z.object({
     ors_url: z.string().url(),
     motis_url: z.string().url(),
     pelias_url: z.string().url(),
+    /**
+     * Optional Nominatim endpoint, queried only when Pelias returns null
+     * (e.g. unreachable, no match). Default points at the public OSM
+     * Nominatim — 1 req/sec rate limit per ToS; the enricher self-throttles.
+     * Set to `null` to disable the fallback.
+     */
+    nominatim_url: z.string().url().nullable().default('https://nominatim.openstreetmap.org'),
   }),
   targets: z.record(z.string(), Target).refine((m) => Object.keys(m).length > 0, {
     message: 'at least one target is required',

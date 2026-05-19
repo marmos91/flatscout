@@ -35,6 +35,7 @@ async function resolveTargetCoords(
     }
     const r = await geocode(t.address!, {
       peliasUrl: cfg.endpoints.pelias_url,
+      nominatimUrl: cfg.endpoints.nominatim_url,
       timeoutMs: cfg.timeouts.geocode_ms,
       logger,
       signal,
@@ -69,6 +70,7 @@ async function resolveListingCoords(
   if (cached) return [cached.lat, cached.lng];
   const r = await geocode(addr, {
     peliasUrl: cfg.endpoints.pelias_url,
+    nominatimUrl: cfg.endpoints.nominatim_url,
     timeoutMs: cfg.timeouts.geocode_ms,
     logger,
     signal,
