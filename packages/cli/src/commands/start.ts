@@ -4,6 +4,7 @@ import {
   CircuitBreaker,
   Quota,
   createLogger,
+  disposeSources,
   loadConfig,
   loadPlugins,
   runOnce,
@@ -56,19 +57,19 @@ export function registerStart(prog: Command): void {
       });
 
       const shutdownHooks: Array<() => Promise<void> | void> = [];
+      shutdownHooks.push(() => disposeSources(loaded.sources, logger));
 
       let bridge: BridgeServer | null = null;
       if (cfg.top.bridge.enabled) {
         bridge = await startBridgeServer({
           dataDir: paths.dataDir,
           port: cfg.top.bridge.port,
-          host: cfg.top.bridge.host,
         });
         const liveBridge = bridge;
         const stopHeartbeat = startHeartbeat(paths.dataDir, () => liveBridge.status());
         shutdownHooks.push(stopHeartbeat);
         shutdownHooks.push(() => liveBridge.stop());
-        logger.info({ host: cfg.top.bridge.host, port: bridge.port }, 'browser bridge listening');
+        logger.info({ host: '127.0.0.1', port: bridge.port }, 'browser bridge listening');
       }
 
       let shuttingDown = false;

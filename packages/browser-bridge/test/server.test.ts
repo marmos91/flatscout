@@ -189,3 +189,25 @@ describe('startBridgeServer status', () => {
     expect(bridge.status().connected).toBe(false);
   });
 });
+
+describe('startBridgeServer loopback enforcement', () => {
+  it('always binds 127.0.0.1 even when StartOpts has no host field', async () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'wabe-bridge-loopback-'));
+    const b = await startBridgeServer({ dataDir: tmp, port: 0 });
+    const ws = new WebSocket(`ws://127.0.0.1:${b.port}/bridge`);
+    await new Promise<void>((r, reject) => {
+      ws.once('open', () => r());
+      ws.once('error', reject);
+    });
+    ws.close();
+    await b.stop();
+    rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it('rejects a host field at the type level (compile-time guard)', () => {
+    type Opts = Parameters<typeof startBridgeServer>[0];
+    type HasHost = 'host' extends keyof Opts ? true : false;
+    const _proof: HasHost = false;
+    expect(_proof).toBe(false);
+  });
+});

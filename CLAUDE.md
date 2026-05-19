@@ -54,7 +54,7 @@ pnpm wabe <command>        # run the CLI from built output
 - Slice-only: `@wabe/server`'s `dependencies` lists the shipping plugins so the loader's dynamic `import()` resolves them at runtime from `packages/server/node_modules/` out-of-the-box.
 - Published-package distribution (users `npm install @wabe/<plugin>` separately) is deferred to a later spec.
 - Cross-source lister normalisation: source plugins emit agency / contact / lister metadata under a shared shape — `agency` (top-level string), strict `contact { phone?, email?, form_url? }`, and `enriched.lister` for source-specific richness (`legal_name`, `website`, `logo_url`, `inquiry_contact`, `viewing_contact`, `address_locality`). Mirror this convention when adding new sources.
-- Bridge mode is daemon-only. `BrowserBridgeTransport` dispatches via an in-process `getCurrentBridge()` singleton, so sibling processes (`wabe scan --source X`) cannot route through the daemon's bridge and fall through to Playwright. Cross-process bridge access (CLI command sharing the daemon's extension) is a future task.
+- Bridge mode supports two contexts. The daemon (`wabe start`) hosts the bridge server in-process; its source plugins dispatch via the `getCurrentBridge()` singleton (`BrowserBridgeTransport`). Sibling processes (`wabe scan --source ...`) read `${dataDir}/bridge.status.json`, open a `/dispatch` WebSocket to the daemon, and dispatch via `DaemonBridgeTransport`. If neither path is available, DataDome-protected sources fail fast at plugin init.
 
 ## License compliance
 
@@ -75,6 +75,6 @@ DataDome on `api.homegate.ch` (and equivalents on ImmoScout24) fingerprints the 
 - Pairing: `wabe bridge pair` prints URL + 64-hex token; the extension's popup persists both in `chrome.storage.local`.
 - Status: `wabe bridge status` and `wabe doctor` read `${dataDir}/bridge.status.json` (no second WS client).
 - Headers: a `declarative_net_request` ruleset on the extension rewrites `Origin` / `Referer` for `api.homegate.ch` + `api.immoscout24.ch` requests.
-- Known gap: Firefox/Chrome MV3 suspends idle background contexts; the WS drops and re-pairs on the next 30 s alarm tick. Keeping DevTools open on the background page disables suspension. Offscreen-document keepalive is deferred.
+- Chrome MV3 keeps the WebSocket open via an offscreen document; the SW only wakes per-request. Firefox MV3 has no offscreen API — it still suspends after ~30 s idle and reconnects on the next alarm tick. For unattended Firefox runs, keep DevTools open on the background page; offscreen-equivalent for Firefox is a deferred follow-up.
 
 See `docs/research/2026-05-18-homegate-investigation.md` for the original DataDome / Auth0 investigation that motivated this design.

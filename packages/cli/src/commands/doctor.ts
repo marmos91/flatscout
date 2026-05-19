@@ -1,19 +1,11 @@
-import { readFile, stat } from 'node:fs/promises';
-import { join } from 'node:path';
 import type { Command } from 'commander';
 import { request } from 'undici';
 import { loadConfig, loadPlugins, loadSecrets, readHeartbeat } from '@wabe/server';
 import { openDb } from '@wabe/db';
 import { resolvePaths } from '../paths.js';
 
-/** Compact relative-time formatter — `"3h ago"`, `"2d ago"`, `"45s ago"`. */
-function relAge(epochMs: number): string {
-  const deltaS = Math.max(0, Math.floor((Date.now() - epochMs) / 1000));
-  if (deltaS < 60) return `${deltaS}s ago`;
-  if (deltaS < 3600) return `${Math.floor(deltaS / 60)}m ago`;
-  if (deltaS < 86400) return `${Math.floor(deltaS / 3600)}h ago`;
-  return `${Math.floor(deltaS / 86400)}d ago`;
-}
+/** Sources that route through DataDome-protected APIs and therefore require the bridge. */
+const DATADOME_SOURCES = ['source-homegate', 'source-immoscout24-sitemap'] as const;
 
 /** Registers the `wabe doctor` subcommand: probes config, DB, plugin loading, and external APIs. */
 export function registerDoctor(prog: Command): void {
@@ -30,6 +22,7 @@ export function registerDoctor(prog: Command): void {
         if (!pass) ok = false;
       };
       let loadedCfg: Awaited<ReturnType<typeof loadConfig>> | null = null;
+      let loadedSources: Array<{ name: string; plugin: { name: string } }> | null = null;
       try {
         const cfg = await loadConfig(paths.configDir);
         loadedCfg = cfg;
@@ -41,6 +34,7 @@ export function registerDoctor(prog: Command): void {
         result('rental_term policy', true, rentalDetail);
         try {
           const loaded = await loadPlugins(cfg);
+          loadedSources = loaded.sources;
           result(
             'plugins resolve + configs validate',
             true,
@@ -77,27 +71,8 @@ export function registerDoctor(prog: Command): void {
       } catch (e) {
         result('flatfox API reachable', false, (e as Error).message);
       }
-      // Informational homegate checks — these NEVER fail the overall
-      // doctor exit code; they exist to make state-debugging easier.
-      try {
-        await stat(join(paths.dataDir, 'homegate-install.json'));
-        result('homegate install present', true, 'yes');
-      } catch {
-        result('homegate install present', true, 'not yet (first scan will generate)');
-      }
-      try {
-        const raw = await readFile(join(paths.dataDir, 'homegate-cookies.json'), 'utf8');
-        const parsed = JSON.parse(raw) as { capturedAt?: number };
-        if (typeof parsed.capturedAt === 'number') {
-          const age = relAge(parsed.capturedAt);
-          const fresh = parsed.capturedAt + 12 * 3600_000 > Date.now();
-          result('homegate cookies fresh', true, `${fresh ? 'fresh' : 'stale'} (captured ${age})`);
-        } else {
-          result('homegate cookies fresh', true, 'present but malformed');
-        }
-      } catch {
-        result('homegate cookies fresh', true, 'absent (will harvest on first scan)');
-      }
+      // Informational homegate check — never fails the overall doctor exit
+      // code; exists to make state-debugging easier.
       try {
         const secrets = await loadSecrets(paths.dataDir);
         if (secrets.homegate?.refreshToken) {
@@ -125,6 +100,31 @@ export function registerDoctor(prog: Command): void {
           const lastSeen =
             hb.last_seen_at === 0 ? 'unknown' : `${Math.round((Date.now() - hb.last_seen_at) / 1000)}s ago`;
           result('browser bridge', true, `connected on port ${hb.port}, extension last seen ${lastSeen}`);
+        }
+      }
+
+      // Hard-fail: DataDome-protected sources require a paired + connected bridge.
+      // Without it, those sources will error on every scan, so surface the misconfiguration
+      // early via a non-zero doctor exit.
+      // Match against the PLUGIN package name (`s.plugin.name` = "source-homegate"),
+      // not the YAML INSTANCE name (`s.name` = e.g. "homegate-zurich") — instance
+      // names are user-defined and won't match DATADOME_SOURCES.
+      const enabledDataDomeSources =
+        loadedSources
+          ?.filter((s) => (DATADOME_SOURCES as readonly string[]).includes(s.plugin.name))
+          .map((s) => `${s.name} (${s.plugin.name})`) ?? [];
+      if (enabledDataDomeSources.length > 0) {
+        const hb = readHeartbeat(paths.dataDir);
+        const bridgeOk =
+          loadedCfg?.top.bridge.enabled === true && hb !== null && hb.age_ms < 15_000 && hb.connected;
+        if (!bridgeOk) {
+          result(
+            'bridge required by DataDome sources',
+            false,
+            `sources [${enabledDataDomeSources.join(', ')}] need bridge paired+connected. Enable \`top.bridge.enabled\` and run \`wabe bridge pair\` + \`wabe start\`.`,
+          );
+        } else {
+          result('bridge required by DataDome sources', true, enabledDataDomeSources.join(', '));
         }
       }
 

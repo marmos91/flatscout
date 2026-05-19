@@ -9,4 +9,3 @@ fetch:
   page_size: 20
   max_pages: 5
   pace_ms: 2500
-  cookie_max_age_hours: 12

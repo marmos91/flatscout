@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
+import { createServer } from 'node:http';
 import { type WebSocket, WebSocketServer } from 'ws';
 import {
-  type BridgeRequest,
+  BridgeRequest,
   type BridgeResponse,
   ClientHello,
   ClientMessage,
@@ -13,8 +14,6 @@ export interface StartOpts {
   dataDir: string;
   /** Pass 0 to let the OS pick a free port (used in tests). */
   port: number;
-  /** Default 127.0.0.1. Never bind to 0.0.0.0 — local-only by design. */
-  host?: string;
 }
 
 export interface BridgeStatus {
@@ -28,14 +27,17 @@ export interface BridgeStatus {
 export interface BridgeServer {
   port: number;
   status(): BridgeStatus;
-  dispatch(req: BridgeRequest): Promise<BridgeResponse>;
+  dispatch(req: BridgeRequest, opts?: { signal?: AbortSignal }): Promise<BridgeResponse>;
   stop(): Promise<void>;
 }
+
+type Origin = WebSocket | 'in-process';
 
 interface Inflight {
   resolve: (r: BridgeResponse) => void;
   reject: (e: Error) => void;
   timer: NodeJS.Timeout;
+  origin: Origin;
 }
 
 /** Module-level pointer to the most-recently-started bridge for plugin code that wants implicit access. */
@@ -51,23 +53,163 @@ export function newRequestId(): string {
 
 export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> {
   const secret = loadOrGenerateSecret(opts.dataDir);
-  const host = opts.host ?? '127.0.0.1';
-  const wss = new WebSocketServer({ host, port: opts.port, path: '/bridge' });
-  await new Promise<void>((resolve, reject) => {
-    wss.once('listening', () => resolve());
-    wss.once('error', reject);
+  const http = createServer();
+  const wss = new WebSocketServer({ noServer: true });
+  http.on('upgrade', (req, socket, head) => {
+    const url = req.url ?? '';
+    if (url !== '/bridge' && url !== '/dispatch') {
+      socket.destroy();
+      return;
+    }
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      (ws as WebSocket & { _path?: string })._path = url;
+      wss.emit('connection', ws, req);
+    });
   });
-  const address = wss.address();
+  await new Promise<void>((resolve, reject) => {
+    http.once('listening', () => resolve());
+    http.once('error', reject);
+    http.listen(opts.port, '127.0.0.1');
+  });
+  const address = http.address();
   const port = typeof address === 'object' && address ? address.port : 0;
 
   let activeSocket: WebSocket | null = null;
   let lastSeenAt = 0;
   const inflight = new Map<string, Inflight>();
+  const requesters = new Set<WebSocket>();
+
+  // Heartbeat: ping every client every 20s. Browsers auto-pong, keeping TCP
+  // alive across NAT/idle-timeout boundaries. Without this, the connection
+  // can silently die after several minutes of idle and ws.send on either
+  // side throws "WebSocket is already in CLOSING or CLOSED state".
+  const PING_INTERVAL_MS = 20_000;
+  const pingTimer = setInterval(() => {
+    if (activeSocket && activeSocket.readyState === activeSocket.OPEN) {
+      try {
+        activeSocket.ping();
+      } catch {
+        /* ignore — close will surface separately */
+      }
+    }
+    for (const r of requesters) {
+      if (r.readyState === r.OPEN) {
+        try {
+          r.ping();
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  }, PING_INTERVAL_MS);
+  pingTimer.unref?.();
 
   wss.on('connection', (ws, req) => {
     const peer = `${req.socket.remoteAddress}:${req.socket.remotePort}`;
+    const role: 'extension' | 'requester' =
+      (ws as WebSocket & { _path?: string })._path === '/dispatch' ? 'requester' : 'extension';
     if (process.env.WABE_BRIDGE_DEBUG)
-      console.log(`[bridge] connect from ${peer} ua=${req.headers['user-agent'] ?? 'n/a'}`);
+      console.log(`[bridge] connect from ${peer} role=${role} ua=${req.headers['user-agent'] ?? 'n/a'}`);
+    if (role === 'requester') {
+      let helloReceived = false;
+      ws.on('message', (raw) => {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(String(raw));
+        } catch {
+          ws.close();
+          return;
+        }
+        if (!helloReceived) {
+          const hello = ClientHello.safeParse(parsed);
+          if (!hello.success) {
+            ws.send(JSON.stringify({ type: 'reject', reason: 'bad hello' }));
+            ws.close();
+            return;
+          }
+          if (!validateToken(secret, hello.data.auth_token_hex)) {
+            ws.send(JSON.stringify({ type: 'reject', reason: 'bad token' }));
+            ws.close();
+            return;
+          }
+          helloReceived = true;
+          requesters.add(ws);
+          ws.send(JSON.stringify({ type: 'welcome', protocol_version: PROTOCOL_VERSION }));
+          return;
+        }
+        const reqMsg = BridgeRequest.safeParse(parsed);
+        if (!reqMsg.success) {
+          const rawObj = parsed as Record<string, unknown> | null;
+          const id = rawObj && typeof rawObj.id === 'string' ? (rawObj.id as string) : 'unknown';
+          try {
+            ws.send(
+              JSON.stringify({
+                type: 'error',
+                id,
+                message: `bad request: ${reqMsg.error.message}`,
+              }),
+            );
+          } catch {
+            // ignore
+          }
+          return;
+        }
+        if (!activeSocket || activeSocket.readyState !== activeSocket.OPEN) {
+          ws.send(
+            JSON.stringify({
+              type: 'error',
+              id: reqMsg.data.id,
+              message: 'bridge not connected (extension offline?)',
+            }),
+          );
+          return;
+        }
+        const timer = setTimeout(() => {
+          inflight.delete(reqMsg.data.id);
+          try {
+            ws.send(
+              JSON.stringify({
+                type: 'error',
+                id: reqMsg.data.id,
+                message: `bridge request ${reqMsg.data.id} timed out after ${reqMsg.data.timeout_ms}ms`,
+              }),
+            );
+          } catch {
+            // ignore
+          }
+        }, reqMsg.data.timeout_ms);
+        inflight.set(reqMsg.data.id, {
+          resolve: (r) => {
+            try {
+              ws.send(JSON.stringify(r));
+            } catch {
+              // ignore
+            }
+          },
+          reject: (e) => {
+            try {
+              ws.send(JSON.stringify({ type: 'error', id: reqMsg.data.id, message: e.message }));
+            } catch {
+              // ignore
+            }
+          },
+          timer,
+          origin: ws,
+        });
+        activeSocket.send(JSON.stringify(reqMsg.data));
+      });
+      ws.on('close', () => {
+        if (!helloReceived) return;
+        requesters.delete(ws);
+        for (const [id, ifl] of inflight) {
+          if (ifl.origin === ws) {
+            clearTimeout(ifl.timer);
+            inflight.delete(id);
+          }
+        }
+      });
+      return;
+    }
     let helloReceived = false;
     ws.on('message', (raw) => {
       if (process.env.WABE_BRIDGE_DEBUG)
@@ -130,17 +272,41 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
     });
   });
 
-  function dispatch(req: BridgeRequest): Promise<BridgeResponse> {
+  function dispatch(req: BridgeRequest, opts?: { signal?: AbortSignal }): Promise<BridgeResponse> {
+    const signal = opts?.signal;
+    if (signal?.aborted) {
+      return Promise.reject(new Error('aborted'));
+    }
     const sock = activeSocket;
     if (!sock || sock.readyState !== sock.OPEN) {
       return Promise.reject(new Error('bridge not connected (extension offline?)'));
     }
     return new Promise<BridgeResponse>((resolve, reject) => {
+      const onAbort = (): void => {
+        const ifl = inflight.get(req.id);
+        if (!ifl) return;
+        clearTimeout(ifl.timer);
+        inflight.delete(req.id);
+        ifl.reject(new Error('aborted'));
+      };
+      if (signal) signal.addEventListener('abort', onAbort, { once: true });
       const timer = setTimeout(() => {
         inflight.delete(req.id);
+        signal?.removeEventListener('abort', onAbort);
         reject(new Error(`bridge request ${req.id} timed out after ${req.timeout_ms}ms`));
       }, req.timeout_ms);
-      inflight.set(req.id, { resolve, reject, timer });
+      inflight.set(req.id, {
+        resolve: (r) => {
+          signal?.removeEventListener('abort', onAbort);
+          resolve(r);
+        },
+        reject: (e) => {
+          signal?.removeEventListener('abort', onAbort);
+          reject(e);
+        },
+        timer,
+        origin: 'in-process',
+      });
       sock.send(JSON.stringify(req));
     });
   }
@@ -155,6 +321,7 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
   }
 
   async function stop(): Promise<void> {
+    clearInterval(pingTimer);
     for (const ifl of inflight.values()) {
       clearTimeout(ifl.timer);
       ifl.reject(new Error('bridge server stopping'));
@@ -168,8 +335,19 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
       }
       activeSocket = null;
     }
+    for (const r of requesters) {
+      try {
+        r.close();
+      } catch {
+        // ignore
+      }
+    }
+    requesters.clear();
     await new Promise<void>((resolve) => {
       wss.close(() => resolve());
+    });
+    await new Promise<void>((resolve) => {
+      http.close(() => resolve());
     });
     if (currentBridge === handle) currentBridge = null;
   }

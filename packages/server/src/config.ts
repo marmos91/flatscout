@@ -27,16 +27,16 @@ export const TopConfig = z.object({
   log: z.object({ level: z.string().default('info') }).default({ level: 'info' }),
   /**
    * Optional browser-bridge daemon. When enabled, `wabe start` binds a
-   * WebSocket server on `host`:`port` (127.0.0.1 by default) so a paired
-   * browser extension can proxy HTTPS requests on behalf of source plugins.
+   * WebSocket server on 127.0.0.1:`port` (loopback is hard-enforced) so a
+   * paired browser extension can proxy HTTPS requests on behalf of source
+   * plugins.
    */
   bridge: z
     .object({
       enabled: z.boolean().default(false),
       port: z.number().int().min(1024).max(65535).default(8431),
-      host: z.string().default('127.0.0.1'),
     })
-    .default({ enabled: false, port: 8431, host: '127.0.0.1' }),
+    .default({ enabled: false, port: 8431 }),
 });
 export type TopConfig = z.infer<typeof TopConfig>;
 

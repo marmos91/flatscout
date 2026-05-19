@@ -13,6 +13,13 @@ export interface Source {
   name: string;
   configSchema: z.ZodTypeAny;
   fetch(ctx: Context): AsyncIterable<RawListing>;
+  /**
+   * Optional. Called once when the pipeline shuts down (clean exit, abrupt
+   * shutdown signal, or test teardown). Implementations should release any held
+   * resources (open WebSockets, file descriptors, child processes, timers). Errors
+   * are logged but do not block shutdown of other plugins.
+   */
+  dispose?(): Promise<void>;
 }
 
 export type { RawListing };

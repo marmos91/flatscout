@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import pino from 'pino';
 import { fetchSearch } from '../src/client.js';
 import { HomegateAntiBotError, HomegateHttpError } from '../src/errors.js';
@@ -9,27 +9,17 @@ const logger = pino({ level: 'silent' });
 
 function makeTransport(opts: {
   responses: Array<TransportResponse | (() => TransportResponse)>;
-  invalidateReturns?: boolean;
-  invalidateImpl?: () => Promise<boolean>;
-}): Transport & { calls: TransportRequestOpts[]; invalidations: number } {
+}): Transport & { calls: TransportRequestOpts[] } {
   let i = 0;
   const calls: TransportRequestOpts[] = [];
-  let invalidations = 0;
-  const t: Transport & { calls: TransportRequestOpts[]; invalidations: number } = {
-    kind: 'undici',
+  const t: Transport & { calls: TransportRequestOpts[] } = {
+    kind: 'bridge-inproc',
     calls,
-    invalidations: 0,
     async request(o) {
       calls.push(o);
       const item = opts.responses[i++];
       if (item === undefined) throw new Error(`no more stub responses (call #${i})`);
       return typeof item === 'function' ? item() : item;
-    },
-    async invalidateAndRetryOnce() {
-      invalidations++;
-      t.invalidations = invalidations;
-      if (opts.invalidateImpl) return opts.invalidateImpl();
-      return opts.invalidateReturns ?? false;
     },
   };
   return t;
@@ -58,40 +48,10 @@ describe('fetchSearch', () => {
     expect(t.calls[0]?.method).toBe('POST');
   });
 
-  it('on 403 calls invalidateAndRetryOnce and retries when the transport supports it', async () => {
-    const t = makeTransport({
-      responses: [
-        { status: 403, body: 'forbidden' },
-        { status: 200, body: okBody },
-      ],
-      invalidateReturns: true,
-    });
-    const res = await fetchSearch(body, ctxWith(t));
-    expect(res.results).toEqual([]);
-    expect(t.invalidations).toBe(1);
-    expect(t.calls).toHaveLength(2);
-  });
-
-  it('throws HomegateAntiBotError when the transport refuses to retry', async () => {
-    const t = makeTransport({
-      responses: [{ status: 403, body: 'blocked' }],
-      invalidateReturns: false,
-    });
+  it('throws HomegateAntiBotError on 403 (no Node-side recovery)', async () => {
+    const t = makeTransport({ responses: [{ status: 403, body: 'blocked' }] });
     await expect(fetchSearch(body, ctxWith(t))).rejects.toBeInstanceOf(HomegateAntiBotError);
-    expect(t.invalidations).toBe(1);
     expect(t.calls).toHaveLength(1);
-  });
-
-  it('throws HomegateAntiBotError on a second 403 even when transport keeps retrying', async () => {
-    const t = makeTransport({
-      responses: [
-        { status: 403, body: 'first' },
-        { status: 403, body: 'second' },
-      ],
-      invalidateReturns: true,
-    });
-    await expect(fetchSearch(body, ctxWith(t))).rejects.toBeInstanceOf(HomegateAntiBotError);
-    expect(t.invalidations).toBe(1);
   });
 
   it('retries on 429 then succeeds', async () => {
@@ -132,18 +92,5 @@ describe('fetchSearch', () => {
     const p = fetchSearch(body, ctx);
     setTimeout(() => ac.abort(), 5);
     await expect(p).rejects.toThrow(/aborted/);
-  });
-
-  it('also calls invalidate on the first 403 attempt (sanity)', async () => {
-    const inv = vi.fn(async () => true);
-    const t = makeTransport({
-      responses: [
-        { status: 403, body: 'a' },
-        { status: 200, body: okBody },
-      ],
-      invalidateImpl: inv,
-    });
-    await fetchSearch(body, ctxWith(t));
-    expect(inv).toHaveBeenCalledTimes(1);
   });
 });

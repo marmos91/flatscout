@@ -12,7 +12,7 @@ The point of the bridge: source plugins that target DataDome/Cloudflare-protecte
 
 - `protocol.ts` — Zod schemas for the wire format (`hello`, `welcome`, `reject`, `request`, `response`, `error`). Single `PROTOCOL_VERSION` constant; server + extension must agree.
 - `secret.ts` — 32-byte random shared secret persisted at `${dataDir}/bridge-secret` (mode 0600). **First file in Wabe to use this dataDir-secret pattern.** Constant-time validation via `crypto.timingSafeEqual`.
-- `server.ts` — `startBridgeServer({ dataDir, port, host })` binds a `ws` `WebSocketServer` to `127.0.0.1` only (never `0.0.0.0`), exposes `dispatch(req)` to source plugins, tracks one connected extension at a time.
+- `server.ts` — `startBridgeServer({ dataDir, port })` binds a `ws` `WebSocketServer` to `127.0.0.1` only (hard-coded; never `0.0.0.0`), exposes `dispatch(req)` to source plugins, tracks one connected extension at a time.
 - `heartbeat.ts` — writes `${dataDir}/bridge.status.json` every ~5s so `wabe bridge status` and `wabe doctor` can read connection state without opening a second WS client.
 - `transport.ts` — `Transport` interface + `BrowserBridgeTransport` adapter (same surface as `UndiciTransport` / `PlaywrightTransport` in source plugins).
 

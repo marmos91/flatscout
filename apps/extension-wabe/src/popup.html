@@ -4,74 +4,278 @@
     <meta charset="utf-8" />
     <title>Wabe Bridge</title>
     <style>
+      :root {
+        --bg: Canvas;
+        --fg: CanvasText;
+        --muted: color-mix(in srgb, CanvasText 55%, transparent);
+        --dim: color-mix(in srgb, CanvasText 70%, transparent);
+        --rule: color-mix(in srgb, CanvasText 12%, transparent);
+        --field-bg: color-mix(in srgb, CanvasText 4%, Canvas);
+        --field-border: color-mix(in srgb, CanvasText 20%, transparent);
+        --green: #1f9d4a;
+        --yellow: #c08a00;
+        --red: #c8392b;
+        --accent-bg: color-mix(in srgb, CanvasText 6%, Canvas);
+        --error-bg: color-mix(in srgb, #c8392b 14%, Canvas);
+        --error-fg: #8a1f15;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --green: #4ade80;
+          --yellow: #facc15;
+          --red: #f87171;
+          --error-fg: #fca5a5;
+        }
+      }
+
+      * { box-sizing: border-box; }
+
       body {
-        font: 13px/1.4 system-ui, sans-serif;
+        font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
         margin: 0;
-        padding: 12px;
-        width: 280px;
+        padding: 0;
+        width: 320px;
+        background: var(--bg);
+        color: var(--fg);
       }
-      h1 {
-        font-size: 14px;
-        margin: 0 0 8px;
+
+      .section {
+        padding: 10px 14px;
+        border-top: 1px solid var(--rule);
       }
-      .status {
-        padding: 6px 8px;
-        border-radius: 4px;
-        margin-bottom: 12px;
+      .section:first-of-type {
+        border-top: none;
       }
-      .status.connected {
-        background: #d4edda;
-        color: #155724;
-      }
-      .status.disconnected {
-        background: #f8d7da;
-        color: #721c24;
-      }
-      .status.unpaired {
-        background: #fff3cd;
-        color: #856404;
-      }
-      label {
-        display: block;
-        margin: 8px 0 2px;
+      .section-label {
+        font-size: 10px;
         font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 6px;
       }
+
+      .header {
+        padding: 12px 14px 10px;
+      }
+      .header h1 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 6px;
+      }
+      .status-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: var(--muted);
+      }
+      .dot.green { background: var(--green); }
+      .dot.yellow { background: var(--yellow); }
+      .dot.red { background: var(--red); }
+      .status-text { color: var(--fg); }
+
+      .error-panel {
+        margin-top: 8px;
+        padding: 6px 8px;
+        font-size: 11px;
+        background: var(--error-bg);
+        color: var(--error-fg);
+        border-radius: 3px;
+      }
+      .error-panel[hidden] { display: none; }
+      .info-panel {
+        margin-top: 8px;
+        padding: 6px 8px;
+        font-size: 11px;
+        background: var(--accent-bg);
+        color: var(--dim);
+        border-radius: 3px;
+      }
+      .info-panel[hidden] { display: none; }
+
+      .stats-line {
+        font-size: 12px;
+        margin: 0;
+      }
+      .stats-line .err-count {
+        color: var(--dim);
+      }
+      .stats-line .err-count.has-err {
+        color: var(--red);
+      }
+      .last-error {
+        font-size: 11px;
+        color: var(--dim);
+        margin: 4px 0 0;
+        word-break: break-word;
+      }
+      .last-error .msg {
+        color: var(--fg);
+      }
+
+      .recent {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      .recent li {
+        display: grid;
+        grid-template-columns: 28px 38px 1fr 32px 50px;
+        gap: 6px;
+        align-items: baseline;
+      }
+      .recent .age { color: var(--muted); }
+      .recent .method { color: var(--dim); }
+      .recent .host {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      .recent .status { text-align: right; }
+      .recent .status.green { color: var(--green); }
+      .recent .status.yellow { color: var(--yellow); }
+      .recent .status.red { color: var(--red); }
+      .recent .ms { text-align: right; color: var(--dim); }
+      .recent-empty {
+        font-size: 11px;
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      label.field-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 4px;
+      }
+
       input,
       textarea {
         width: 100%;
-        box-sizing: border-box;
-        font: 12px/1.4 ui-monospace, monospace;
+        padding: 6px 8px;
+        font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        color: var(--fg);
+        background: var(--field-bg);
+        border: 1px solid var(--field-border);
+        border-radius: 3px;
+        outline: none;
+      }
+      input:focus,
+      textarea:focus {
+        border-color: color-mix(in srgb, CanvasText 45%, transparent);
       }
       textarea {
-        height: 44px;
+        height: 46px;
         resize: vertical;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       }
-      button {
-        margin-top: 8px;
-        padding: 6px 10px;
-        font: 12px/1 system-ui, sans-serif;
-        cursor: pointer;
+
+      .field-block {
+        margin-bottom: 10px;
       }
-      .row {
+      .field-block:last-of-type {
+        margin-bottom: 0;
+      }
+
+      .button-row {
         display: flex;
         gap: 6px;
+        margin-top: 12px;
+      }
+      button {
+        flex: 1;
+        padding: 6px 8px;
+        font: 12px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+        color: var(--fg);
+        background: var(--field-bg);
+        border: 1px solid var(--field-border);
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: color-mix(in srgb, CanvasText 8%, Canvas);
+      }
+      button.primary {
+        background: color-mix(in srgb, CanvasText 12%, Canvas);
+      }
+      button.primary:hover {
+        background: color-mix(in srgb, CanvasText 18%, Canvas);
+      }
+      button.linklike {
+        flex: 0 0 auto;
+        padding: 2px 6px;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        background: transparent;
+        border: 1px solid var(--field-border);
+        color: var(--dim);
+      }
+      button.linklike:hover {
+        color: var(--fg);
       }
     </style>
   </head>
   <body>
-    <h1>Wabe Bridge</h1>
-    <div id="status" class="status unpaired">loading…</div>
+    <section class="header">
+      <h1>Wabe Bridge</h1>
+      <div class="status-row">
+        <span id="dot" class="dot"></span>
+        <span id="statusText" class="status-text">loading…</span>
+      </div>
+      <div id="errorPanel" class="error-panel" hidden></div>
+      <div id="infoPanel" class="info-panel" hidden></div>
+    </section>
 
-    <label for="bridgeUrl">Bridge URL</label>
-    <input id="bridgeUrl" type="text" placeholder="ws://127.0.0.1:8431/bridge" />
+    <section class="section">
+      <p class="section-label">Today</p>
+      <p class="stats-line">
+        <span id="requestsToday">0</span> requests ·
+        <span id="errorsToday" class="err-count">0 errors</span>
+      </p>
+      <p class="last-error">Last error: <span id="lastError">(none)</span></p>
+    </section>
 
-    <label for="authToken">Auth token</label>
-    <textarea id="authToken" placeholder="64 hex chars from `wabe bridge pair`"></textarea>
+    <section class="section">
+      <p class="section-label">Recent requests</p>
+      <ul id="recent" class="recent"></ul>
+      <p id="recentEmpty" class="recent-empty">no requests yet</p>
+    </section>
 
-    <div class="row">
-      <button id="save">Save &amp; connect</button>
-      <button id="forget">Forget pairing</button>
-    </div>
+    <section class="section">
+      <div class="field-block">
+        <label class="field-label" for="bridgeUrl">Bridge URL</label>
+        <input id="bridgeUrl" type="text" placeholder="ws://127.0.0.1:8431/bridge" />
+      </div>
+
+      <div class="field-block">
+        <label class="field-label" for="authToken">
+          <span>Auth token</span>
+          <button id="paste" type="button" class="linklike">Paste</button>
+        </label>
+        <textarea id="authToken" placeholder="64 hex chars from `wabe bridge pair`" spellcheck="false"></textarea>
+      </div>
+
+      <div class="button-row">
+        <button id="save" class="primary" type="button">Save &amp; connect</button>
+        <button id="test" type="button">Test</button>
+        <button id="forget" type="button">Forget</button>
+      </div>
+    </section>
 
     <script type="module" src="./popup.ts"></script>
   </body>

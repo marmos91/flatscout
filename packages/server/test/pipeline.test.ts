@@ -1,14 +1,14 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { openDb, migrate, type WabeDb } from '@wabe/db';
 import type { RawListing } from '@wabe/core';
 import type { Notifier, Source } from '@wabe/plugin-sdk';
 import { CircuitBreaker } from '../src/circuit.js';
 import { Quota } from '../src/quota.js';
-import { runOnce } from '../src/pipeline.js';
+import { disposeSources, runOnce } from '../src/pipeline.js';
 import { createLogger } from '../src/logger.js';
 
 let dir: string;
@@ -159,6 +159,51 @@ describe('runOnce pipeline', () => {
     expect(sent.map((s) => s.id)).toEqual(['stub:z']);
     const failures = db._raw.prepare('SELECT plugin FROM failures').all() as Array<{ plugin: string }>;
     expect(failures.map((f) => f.plugin)).toContain('bad');
+  });
+
+  it('calls plugin.dispose() once on shutdown', async () => {
+    const dispose = vi.fn(async () => {});
+    const stub: Source = {
+      name: 'stub-dispose',
+      configSchema: z.object({}).default({}),
+      async *fetch() {
+        /* yields nothing */
+      },
+      dispose,
+    };
+    await disposeSources(
+      [{ name: 'stub-dispose', kind: 'source', plugin: stub, config: {} }],
+      createLogger('silent'),
+    );
+    expect(dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('isolates a throwing dispose; sibling plugins still disposed', async () => {
+    const goodDispose = vi.fn(async () => {});
+    const badDispose = vi.fn(async () => {
+      throw new Error('dispose boom');
+    });
+    const good: Source = {
+      name: 'good',
+      configSchema: z.object({}).default({}),
+      async *fetch() {},
+      dispose: goodDispose,
+    };
+    const bad: Source = {
+      name: 'bad',
+      configSchema: z.object({}).default({}),
+      async *fetch() {},
+      dispose: badDispose,
+    };
+    await disposeSources(
+      [
+        { name: 'good', kind: 'source', plugin: good, config: {} },
+        { name: 'bad', kind: 'source', plugin: bad, config: {} },
+      ],
+      createLogger('silent'),
+    );
+    expect(goodDispose).toHaveBeenCalledTimes(1);
+    expect(badDispose).toHaveBeenCalledTimes(1);
   });
 
   it('trips circuit breaker after N failures', async () => {

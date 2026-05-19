@@ -10,16 +10,15 @@ export class HomegateHttpError extends Error {
 }
 
 /**
- * Thrown after a 403 + re-bootstrap retry has also returned 403. The
- * auto-headless bootstrap produces low-friction DataDome cookies that do
- * NOT clear `api.homegate.ch` — see
- * `docs/research/2026-05-18-homegate-web-xhr-probe.md`. Recover by running
- * `wabe homegate-bootstrap` to manually solve the CAPTCHA once.
+ * Thrown when the Homegate API returns a 403 that the bridge transport could
+ * not transparently recover from. DataDome binds its cookie to the user's
+ * real browser session — recover by opening https://www.homegate.ch/rent in
+ * the paired browser once to refresh the session.
  */
 export class HomegateAntiBotError extends HomegateHttpError {
   constructor(url: string, body?: string) {
     super(403, url, body);
-    this.message = `homegate DataDome 403 persisted after auto-bootstrap for ${url} — run \`wabe homegate-bootstrap\` to harvest a CAPTCHA-solved cookie`;
+    this.message = `homegate DataDome blocked ${url} — open https://www.homegate.ch/rent in your paired browser once to refresh the session`;
   }
 }
 

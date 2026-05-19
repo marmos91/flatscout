@@ -54,3 +54,39 @@ Same for ImmoScout24: open `https://www.immoscout24.ch/` once before scanning.
 - **Single tenant.** Only one extension may be paired at a time per Wabe agent. A newer pairing preempts the older one server-side.
 - **127.0.0.1 only.** The bridge is not reachable from other machines on the LAN.
 - **Headless deployments.** Wabe falls back to its Playwright transport automatically when no extension is paired. The bridge is only useful where you'd otherwise be fighting DataDome from a server.
+
+## Manual smoke test (Chrome offscreen keepalive)
+
+vitest cannot host an MV3 context. After modifying the extension, run this
+checklist before claiming a change works:
+
+1. Build: `WABE_EXT_BROWSER=chrome pnpm --filter @wabe/extension-wabe build`
+2. `chrome://extensions` → Developer mode → "Load unpacked" → `apps/extension-wabe/dist/chrome`
+3. Click the extension's action icon; popup opens.
+4. Run `wabe bridge pair` in a terminal; copy the URL + 64-hex token into the popup; click Save.
+5. Wait until the popup shows "connected".
+6. **Close the DevTools window for the extension's background context** (the whole point of this design is that it works without DevTools).
+7. Start `wabe start` if not running.
+8. `wabe doctor` — expect bridge `connected: true`.
+9. Wait 5 minutes. `wabe doctor` again — still `connected: true`.
+10. Trigger a Homegate scan: `wabe scan --source source-homegate`. Listings persisted.
+11. Close laptop lid for 10 minutes; reopen. Within 30 s, popup back to "connected".
+
+## Manual smoke test (Firefox)
+
+Firefox has no offscreen API. The SW suspends after ~30 s idle; the alarm
+reconnects on its next 1-minute tick. Acceptable for interactive use.
+
+1. Build: `WABE_EXT_BROWSER=firefox pnpm --filter @wabe/extension-wabe build`
+2. `about:debugging` → "This Firefox" → "Load Temporary Add-on" → pick `manifest.json` in `apps/extension-wabe/dist/firefox`
+3. Pair as for Chrome.
+4. **Grant host permissions in `about:addons`** (Firefox does not auto-grant MV3 host permissions).
+5. Confirm `wabe doctor` reports bridge connected within 90 s.
+
+## Manual smoke test (cross-process)
+
+With `wabe start` daemon running + extension paired:
+
+1. In a second terminal: `wabe scan --source source-homegate`.
+2. Listings persist; no Playwright fallback messages in logs.
+3. `wabe doctor` reports bridge `inflight: 0` after the scan completes.

@@ -142,3 +142,20 @@ Recommendation, not commitment.
 
 Sensitive tokens are redacted as `<redacted>`; only structural facts are
 captured.
+
+## Addendum — 2026-05-19
+
+Playwright fallback dropped from `source-homegate` and
+`source-immoscout24-sitemap` (note: the sitemap plugin only used the bridge
+for PDP enrichment and still works URL-only without it; `source-homegate`
+now hard-fails without a bridge). DataDome rejects any request that does
+not originate from a genuine Homegate / ImmoScout page context. The
+Playwright path issued requests from Node (or from Chromium's network
+stack, not the page's hooked `fetch`), so DataDome blocked them anyway.
+Documented as non-recoverable; bridge is now the only supported transport
+for these sources.
+
+Sibling CLI processes (`wabe scan --source ...`) now route through the
+daemon's bridge via a new `/dispatch` WebSocket path (`DaemonBridgeTransport`
++ heartbeat-based discovery). Trust model unchanged: 127.0.0.1, shared
+`bridge-secret`.

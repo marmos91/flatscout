@@ -14,12 +14,11 @@ enabled:
     - {name: telegram, plugin: notifier-telegram, config: plugins/notifier-telegram.yaml}
 log:
   level: info
-# Browser-bridge daemon (optional). When enabled, `wabe start` exposes a
-# local WebSocket that a paired Wabe Bridge extension can connect to;
-# source-homegate + source-immoscout24-sitemap then route their HTTPS calls
-# through the genuine browser session (bypassing DataDome / Cloudflare).
-# Headless deployments can leave this off — Playwright fallback handles them.
+# Browser-bridge daemon. When enabled, `wabe start` exposes a local WebSocket
+# that a paired Wabe Bridge extension can connect to; source-homegate +
+# source-immoscout24-sitemap then route their HTTPS calls through the genuine
+# browser session (bypassing DataDome / Cloudflare). Required for those
+# sources — there is no headless fallback.
 bridge:
-  enabled: false
+  enabled: true
   port: 8431
-  host: 127.0.0.1

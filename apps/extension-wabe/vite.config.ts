@@ -39,12 +39,20 @@ export default defineConfig(() => {
   const manifest = { ...baseManifest } as Record<string, unknown>;
   if (browser === 'firefox') {
     manifest.background = { scripts: ['src/background.ts'] };
+  } else {
+    // Chrome: offscreen API is supported; add the permission so the SW can spawn
+    // a persistent offscreen document for the bridge WebSocket. Firefox MV3 has
+    // no offscreen API — its build omits the permission.
+    const perms = Array.isArray(manifest.permissions) ? [...(manifest.permissions as string[])] : [];
+    if (!perms.includes('offscreen')) perms.push('offscreen');
+    manifest.permissions = perms;
   }
   return {
     plugins: [
       webExtension({
         manifest: () => manifest,
-        additionalInputs: ['src/popup.html'],
+        additionalInputs:
+          browser === 'chrome' ? ['src/popup.html', 'src/offscreen.html'] : ['src/popup.html'],
         browser,
       }),
       copyRawAssets([{ from: 'src/dnr-rules.json', to: 'src/dnr-rules.json' }]),
