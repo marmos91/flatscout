@@ -1,7 +1,22 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { defineConfig } from 'vite';
+import { copyFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { defineConfig, type Plugin } from 'vite';
 import webExtension from 'vite-plugin-web-extension';
+
+function copyRawAssets(files: Array<{ from: string; to: string }>): Plugin {
+  return {
+    name: 'wabe-copy-raw-assets',
+    apply: 'build',
+    writeBundle(opts) {
+      const outDir = opts.dir ?? 'dist';
+      for (const f of files) {
+        const dest = join(outDir, f.to);
+        mkdirSync(join(dest, '..'), { recursive: true });
+        copyFileSync(resolve(__dirname, f.from), dest);
+      }
+    },
+  };
+}
 
 /**
  * Bundles the Wabe Bridge extension as manifest-v3.
@@ -17,9 +32,10 @@ import webExtension from 'vite-plugin-web-extension';
  */
 export default defineConfig(() => {
   const browser = process.env.WABE_EXT_BROWSER ?? 'chrome';
-  const baseManifest = JSON.parse(
-    readFileSync(resolve(__dirname, 'manifest.json'), 'utf8'),
-  ) as Record<string, unknown>;
+  const baseManifest = JSON.parse(readFileSync(resolve(__dirname, 'manifest.json'), 'utf8')) as Record<
+    string,
+    unknown
+  >;
   const manifest = { ...baseManifest } as Record<string, unknown>;
   if (browser === 'firefox') {
     manifest.background = { scripts: ['src/background.ts'] };
@@ -31,6 +47,7 @@ export default defineConfig(() => {
         additionalInputs: ['src/popup.html'],
         browser,
       }),
+      copyRawAssets([{ from: 'src/dnr-rules.json', to: 'src/dnr-rules.json' }]),
     ],
     build: {
       outDir: `dist/${browser}`,

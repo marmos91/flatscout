@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        { "header": "origin", "operation": "set", "value": "https://www.homegate.ch" },
+        { "header": "referer", "operation": "set", "value": "https://www.homegate.ch/rent" }
+      ]
+    },
+    "condition": {
+      "urlFilter": "||api.homegate.ch/",
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        { "header": "origin", "operation": "set", "value": "https://www.immoscout24.ch" },
+        { "header": "referer", "operation": "set", "value": "https://www.immoscout24.ch/" }
+      ]
+    },
+    "condition": {
+      "urlFilter": "||immoscout24.ch/",
+      "resourceTypes": ["xmlhttprequest", "main_frame", "sub_frame"]
+    }
+  }
+]

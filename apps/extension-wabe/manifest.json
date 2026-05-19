@@ -11,12 +11,26 @@
     "default_popup": "src/popup.html",
     "default_title": "Wabe Bridge"
   },
-  "permissions": ["storage", "cookies", "alarms"],
+  "permissions": ["storage", "cookies", "alarms", "declarativeNetRequest", "tabs", "scripting"],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "wabe_origin_rewrite",
+        "enabled": true,
+        "path": "src/dnr-rules.json"
+      }
+    ]
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src ws://127.0.0.1:8431 ws://localhost:8431 https: wss:"
+  },
   "host_permissions": [
     "*://*.homegate.ch/*",
     "*://api.homegate.ch/*",
     "*://*.immoscout24.ch/*",
-    "*://api.immoscout24.ch/*"
+    "*://api.immoscout24.ch/*",
+    "ws://127.0.0.1/*",
+    "http://127.0.0.1/*"
   ],
   "browser_specific_settings": {
     "gecko": {
