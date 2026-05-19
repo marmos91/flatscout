@@ -7,7 +7,10 @@ const Weekday = z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
 const Target = z
   .object({
     address: z.string().min(1).optional(),
-    coords: z.tuple([z.number(), z.number()]).optional(),
+    coords: z
+      .tuple([z.number(), z.number()])
+      .describe('[lng, lat] — GeoJSON order, same convention as Listing.location.coords')
+      .optional(),
     arrive_by: HHMM,
     weekday: Weekday,
     modes: z.array(CommuteMode).min(1),
