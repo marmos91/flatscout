@@ -93,6 +93,19 @@ function recordState(patch: {
   });
 }
 
+/** Fire-and-forget. SW merges into chrome.storage.local.bridgeStats. */
+function recordRequest(payload: {
+  method: string;
+  url: string;
+  status: number;
+  ms: number;
+  errorMessage?: string;
+}): void {
+  void chrome.runtime.sendMessage({ type: 'wabe-bridge:record-request', payload }).catch(() => {
+    /* SW may be busy; loss of a single stats record is non-fatal */
+  });
+}
+
 function scheduleReconnect(): void {
   if (state.reconnectTimer !== null) return;
   state.reconnectTimer = setTimeout(() => {
@@ -144,8 +157,9 @@ async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<v
       payload: msg,
     })) as { ok: true; result: InPageFetchResult } | { ok: false; message: string };
     if (reply?.ok) {
+      const elapsed = Date.now() - t0;
       console.log(
-        `[wabe-bridge:offscreen] proxy ok ${reply.result.status} (${Date.now() - t0}ms) ${msg.id.slice(0, 8)}`,
+        `[wabe-bridge:offscreen] proxy ok ${reply.result.status} (${elapsed}ms) ${msg.id.slice(0, 8)}`,
       );
       safeSend(
         ws,
@@ -157,30 +171,51 @@ async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<v
           body: reply.result.body,
         }),
       );
-      recordState({ lastRequestAt: Date.now() });
+      recordRequest({
+        method: msg.method,
+        url: msg.url,
+        status: reply.result.status,
+        ms: elapsed,
+      });
     } else {
-      console.warn(
-        `[wabe-bridge:offscreen] proxy fail ${reply?.message ?? '(no message)'} (${Date.now() - t0}ms)`,
-      );
+      const elapsed = Date.now() - t0;
+      const message = reply?.message ?? 'background proxy failed';
+      console.warn(`[wabe-bridge:offscreen] proxy fail ${message} (${elapsed}ms)`);
       safeSend(
         ws,
         JSON.stringify({
           type: 'error',
           id: msg.id,
-          message: reply?.message ?? 'background proxy failed',
+          message,
         }),
       );
+      recordRequest({
+        method: msg.method,
+        url: msg.url,
+        status: 0,
+        ms: elapsed,
+        errorMessage: message,
+      });
     }
   } catch (err) {
-    console.warn(`[wabe-bridge:offscreen] proxy threw: ${(err as Error).message}`);
+    const elapsed = Date.now() - t0;
+    const message = (err as Error).message;
+    console.warn(`[wabe-bridge:offscreen] proxy threw: ${message}`);
     safeSend(
       ws,
       JSON.stringify({
         type: 'error',
         id: msg.id,
-        message: (err as Error).message,
+        message,
       }),
     );
+    recordRequest({
+      method: msg.method,
+      url: msg.url,
+      status: 0,
+      ms: elapsed,
+      errorMessage: message,
+    });
   }
 }
 

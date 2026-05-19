@@ -233,6 +233,102 @@ async function executeProxyRequest(msg: BridgeRequestMessage): Promise<InPageFet
   return exec.result as InPageFetchResult;
 }
 
+// --------- Stats / recent-requests recorder (shared by both paths) ---------
+
+const MAX_RECENT_REQUESTS = 5;
+const MAX_ERROR_MESSAGE_LEN = 200;
+
+interface RecentRequestEntry {
+  at: number;
+  method: string;
+  host: string;
+  status: number;
+  ms: number;
+  errored: boolean;
+}
+
+interface BridgeStats {
+  statsDay: string;
+  requestsToday: number;
+  errorsToday: number;
+  lastErrorAt?: number;
+  lastErrorMessage?: string;
+  recentRequests: RecentRequestEntry[];
+}
+
+interface RecordRequestPayload {
+  method: string;
+  url: string;
+  status: number;
+  ms: number;
+  errorMessage?: string;
+}
+
+function todayString(): string {
+  // Use local date — popup also runs in local TZ, so day rollover is consistent.
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = `${d.getMonth() + 1}`.padStart(2, '0');
+  const day = `${d.getDate()}`.padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function safeHost(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return '(invalid url)';
+  }
+}
+
+async function recordRequestStats(payload: RecordRequestPayload): Promise<void> {
+  const stored = await chrome.storage.local.get('bridgeStats');
+  const today = todayString();
+  const existing = (stored.bridgeStats as BridgeStats | undefined) ?? {
+    statsDay: today,
+    requestsToday: 0,
+    errorsToday: 0,
+    recentRequests: [],
+  };
+  let stats: BridgeStats =
+    existing.statsDay === today
+      ? existing
+      : {
+          statsDay: today,
+          requestsToday: 0,
+          errorsToday: 0,
+          recentRequests: existing.recentRequests ?? [],
+        };
+
+  const ok = payload.status >= 200 && payload.status < 300 && !payload.errorMessage;
+  const now = Date.now();
+  if (ok) {
+    stats.requestsToday += 1;
+  } else {
+    stats.errorsToday += 1;
+    stats.lastErrorAt = now;
+    stats.lastErrorMessage = (payload.errorMessage ?? `HTTP ${payload.status}`).slice(
+      0,
+      MAX_ERROR_MESSAGE_LEN,
+    );
+  }
+
+  const entry: RecentRequestEntry = {
+    at: now,
+    method: payload.method,
+    host: safeHost(payload.url),
+    status: payload.status,
+    ms: payload.ms,
+    errored: !ok,
+  };
+  stats = {
+    ...stats,
+    recentRequests: [entry, ...(stats.recentRequests ?? [])].slice(0, MAX_RECENT_REQUESTS),
+  };
+
+  await chrome.storage.local.set({ bridgeStats: stats, lastRequestAt: now });
+}
+
 // --------- Path selection ---------
 
 const HAS_OFFSCREEN = typeof (chrome as typeof chrome & { offscreen?: unknown }).offscreen !== 'undefined';
@@ -335,6 +431,13 @@ function installChromePath(): void {
         .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
       return true;
     }
+    if (message?.type === 'wabe-bridge:record-request') {
+      const payload = (message.payload ?? {}) as RecordRequestPayload;
+      void recordRequestStats(payload)
+        .then(() => sendResponse({ ok: true }))
+        .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
+      return true;
+    }
     return false;
   });
 }
@@ -391,7 +494,12 @@ function installFirefoxPath(): void {
           body: out.body,
         }),
       );
-      await chrome.storage.local.set({ lastRequestAt: Date.now() });
+      await recordRequestStats({
+        method: msg.method,
+        url: msg.url,
+        status: out.status,
+        ms: Date.now() - tStart,
+      });
     } catch (err) {
       const e = err as Error;
       console.warn(
@@ -404,6 +512,13 @@ function installFirefoxPath(): void {
           message: e.message,
         }),
       );
+      await recordRequestStats({
+        method: msg.method,
+        url: msg.url,
+        status: 0,
+        ms: Date.now() - tStart,
+        errorMessage: e.message,
+      });
     }
   }
 
@@ -502,6 +617,13 @@ function installFirefoxPath(): void {
       state.reconnectDelayMs = 1_000;
       void connect();
       sendResponse({ ok: true });
+      return true;
+    }
+    if (message?.type === 'wabe-bridge:record-request') {
+      const payload = (message.payload ?? {}) as RecordRequestPayload;
+      void recordRequestStats(payload)
+        .then(() => sendResponse({ ok: true }))
+        .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
       return true;
     }
     return false;
