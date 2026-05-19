@@ -378,14 +378,34 @@ async function ensureOffscreen(): Promise<void> {
   await offscreenCreating;
 }
 
+/**
+ * Open a hidden tab at each registered homepage so DataDome can run its
+ * challenge and stamp cookies before the first bridge request arrives.
+ * `ensureTabForOrigin` dedups via `findExistingTabForOrigin`, so calling
+ * it for both `www.X.ch` and `api.X.ch` is safe — the second call returns
+ * the same tab the first opened.
+ */
+async function prewarmTabs(): Promise<void> {
+  for (const origin of Object.keys(TAB_HOMEPAGE)) {
+    try {
+      await ensureTabForOrigin(origin);
+    } catch (err) {
+      console.warn(`[wabe-bridge] prewarm ${origin} failed: ${(err as Error).message}`);
+    }
+  }
+}
+
 function installChromePath(): void {
   chrome.runtime.onInstalled.addListener(() => {
     void ensureOffscreen();
+    void prewarmTabs();
   });
   chrome.runtime.onStartup.addListener(() => {
     void ensureOffscreen();
+    void prewarmTabs();
   });
   void ensureOffscreen();
+  void prewarmTabs();
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === 'wabe-bridge:proxy') {
@@ -634,10 +654,13 @@ function installFirefoxPath(): void {
   // rely on the same `connect()` mutex, so racing is harmless.
   chrome.runtime.onInstalled.addListener(() => {
     void connect();
+    void prewarmTabs();
   });
   chrome.runtime.onStartup.addListener(() => {
     void connect();
+    void prewarmTabs();
   });
+  void prewarmTabs();
 
   chrome.alarms.create(KEEPALIVE_ALARM, { periodInMinutes: KEEPALIVE_MIN });
   chrome.alarms.onAlarm.addListener((alarm) => {
