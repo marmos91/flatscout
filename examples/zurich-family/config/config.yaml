@@ -12,6 +12,8 @@ enabled:
     - {name: agencies-zurich,     plugin: agencies,                    config: plugins/agencies.yaml}
   notifiers:
     - {name: telegram, plugin: notifier-telegram, config: plugins/notifier-telegram.yaml}
+  enrichers:
+    - {name: commute, plugin: enricher-commute, config: commute.yaml}
 log:
   level: info
 # Browser-bridge daemon. When enabled, `wabe start` exposes a local WebSocket

@@ -1,0 +1,24 @@
+endpoints:
+  ors_url: http://localhost:8080/ors
+  motis_url: http://localhost:8081
+  pelias_url: http://localhost:4000
+
+targets:
+  work:
+    address: "Brandschenkestrasse 178, 8002 Zürich"
+    arrive_by: "08:30"
+    weekday: mon
+    modes: [transit, cycling, walking]
+  partner-work:
+    address: "Bahnhofstrasse 1, 8001 Zürich"
+    arrive_by: "09:00"
+    weekday: mon
+    modes: [transit]
+
+cache:
+  enabled: true
+  quantize_decimals: 4
+
+timeouts:
+  geocode_ms: 5000
+  route_ms: 15000
