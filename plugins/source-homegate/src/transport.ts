@@ -1,15 +1,9 @@
 import type { Logger } from 'pino';
 import { request } from 'undici';
-import {
-  BrowserBridgeTransport as RawBridgeTransport,
-  getCurrentBridge,
-  readHeartbeat,
-} from '@wabe/browser-bridge';
+import { BrowserBridgeTransport as RawBridgeTransport, getCurrentBridge } from '@wabe/browser-bridge';
 import { ensureBootstrap, type EnsureBootstrapOptions } from './bootstrap.js';
 import { deleteCookies } from './cookies.js';
 import { buildHeaders } from './headers.js';
-
-const STALE_HEARTBEAT_MS = 15_000;
 
 export type TransportKind = 'bridge' | 'playwright' | 'undici';
 
@@ -158,19 +152,23 @@ export class UndiciTransport implements Transport {
 
 export interface SelectTransportOpts extends PlaywrightTransportOpts {
   logger: Logger;
-  /** When false, skips heartbeat lookup (e.g. tests that wire their own bridge). */
+  /** Reserved for tests; bridge selection is always in-process today. */
   checkHeartbeat?: boolean;
 }
 
 /**
  * Picks a transport at plugin-init time:
- *   1. `BrowserBridgeTransport` if a paired extension is connected (current
- *      process or fresh-enough heartbeat from a sibling `wabe start`).
+ *   1. `BrowserBridgeTransport` if a paired extension is connected to the
+ *      bridge running in *this* process (i.e. you are inside `wabe start`).
  *   2. `PlaywrightTransport` if `@wabe/browser-runtime` is installed.
  *   3. `UndiciTransport` as last-resort fallback.
  *
  * Selection is one-shot for the plugin lifetime; reconnecting an extension
  * mid-run does not re-route ongoing scans.
+ *
+ * Bridge mode is daemon-only: one-shot commands like `wabe scan` run in their
+ * own process and cannot dispatch through the daemon's bridge — they fall
+ * through to Playwright.
  */
 export function selectTransport(opts: SelectTransportOpts): Transport {
   if (isBridgeAvailable(opts.dataDir, opts.checkHeartbeat ?? true)) {
@@ -183,12 +181,12 @@ export function selectTransport(opts: SelectTransportOpts): Transport {
   return new PlaywrightTransport(opts);
 }
 
-function isBridgeAvailable(dataDir: string, checkHeartbeat: boolean): boolean {
+function isBridgeAvailable(_dataDir: string, _checkHeartbeat: boolean): boolean {
+  // The bridge dispatches requests via an in-process `getCurrentBridge()`
+  // singleton, so the only context that can use it is the same process that
+  // started it (i.e. `wabe start`'s daemon). Sibling processes such as
+  // `wabe scan --source ...` see the heartbeat file but cannot route requests
+  // through it — bridge mode is daemon-only.
   const inProc = getCurrentBridge();
-  if (inProc?.status().connected) return true;
-  if (!checkHeartbeat) return false;
-  const hb = readHeartbeat(dataDir);
-  if (!hb) return false;
-  if (hb.age_ms > STALE_HEARTBEAT_MS) return false;
-  return hb.connected;
+  return inProc?.status().connected === true;
 }

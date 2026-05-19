@@ -64,9 +64,14 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
   let lastSeenAt = 0;
   const inflight = new Map<string, Inflight>();
 
-  wss.on('connection', (ws) => {
+  wss.on('connection', (ws, req) => {
+    const peer = `${req.socket.remoteAddress}:${req.socket.remotePort}`;
+    if (process.env.WABE_BRIDGE_DEBUG)
+      console.log(`[bridge] connect from ${peer} ua=${req.headers['user-agent'] ?? 'n/a'}`);
     let helloReceived = false;
     ws.on('message', (raw) => {
+      if (process.env.WABE_BRIDGE_DEBUG)
+        console.log(`[bridge] msg from ${peer}: ${String(raw).slice(0, 200)}`);
       let parsed: unknown;
       try {
         parsed = JSON.parse(String(raw));
@@ -114,8 +119,14 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
         ifl.reject(new Error(msg.data.message));
       }
     });
-    ws.on('close', () => {
+    ws.on('close', (code, reason) => {
+      if (process.env.WABE_BRIDGE_DEBUG)
+        console.log(`[bridge] close from ${peer} code=${code} reason=${reason.toString() || '(none)'}`);
       if (activeSocket === ws) activeSocket = null;
+    });
+    ws.on('error', (err) => {
+      if (process.env.WABE_BRIDGE_DEBUG)
+        console.log(`[bridge] error from ${peer}: ${(err as Error).message}`);
     });
   });
 

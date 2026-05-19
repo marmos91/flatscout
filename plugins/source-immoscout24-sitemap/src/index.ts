@@ -1,15 +1,11 @@
-import { homedir } from 'node:os';
-import { join } from 'node:path';
 import { z } from 'zod';
 import type { PluginExport, Source, Context } from '@wabe/plugin-sdk';
 import type { WabeDb } from '@wabe/db';
-import { BrowserBridgeTransport, getCurrentBridge, readHeartbeat } from '@wabe/browser-bridge';
+import { BrowserBridgeTransport, getCurrentBridge } from '@wabe/browser-bridge';
 import { extractDetail } from './detail.js';
 import { discoverRentLeaves, fetchSitemapLeaf, type SitemapEntry } from './sitemap.js';
 import { loadSeenUrls, saveSeenUrls } from './state.js';
 import { mapEntry } from './map.js';
-
-const STALE_HEARTBEAT_MS = 15_000;
 
 const ConfigSchema = z.object({
   schedule: z.string().default('*/15 * * * *'),
@@ -29,19 +25,12 @@ const ConfigSchema = z.object({
 });
 type Config = z.infer<typeof ConfigSchema>;
 
-function resolveDataDir(): string {
-  if (process.env.WABE_DATA_DIR) return process.env.WABE_DATA_DIR;
-  const xdg = process.env.XDG_DATA_HOME ?? join(homedir(), '.local', 'share');
-  return join(xdg, 'wabe');
-}
-
 function bridgeReady(): boolean {
+  // Bridge dispatch is in-process; sibling processes (one-shot `wabe scan`)
+  // see the heartbeat file but can't actually route through it, so we only
+  // accept an in-process paired bridge here.
   const inProc = getCurrentBridge();
-  if (inProc?.status().connected) return true;
-  const hb = readHeartbeat(resolveDataDir());
-  if (!hb) return false;
-  if (hb.age_ms > STALE_HEARTBEAT_MS) return false;
-  return hb.connected;
+  return inProc?.status().connected === true;
 }
 
 const plugin: Source = {
