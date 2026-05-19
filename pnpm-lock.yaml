@@ -146,9 +146,6 @@ importers:
       '@wabe/agency-fingerprint':
         specifier: workspace:*
         version: link:../agency-fingerprint
-      '@wabe/browser-runtime':
-        specifier: workspace:*
-        version: link:../browser-runtime
       '@wabe/core':
         specifier: workspace:*
         version: link:../core
@@ -390,9 +387,6 @@ importers:
       '@wabe/browser-bridge':
         specifier: workspace:*
         version: link:../../packages/browser-bridge
-      '@wabe/browser-runtime':
-        specifier: workspace:*
-        version: link:../../packages/browser-runtime
       '@wabe/core':
         specifier: workspace:*
         version: link:../../packages/core

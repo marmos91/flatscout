@@ -10,7 +10,6 @@ import { registerDoctor } from './commands/doctor.js';
 import { registerPurge } from './commands/purge.js';
 import { registerLogin } from './commands/login.js';
 import { registerLogout } from './commands/logout.js';
-import { registerHomegateBootstrap } from './commands/homegate-bootstrap.js';
 import { registerAgencies } from './commands/agencies/index.js';
 import { registerBridge } from './commands/bridge/index.js';
 import { splash } from './splash.js';
@@ -40,7 +39,6 @@ registerDoctor(program);
 registerPurge(program);
 registerLogin(program);
 registerLogout(program);
-registerHomegateBootstrap(program);
 registerAgencies(program);
 registerBridge(program);
 

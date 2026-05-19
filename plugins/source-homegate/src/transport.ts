@@ -31,8 +31,6 @@ export interface TransportResponse {
 export interface Transport {
   readonly kind: TransportKind;
   request(opts: TransportRequestOpts): Promise<TransportResponse>;
-  /** No-op for bridge transports — the operator refreshes DataDome cookies in their browser. */
-  invalidateAndRetryOnce(reason: string, logger: Logger): Promise<boolean>;
   /** Release any held resources (e.g. daemon WS). Optional. */
   close?(): Promise<void>;
 }
@@ -56,10 +54,6 @@ export class HomegateBridgeTransport implements Transport {
       signal: opts.signal,
     });
     return { status: resp.status, body: resp.body };
-  }
-
-  async invalidateAndRetryOnce(): Promise<boolean> {
-    return false;
   }
 
   async close(): Promise<void> {

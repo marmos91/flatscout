@@ -80,10 +80,6 @@ sources:
 > and trips the orchestrator's circuit breaker. The operator must reload
 > Homegate in the paired browser to recover.
 
-> **Legacy field.** `fetch.cookie_max_age_hours` is accepted for YAML
-> backwards compatibility and ignored — bridge transports do not manage
-> cookies.
-
 ## Rental term detection
 
 Homegate's search fieldset does **not** carry a structured

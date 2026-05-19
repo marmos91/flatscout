@@ -14,7 +14,6 @@
     "@wabe/core": "workspace:*",
     "@wabe/db": "workspace:*",
     "@wabe/plugin-sdk": "workspace:*",
-    "@wabe/browser-runtime": "workspace:*",
     "@wabe/agency-fingerprint": "workspace:*",
     "@wabe/server": "workspace:*",
     "@wabe/source-homegate": "workspace:*",

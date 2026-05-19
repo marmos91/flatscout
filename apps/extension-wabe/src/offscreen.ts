@@ -83,12 +83,14 @@ async function readConfig(): Promise<ConfigReply> {
 }
 
 /** Fire-and-forget. SW writes to chrome.storage.local on our behalf. */
-function recordState(patch: { lastConnectedAt?: number; lastAliveAt?: number; lastRequestAt?: number }): void {
-  void chrome.runtime
-    .sendMessage({ type: 'wabe-bridge:set-state', payload: patch })
-    .catch(() => {
-      /* SW may be busy; popup still reads via SW on next render */
-    });
+function recordState(patch: {
+  lastConnectedAt?: number;
+  lastAliveAt?: number;
+  lastRequestAt?: number;
+}): void {
+  void chrome.runtime.sendMessage({ type: 'wabe-bridge:set-state', payload: patch }).catch(() => {
+    /* SW may be busy; popup still reads via SW on next render */
+  });
 }
 
 function scheduleReconnect(): void {
@@ -101,12 +103,17 @@ function scheduleReconnect(): void {
 }
 
 async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<void> {
+  const t0 = Date.now();
+  console.log(`[wabe-bridge:offscreen] proxy ${msg.method} ${msg.url.slice(0, 80)}`);
   try {
     const reply = (await chrome.runtime.sendMessage({
       type: 'wabe-bridge:proxy',
       payload: msg,
     })) as { ok: true; result: InPageFetchResult } | { ok: false; message: string };
     if (reply?.ok) {
+      console.log(
+        `[wabe-bridge:offscreen] proxy ok ${reply.result.status} (${Date.now() - t0}ms) ${msg.id.slice(0, 8)}`,
+      );
       ws.send(
         JSON.stringify({
           type: 'response',
@@ -118,6 +125,9 @@ async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<v
       );
       recordState({ lastRequestAt: Date.now() });
     } else {
+      console.warn(
+        `[wabe-bridge:offscreen] proxy fail ${reply?.message ?? '(no message)'} (${Date.now() - t0}ms)`,
+      );
       ws.send(
         JSON.stringify({
           type: 'error',
@@ -127,6 +137,7 @@ async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<v
       );
     }
   } catch (err) {
+    console.warn(`[wabe-bridge:offscreen] proxy threw: ${(err as Error).message}`);
     ws.send(
       JSON.stringify({
         type: 'error',

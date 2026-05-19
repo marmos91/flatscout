@@ -32,16 +32,14 @@ export interface FetchContext {
  * Performs one `POST /search/listings` against the Homegate API using the
  * supplied `Transport`.
  *
- * Retries the configured backoff status codes with exponential backoff. On a
- * 403 the transport's `invalidateAndRetryOnce` hook is called; bridge
- * transports cannot refresh DataDome state from Node (the operator must
- * reload Homegate in their browser), so the hook returns false and the 403
- * surfaces as `HomegateAntiBotError`.
+ * Retries the configured backoff status codes with exponential backoff. A 403
+ * is always treated as a DataDome block and surfaces as `HomegateAntiBotError`
+ * — there is no Node-side recovery; the operator must reload Homegate in the
+ * paired browser to refresh the session.
  */
 export async function fetchSearch(body: SearchBody, ctx: FetchContext): Promise<SearchResponse> {
   const url = `${API_BASE}${SEARCH_PATH}`;
   const payload = JSON.stringify(body);
-  let antibotRetryUsed = false;
 
   for (let attempt = 0; attempt <= ctx.backoff.retries; ) {
     if (ctx.signal.aborted) throw new Error('aborted');
@@ -66,15 +64,7 @@ export async function fetchSearch(body: SearchBody, ctx: FetchContext): Promise<
       return parsed as SearchResponse;
     }
     if (res.status === 403) {
-      if (antibotRetryUsed) {
-        throw new HomegateAntiBotError(url, res.body);
-      }
-      antibotRetryUsed = true;
-      const retried = await ctx.transport.invalidateAndRetryOnce('403 anti-bot', ctx.logger);
-      if (!retried) {
-        throw new HomegateAntiBotError(url, res.body);
-      }
-      continue;
+      throw new HomegateAntiBotError(url, res.body);
     }
     if (!ctx.backoff.on.includes(res.status) || attempt === ctx.backoff.retries) {
       throw new HomegateHttpError(res.status, url, res.body);
