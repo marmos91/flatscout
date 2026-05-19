@@ -1,5 +1,17 @@
 # @wabe/source-homegate
 
+## Requirements
+
+`source-homegate` **requires the Wabe browser bridge**. DataDome (Homegate's
+anti-bot stack) blocks any request that does not originate from a real Homegate
+page context. Run `wabe bridge pair` once, load the extension, then start
+`wabe start`. If no bridge is paired, plugin init fails fast with a clear error.
+
+Sibling CLI processes (`wabe scan --source source-homegate`) connect to the
+running daemon's bridge via `${dataDir}/bridge.status.json` and route requests
+through the daemon's paired extension. Without a daemon running, the scan
+fails fast.
+
 ## What it is
 
 A Wabe **source** plugin that fetches Swiss rental listings from

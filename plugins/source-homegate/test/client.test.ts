@@ -16,7 +16,7 @@ function makeTransport(opts: {
   const calls: TransportRequestOpts[] = [];
   let invalidations = 0;
   const t: Transport & { calls: TransportRequestOpts[]; invalidations: number } = {
-    kind: 'undici',
+    kind: 'bridge-inproc',
     calls,
     invalidations: 0,
     async request(o) {

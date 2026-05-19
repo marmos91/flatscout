@@ -5,12 +5,17 @@ import type { Context, PluginExport, Source } from '@wabe/plugin-sdk';
 import { fetchSearch, sleep } from './client.js';
 import { mapHomegateResult, HomegateApiSchema } from './map.js';
 import { buildSearchBody, SearchConfig } from './search.js';
-import { selectTransport } from './transport.js';
+import { selectTransport, type Transport } from './transport.js';
 
 const FetchConfig = z.object({
   page_size: z.number().int().positive().max(50).default(20),
   max_pages: z.number().int().positive().default(5),
   pace_ms: z.number().int().nonnegative().default(2500),
+  /**
+   * @deprecated Bridge transport doesn't manage cookies — DataDome cookies live
+   * in the user's real browser session. Kept for YAML backwards compatibility;
+   * the field is accepted and ignored.
+   */
   cookie_max_age_hours: z.number().positive().default(12),
   backoff: z
     .object({
@@ -40,24 +45,29 @@ function resolveDataDir(): string {
 }
 
 /**
- * Homegate source plugin: paginates the iOS-style anonymous search endpoint,
- * driving fresh DataDome cookies through `@wabe/browser-runtime` on first
- * call and refreshing them automatically on 403.
+ * `Source` with the (forthcoming) `dispose()` lifecycle hook. Task 11 will
+ * fold this into `@wabe/plugin-sdk` formally; the local widening lets the
+ * plugin export the hook today so the pipeline can close transports on shutdown.
  */
-const plugin: Source = {
+type SourceWithDispose = Source & { dispose?(): Promise<void> };
+
+let activeTransport: Transport | undefined;
+
+/**
+ * Homegate source plugin: paginates the iOS-style anonymous search endpoint
+ * through the Wabe browser bridge. DataDome's anti-bot challenge requires
+ * requests originate from a real Homegate page context — bridge is the only
+ * viable transport.
+ */
+const plugin: SourceWithDispose = {
   name: 'source-homegate',
   configSchema: ConfigSchema,
   async *fetch(ctx: Context) {
     const cfg = ctx.config as Config;
     const dataDir = resolveDataDir();
 
-    const cookieMaxAgeMs = cfg.fetch.cookie_max_age_hours * 3600_000;
-    const transport = selectTransport({
-      dataDir,
-      cookieMaxAgeMs,
-      logger: ctx.logger,
-      // Phase 3: getBearer will be wired to auth.getAccessToken; search is anonymous in Phase 2.
-    });
+    const transport = await selectTransport({ dataDir, logger: ctx.logger });
+    activeTransport = transport;
 
     for (let page = 0; page < cfg.fetch.max_pages; page += 1) {
       if (ctx.signal.aborted) return;
@@ -90,6 +100,12 @@ const plugin: Source = {
       if (res.maxFrom != null && next >= res.maxFrom) break;
       if (page + 1 < cfg.fetch.max_pages) await sleep(cfg.fetch.pace_ms, ctx.signal);
     }
+  },
+  async dispose() {
+    if (activeTransport?.close) {
+      await activeTransport.close();
+    }
+    activeTransport = undefined;
   },
 };
 
