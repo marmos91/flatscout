@@ -81,3 +81,44 @@ describe('evaluateFilters', () => {
     ).toBe(true);
   });
 });
+
+describe('evaluateFilters - commute branch', () => {
+  const baseListing = {
+    id: 'a',
+    source: 's',
+    url: 'https://x/a',
+    enriched: { commute: { work: { transit: { duration_min: 25, distance_km: 8, computed_at: new Date() } } } },
+  } as unknown;
+
+  it('passes when commute duration <= threshold', async () => {
+    const r = await evaluateFilters(
+      [{ kind: 'commute', target: 'work', mode: 'transit', op: '<=', value: 30, on_missing: 'fail' }],
+      baseListing,
+    );
+    expect(r.passed).toBe(true);
+  });
+
+  it('rejects when commute duration > threshold', async () => {
+    const r = await evaluateFilters(
+      [{ kind: 'commute', target: 'work', mode: 'transit', op: '<=', value: 20, on_missing: 'fail' }],
+      baseListing,
+    );
+    expect(r.passed).toBe(false);
+  });
+
+  it('treats missing target as Infinity (fails strict op with on_missing:fail)', async () => {
+    const r = await evaluateFilters(
+      [{ kind: 'commute', target: 'gym', mode: 'transit', op: '<=', value: 30, on_missing: 'fail' }],
+      baseListing,
+    );
+    expect(r.passed).toBe(false);
+  });
+
+  it('passes when missing target + on_missing:pass', async () => {
+    const r = await evaluateFilters(
+      [{ kind: 'commute', target: 'gym', mode: 'transit', op: '<=', value: 30, on_missing: 'pass' }],
+      baseListing,
+    );
+    expect(r.passed).toBe(true);
+  });
+});
