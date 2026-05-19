@@ -572,6 +572,12 @@ function installFirefoxPath(): void {
       ws.close();
       return;
     }
+    if (msg.type === 'keepalive') {
+      // Server-side application-level heartbeat. Receiving the message
+      // resets Firefox MV3's ~30s background-suspension timer.
+      await chrome.storage.local.set({ lastAliveAt: Date.now() });
+      return;
+    }
     if (msg.type === 'request') {
       await proxyRequest(ws, msg as unknown as BridgeRequestMessage);
     }

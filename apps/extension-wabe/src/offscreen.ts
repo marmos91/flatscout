@@ -240,6 +240,10 @@ async function handleBridgeMessage(ws: WebSocket, raw: string): Promise<void> {
     ws.close();
     return;
   }
+  if (msg.type === 'keepalive') {
+    recordState({ lastAliveAt: Date.now() });
+    return;
+  }
   if (msg.type === 'request') {
     await proxyRequest(ws, msg as unknown as BridgeRequestMessage);
   }

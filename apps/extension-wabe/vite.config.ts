@@ -38,10 +38,11 @@ export default defineConfig(() => {
   >;
   const manifest = { ...baseManifest } as Record<string, unknown>;
   if (browser === 'firefox') {
-    // `persistent: true` is a Firefox-MV3-only escape hatch: keeps the
-    // background page alive across idle so the bridge WS doesn't drop.
-    // Chrome ignores `persistent` on MV3 and uses an offscreen document instead.
-    manifest.background = { scripts: ['src/background.ts'], persistent: true };
+    // Firefox MV3 dropped support for `persistent: true` (warns on load).
+    // Background suspends after ~30s idle; rely instead on server-side
+    // application-level keepalive (JSON message every 10s) — see
+    // `@wabe/browser-bridge`'s server.ts PING_INTERVAL_MS.
+    manifest.background = { scripts: ['src/background.ts'] };
   } else {
     // Chrome: offscreen API is supported; add the permission so the SW can spawn
     // a persistent offscreen document for the bridge WebSocket. Firefox MV3 has

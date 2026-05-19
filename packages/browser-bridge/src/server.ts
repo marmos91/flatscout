@@ -79,19 +79,25 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
   const inflight = new Map<string, Inflight>();
   const requesters = new Set<WebSocket>();
 
-  // Heartbeat: ping every client every 20s. Browsers auto-pong, keeping TCP
-  // alive across NAT/idle-timeout boundaries. Without this, the connection
-  // can silently die after several minutes of idle and ws.send on either
-  // side throws "WebSocket is already in CLOSING or CLOSED state".
-  const PING_INTERVAL_MS = 20_000;
-  const pingTimer = setInterval(() => {
+  // Heartbeat: 10s app-level keepalive to the extension. WS `ping()` control
+  // frames are handled at protocol level by the browser and DO NOT fire a
+  // `message` event — meaning they don't reset Firefox MV3's ~30s background
+  // suspension timer. A JSON `{type:'keepalive'}` payload does, so the event
+  // page stays awake as long as it's connected. Requesters (Node sibling
+  // processes) don't suspend, so a 20s WS `ping()` is enough for them.
+  const EXT_KEEPALIVE_MS = 10_000;
+  const REQ_PING_MS = 20_000;
+  const extKeepaliveTimer = setInterval(() => {
     if (activeSocket && activeSocket.readyState === activeSocket.OPEN) {
       try {
-        activeSocket.ping();
+        activeSocket.send(JSON.stringify({ type: 'keepalive' }));
       } catch {
         /* ignore — close will surface separately */
       }
     }
+  }, EXT_KEEPALIVE_MS);
+  extKeepaliveTimer.unref?.();
+  const reqPingTimer = setInterval(() => {
     for (const r of requesters) {
       if (r.readyState === r.OPEN) {
         try {
@@ -101,8 +107,8 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
         }
       }
     }
-  }, PING_INTERVAL_MS);
-  pingTimer.unref?.();
+  }, REQ_PING_MS);
+  reqPingTimer.unref?.();
 
   wss.on('connection', (ws, req) => {
     const peer = `${req.socket.remoteAddress}:${req.socket.remotePort}`;
@@ -321,7 +327,8 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
   }
 
   async function stop(): Promise<void> {
-    clearInterval(pingTimer);
+    clearInterval(extKeepaliveTimer);
+    clearInterval(reqPingTimer);
     for (const ifl of inflight.values()) {
       clearTimeout(ifl.timer);
       ifl.reject(new Error('bridge server stopping'));
