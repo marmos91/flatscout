@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { createServer } from 'node:http';
 import { type WebSocket, WebSocketServer } from 'ws';
 import {
   type BridgeRequest,
@@ -49,12 +50,25 @@ export function newRequestId(): string {
 
 export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> {
   const secret = loadOrGenerateSecret(opts.dataDir);
-  const wss = new WebSocketServer({ host: '127.0.0.1', port: opts.port, path: '/bridge' });
-  await new Promise<void>((resolve, reject) => {
-    wss.once('listening', () => resolve());
-    wss.once('error', reject);
+  const http = createServer();
+  const wss = new WebSocketServer({ noServer: true });
+  http.on('upgrade', (req, socket, head) => {
+    const url = req.url ?? '';
+    if (url !== '/bridge' && url !== '/dispatch') {
+      socket.destroy();
+      return;
+    }
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      (ws as WebSocket & { _path?: string })._path = url;
+      wss.emit('connection', ws, req);
+    });
   });
-  const address = wss.address();
+  await new Promise<void>((resolve, reject) => {
+    http.once('listening', () => resolve());
+    http.once('error', reject);
+    http.listen(opts.port, '127.0.0.1');
+  });
+  const address = http.address();
   const port = typeof address === 'object' && address ? address.port : 0;
 
   let activeSocket: WebSocket | null = null;
@@ -63,8 +77,40 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
 
   wss.on('connection', (ws, req) => {
     const peer = `${req.socket.remoteAddress}:${req.socket.remotePort}`;
+    const role: 'extension' | 'requester' =
+      (ws as WebSocket & { _path?: string })._path === '/dispatch' ? 'requester' : 'extension';
     if (process.env.WABE_BRIDGE_DEBUG)
-      console.log(`[bridge] connect from ${peer} ua=${req.headers['user-agent'] ?? 'n/a'}`);
+      console.log(
+        `[bridge] connect from ${peer} role=${role} ua=${req.headers['user-agent'] ?? 'n/a'}`,
+      );
+    if (role === 'requester') {
+      let helloReceived = false;
+      ws.on('message', (raw) => {
+        if (!helloReceived) {
+          try {
+            const parsed = JSON.parse(String(raw));
+            const hello = ClientHello.safeParse(parsed);
+            if (!hello.success || !validateToken(secret, hello.data.auth_token_hex)) {
+              ws.send(
+                JSON.stringify({
+                  type: 'reject',
+                  reason: hello.success ? 'bad token' : 'bad hello',
+                }),
+              );
+              ws.close();
+              return;
+            }
+            helloReceived = true;
+            ws.send(JSON.stringify({ type: 'welcome', protocol_version: PROTOCOL_VERSION }));
+          } catch {
+            ws.close();
+          }
+        }
+        // post-hello requester messages are handled in Task 7.
+      });
+      ws.on('close', () => {});
+      return;
+    }
     let helloReceived = false;
     ws.on('message', (raw) => {
       if (process.env.WABE_BRIDGE_DEBUG)
@@ -193,6 +239,9 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
     }
     await new Promise<void>((resolve) => {
       wss.close(() => resolve());
+    });
+    await new Promise<void>((resolve) => {
+      http.close(() => resolve());
     });
     if (currentBridge === handle) currentBridge = null;
   }
