@@ -26,7 +26,7 @@ export interface BridgeStatus {
 export interface BridgeServer {
   port: number;
   status(): BridgeStatus;
-  dispatch(req: BridgeRequest): Promise<BridgeResponse>;
+  dispatch(req: BridgeRequest, opts?: { signal?: AbortSignal }): Promise<BridgeResponse>;
   stop(): Promise<void>;
 }
 
@@ -127,17 +127,43 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
     });
   });
 
-  function dispatch(req: BridgeRequest): Promise<BridgeResponse> {
+  function dispatch(
+    req: BridgeRequest,
+    opts?: { signal?: AbortSignal },
+  ): Promise<BridgeResponse> {
+    const signal = opts?.signal;
+    if (signal?.aborted) {
+      return Promise.reject(new Error('aborted'));
+    }
     const sock = activeSocket;
     if (!sock || sock.readyState !== sock.OPEN) {
       return Promise.reject(new Error('bridge not connected (extension offline?)'));
     }
     return new Promise<BridgeResponse>((resolve, reject) => {
+      const onAbort = (): void => {
+        const ifl = inflight.get(req.id);
+        if (!ifl) return;
+        clearTimeout(ifl.timer);
+        inflight.delete(req.id);
+        ifl.reject(new Error('aborted'));
+      };
+      if (signal) signal.addEventListener('abort', onAbort, { once: true });
       const timer = setTimeout(() => {
         inflight.delete(req.id);
+        signal?.removeEventListener('abort', onAbort);
         reject(new Error(`bridge request ${req.id} timed out after ${req.timeout_ms}ms`));
       }, req.timeout_ms);
-      inflight.set(req.id, { resolve, reject, timer });
+      inflight.set(req.id, {
+        resolve: (r) => {
+          signal?.removeEventListener('abort', onAbort);
+          resolve(r);
+        },
+        reject: (e) => {
+          signal?.removeEventListener('abort', onAbort);
+          reject(e);
+        },
+        timer,
+      });
       sock.send(JSON.stringify(req));
     });
   }
