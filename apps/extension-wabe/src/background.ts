@@ -3,21 +3,35 @@ export {};
 /**
  * Wabe Bridge — service worker / event page.
  *
- * Holds a single WebSocket to the local `@wabe/browser-bridge` server. Bridge
- * requests are not performed via the SW's own `fetch()` (which goes out as
- * the extension origin and bypasses any anti-bot JS hook on the target page).
- * Instead, a hidden tab is opened per target origin (`https://www.homegate.ch`,
- * `https://www.immoscout24.ch`, …); `chrome.scripting.executeScript` injects
- * a `fetch()` call into the tab's MAIN world. DataDome's `fetch` hook runs
- * normally, adds the JS-challenge-derived header, and the upstream sees a
- * legitimate web-app request.
+ * Two paths, feature-detected at load time:
+ *
+ *  - **Chrome (HAS_OFFSCREEN):** the SW does NOT own a WebSocket. A long-lived
+ *    offscreen document (see `offscreen.ts`) holds the WS to the local
+ *    `@wabe/browser-bridge` server and proxies each request through the SW
+ *    via `chrome.runtime.sendMessage({ type: 'wabe-bridge:proxy' })`. The SW
+ *    only runs the per-request `chrome.scripting.executeScript` and forwards
+ *    `wabe-bridge:reconnect` from the popup down to the offscreen doc.
+ *
+ *  - **Firefox (no offscreen API):** the existing SW+alarm behavior — the
+ *    background page owns the WS directly, with a 1-minute keepalive alarm
+ *    re-running `connect()` and writing `lastAliveAt`.
+ *
+ * Per-request flow is identical on both: open / reuse a hidden tab at the
+ * target origin's homepage, then `chrome.scripting.executeScript({ world:
+ * 'MAIN', func: inPageFetch })` so DataDome / Cloudflare client-side JS can
+ * sign the request normally.
  */
+
+// --------- Shared constants ---------
 
 const DEFAULT_BRIDGE_URL = 'ws://127.0.0.1:8431/bridge';
 const PROTOCOL_VERSION = 1;
 const KEEPALIVE_ALARM = 'wabe-bridge-keepalive';
 const KEEPALIVE_MIN = 1;
 const MAX_RECONNECT_DELAY_MS = 30_000;
+const OFFSCREEN_URL = 'src/offscreen.html';
+
+// --------- Shared tab helpers ---------
 
 /**
  * Per-target-origin warm-tab map. Each origin gets exactly one tab; we
@@ -67,75 +81,6 @@ async function findExistingTabForOrigin(origin: string): Promise<number | null> 
   return null;
 }
 
-interface State {
-  ws: WebSocket | null;
-  reconnectDelayMs: number;
-  reconnectTimer: ReturnType<typeof setTimeout> | null;
-  everPaired: boolean;
-  /** True while a connect() call is constructing a WebSocket; prevents parallel sockets. */
-  connecting: boolean;
-}
-
-const state: State = {
-  ws: null,
-  reconnectDelayMs: 1_000,
-  reconnectTimer: null,
-  everPaired: false,
-  connecting: false,
-};
-
-const EXT_VERSION = chrome.runtime.getManifest().version;
-
-async function readConfig(): Promise<{ bridgeUrl: string; token: string | null }> {
-  const cfg = await chrome.storage.local.get(['bridgeUrl', 'authToken']);
-  return {
-    bridgeUrl: (cfg.bridgeUrl as string | undefined) ?? DEFAULT_BRIDGE_URL,
-    token: (cfg.authToken as string | undefined) ?? null,
-  };
-}
-
-function scheduleReconnect(): void {
-  if (state.reconnectTimer !== null) return;
-  state.reconnectTimer = setTimeout(() => {
-    state.reconnectTimer = null;
-    void connect();
-  }, state.reconnectDelayMs);
-  state.reconnectDelayMs = Math.min(state.reconnectDelayMs * 2, MAX_RECONNECT_DELAY_MS);
-}
-
-/**
- * Returns the tab id loaded at `${origin}/`-something, creating + waiting for
- * it on first request. Subsequent requests reuse the same tab so the page's
- * DataDome session persists.
- */
-async function ensureTabForOrigin(origin: string): Promise<number> {
-  // Always query browser state — SW suspension makes in-memory caching unreliable.
-  const existing = await findExistingTabForOrigin(origin);
-  if (existing !== null) {
-    const tab = await getTab(existing).catch(() => null);
-    if (tab && tab.status === 'complete') return existing;
-    if (tab) {
-      await waitForTabComplete(existing);
-      return existing;
-    }
-  }
-  const pending = tabReady.get(origin);
-  if (pending) return pending;
-  const homepage = TAB_HOMEPAGE[origin] ?? `${origin}/`;
-  const p = (async (): Promise<number> => {
-    const tab = await chrome.tabs.create({ url: homepage, active: false });
-    if (tab.id === undefined) throw new Error('tab created with no id');
-    await waitForTabComplete(tab.id);
-    return tab.id;
-  })();
-  tabReady.set(origin, p);
-  try {
-    return await p;
-  } finally {
-    tabReady.delete(origin);
-  }
-}
-
 function waitForTabComplete(tabId: number, timeoutMs = 30_000): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -178,8 +123,41 @@ function getTab(tabId: number): Promise<chrome.tabs.Tab> {
   });
 }
 
-// no in-memory tab map — every request re-queries via chrome.tabs.query.
-// (originFromHostUrl is only used inside proxyRequest below.)
+/**
+ * Returns the tab id loaded at `${origin}/`-something, creating + waiting for
+ * it on first request. Subsequent requests reuse the same tab so the page's
+ * DataDome session persists.
+ */
+async function ensureTabForOrigin(origin: string): Promise<number> {
+  // Always query browser state — SW suspension makes in-memory caching unreliable.
+  const existing = await findExistingTabForOrigin(origin);
+  if (existing !== null) {
+    const tab = await getTab(existing).catch(() => null);
+    if (tab && tab.status === 'complete') return existing;
+    if (tab) {
+      await waitForTabComplete(existing);
+      return existing;
+    }
+  }
+  const pending = tabReady.get(origin);
+  if (pending) return pending;
+  const homepage = TAB_HOMEPAGE[origin] ?? `${origin}/`;
+  const p = (async (): Promise<number> => {
+    const tab = await chrome.tabs.create({ url: homepage, active: false });
+    if (tab.id === undefined) throw new Error('tab created with no id');
+    await waitForTabComplete(tab.id);
+    return tab.id;
+  })();
+  tabReady.set(origin, p);
+  try {
+    return await p;
+  } finally {
+    tabReady.delete(origin);
+  }
+}
+
+// originFromHostUrl is only used inside executeProxyRequest below. Referenced
+// here to keep linters happy in builds that strip dead code aggressively.
 void originFromHostUrl;
 
 interface InPageFetchArgs {
@@ -239,166 +217,280 @@ interface BridgeRequestMessage {
   timeout_ms?: number;
 }
 
-async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<void> {
-  const tStart = Date.now();
-  try {
-    const targetOrigin = new URL(msg.url).origin;
-    const tabId = await ensureTabForOrigin(targetOrigin);
-    const [exec] = await chrome.scripting.executeScript({
-      target: { tabId },
-      world: 'MAIN',
-      func: inPageFetch,
-      args: [
-        {
-          method: msg.method,
-          url: msg.url,
-          headers: msg.headers ?? {},
-          body: msg.body,
-          timeoutMs: msg.timeout_ms ?? 30_000,
-        },
-      ],
-    });
-    if (!exec || exec.result === undefined) {
-      throw new Error('executeScript returned no result');
-    }
-    const out = exec.result as InPageFetchResult;
-    ws.send(
-      JSON.stringify({
-        type: 'response',
-        id: msg.id,
-        status: out.status,
-        headers: out.headers,
-        body: out.body,
-      }),
-    );
-    await chrome.storage.local.set({ lastRequestAt: Date.now() });
-  } catch (err) {
-    const e = err as Error;
-    console.warn(
-      `[wabe-bridge] request ${msg.id.slice(0, 8)} failed after ${Date.now() - tStart}ms: ${e.message}`,
-    );
-    ws.send(
-      JSON.stringify({
-        type: 'error',
-        id: msg.id,
-        message: e.message,
-      }),
-    );
+// --------- Per-request proxy (used by Chrome onMessage AND Firefox proxyRequest) ---------
+
+async function executeProxyRequest(msg: BridgeRequestMessage): Promise<InPageFetchResult> {
+  const targetOrigin = new URL(msg.url).origin;
+  const tabId = await ensureTabForOrigin(targetOrigin);
+  const [exec] = await chrome.scripting.executeScript({
+    target: { tabId },
+    world: 'MAIN',
+    func: inPageFetch,
+    args: [
+      {
+        method: msg.method,
+        url: msg.url,
+        headers: msg.headers ?? {},
+        body: msg.body,
+        timeoutMs: msg.timeout_ms ?? 30_000,
+      },
+    ],
+  });
+  if (!exec || exec.result === undefined) {
+    throw new Error('executeScript returned no result');
   }
+  return exec.result as InPageFetchResult;
 }
 
-async function handleBridgeMessage(ws: WebSocket, raw: string): Promise<void> {
-  let msg: { type?: string } & Record<string, unknown>;
-  try {
-    msg = JSON.parse(raw);
-  } catch {
-    return;
-  }
-  if (msg.type === 'welcome') {
-    state.reconnectDelayMs = 1_000;
-    await chrome.storage.local.set({ lastConnectedAt: Date.now() });
-    // Log only on first welcome of a session; the rest are alarm-driven
-    // reconnects after SW suspension and would otherwise spam the console.
-    if (!state.everPaired) {
-      state.everPaired = true;
-      console.log('[wabe-bridge] paired with wabe agent');
-    }
-    return;
-  }
-  if (msg.type === 'reject') {
-    console.warn('[wabe-bridge] rejected by server:', msg.reason);
-    ws.close();
-    return;
-  }
-  if (msg.type === 'request') {
-    await proxyRequest(ws, msg as unknown as BridgeRequestMessage);
-  }
+// --------- Path selection ---------
+
+const HAS_OFFSCREEN =
+  typeof (chrome as typeof chrome & { offscreen?: unknown }).offscreen !== 'undefined';
+
+if (HAS_OFFSCREEN) {
+  installChromePath();
+} else {
+  installFirefoxPath();
 }
 
-async function connect(): Promise<void> {
-  if (state.connecting) return;
-  if (state.ws && (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)) {
-    return; // already have a live or in-flight socket
-  }
-  state.connecting = true;
-  const { bridgeUrl, token } = await readConfig();
-  if (!token) {
-    state.connecting = false;
-    return; // popup will message us once paired
-  }
-  let ws: WebSocket;
-  try {
-    ws = new WebSocket(bridgeUrl);
-  } catch (err) {
-    state.connecting = false;
-    console.warn(`[wabe-bridge] failed to open WS: ${(err as Error).message}`);
-    scheduleReconnect();
-    return;
-  }
-  state.ws = ws;
-  state.connecting = false;
-  ws.addEventListener('open', () => {
-    ws.send(
-      JSON.stringify({
-        type: 'hello',
-        protocol_version: PROTOCOL_VERSION,
-        extension_version: EXT_VERSION,
-        auth_token_hex: token,
-      }),
-    );
-  });
-  ws.addEventListener('message', (ev) => {
-    void handleBridgeMessage(ws, typeof ev.data === 'string' ? ev.data : '');
-  });
-  ws.addEventListener('close', () => {
-    state.ws = null;
-    scheduleReconnect();
-  });
-  ws.addEventListener('error', () => {
-    // Network failures will surface via the subsequent close event; no need to log twice.
+// --------- Chrome path ---------
+
+async function ensureOffscreen(): Promise<void> {
+  const offscreenAny = (
+    chrome as typeof chrome & {
+      offscreen: {
+        hasDocument(): Promise<boolean>;
+        createDocument(opts: {
+          url: string;
+          reasons: string[];
+          justification: string;
+        }): Promise<void>;
+      };
+    }
+  ).offscreen;
+  const exists = await offscreenAny.hasDocument();
+  if (exists) return;
+  await offscreenAny.createDocument({
+    url: OFFSCREEN_URL,
+    reasons: ['WORKERS'],
+    justification: 'persistent WebSocket to local Wabe agent',
   });
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type === 'wabe-bridge:reconnect') {
-    if (state.ws) {
-      try {
-        state.ws.close();
-      } catch {
-        // ignore
-      }
-      state.ws = null;
+function installChromePath(): void {
+  chrome.runtime.onInstalled.addListener(() => {
+    void ensureOffscreen();
+  });
+  chrome.runtime.onStartup.addListener(() => {
+    void ensureOffscreen();
+  });
+  void ensureOffscreen();
+
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type === 'wabe-bridge:proxy') {
+      // Self-heal: offscreen may have been evicted by Chrome low-memory reclaim.
+      void ensureOffscreen()
+        .then(() => executeProxyRequest(message.payload as BridgeRequestMessage))
+        .then((result) => sendResponse({ ok: true, result }))
+        .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
+      return true; // async response
     }
-    if (state.reconnectTimer !== null) {
-      clearTimeout(state.reconnectTimer);
+    if (message?.type === 'wabe-bridge:reconnect') {
+      // Forward to offscreen so it resets its socket; sender is the popup.
+      void ensureOffscreen()
+        .then(() => chrome.runtime.sendMessage({ type: 'wabe-bridge:reconnect' }))
+        .then(() => sendResponse({ ok: true }))
+        .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
+      return true;
+    }
+    return false;
+  });
+}
+
+// --------- Firefox path (existing SW + alarm behavior) ---------
+
+function installFirefoxPath(): void {
+  interface State {
+    ws: WebSocket | null;
+    reconnectDelayMs: number;
+    reconnectTimer: ReturnType<typeof setTimeout> | null;
+    everPaired: boolean;
+    /** True while a connect() call is constructing a WebSocket; prevents parallel sockets. */
+    connecting: boolean;
+  }
+
+  const state: State = {
+    ws: null,
+    reconnectDelayMs: 1_000,
+    reconnectTimer: null,
+    everPaired: false,
+    connecting: false,
+  };
+
+  const EXT_VERSION = chrome.runtime.getManifest().version;
+
+  async function readConfig(): Promise<{ bridgeUrl: string; token: string | null }> {
+    const cfg = await chrome.storage.local.get(['bridgeUrl', 'authToken']);
+    return {
+      bridgeUrl: (cfg.bridgeUrl as string | undefined) ?? DEFAULT_BRIDGE_URL,
+      token: (cfg.authToken as string | undefined) ?? null,
+    };
+  }
+
+  function scheduleReconnect(): void {
+    if (state.reconnectTimer !== null) return;
+    state.reconnectTimer = setTimeout(() => {
       state.reconnectTimer = null;
+      void connect();
+    }, state.reconnectDelayMs);
+    state.reconnectDelayMs = Math.min(state.reconnectDelayMs * 2, MAX_RECONNECT_DELAY_MS);
+  }
+
+  async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<void> {
+    const tStart = Date.now();
+    try {
+      const out = await executeProxyRequest(msg);
+      ws.send(
+        JSON.stringify({
+          type: 'response',
+          id: msg.id,
+          status: out.status,
+          headers: out.headers,
+          body: out.body,
+        }),
+      );
+      await chrome.storage.local.set({ lastRequestAt: Date.now() });
+    } catch (err) {
+      const e = err as Error;
+      console.warn(
+        `[wabe-bridge] request ${msg.id.slice(0, 8)} failed after ${Date.now() - tStart}ms: ${e.message}`,
+      );
+      ws.send(
+        JSON.stringify({
+          type: 'error',
+          id: msg.id,
+          message: e.message,
+        }),
+      );
     }
-    state.reconnectDelayMs = 1_000;
-    void connect();
-    sendResponse({ ok: true });
-    return true;
   }
-  return false;
-});
 
-// Single boot entry point — runs each time the event page wakes from idle.
-// onInstalled/onStartup are kept for the install/Firefox-startup paths but
-// rely on the same `connect()` mutex, so racing is harmless.
-chrome.runtime.onInstalled.addListener(() => {
-  void connect();
-});
-chrome.runtime.onStartup.addListener(() => {
-  void connect();
-});
-
-chrome.alarms.create(KEEPALIVE_ALARM, { periodInMinutes: KEEPALIVE_MIN });
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name !== KEEPALIVE_ALARM) return;
-  if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-    void chrome.storage.local.set({ lastAliveAt: Date.now() });
-  } else {
-    void connect();
+  async function handleBridgeMessage(ws: WebSocket, raw: string): Promise<void> {
+    let msg: { type?: string } & Record<string, unknown>;
+    try {
+      msg = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    if (msg.type === 'welcome') {
+      state.reconnectDelayMs = 1_000;
+      await chrome.storage.local.set({ lastConnectedAt: Date.now() });
+      // Log only on first welcome of a session; the rest are alarm-driven
+      // reconnects after SW suspension and would otherwise spam the console.
+      if (!state.everPaired) {
+        state.everPaired = true;
+        console.log('[wabe-bridge] paired with wabe agent');
+      }
+      return;
+    }
+    if (msg.type === 'reject') {
+      console.warn('[wabe-bridge] rejected by server:', msg.reason);
+      ws.close();
+      return;
+    }
+    if (msg.type === 'request') {
+      await proxyRequest(ws, msg as unknown as BridgeRequestMessage);
+    }
   }
-});
 
-void connect();
+  async function connect(): Promise<void> {
+    if (state.connecting) return;
+    if (
+      state.ws &&
+      (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)
+    ) {
+      return; // already have a live or in-flight socket
+    }
+    state.connecting = true;
+    const { bridgeUrl, token } = await readConfig();
+    if (!token) {
+      state.connecting = false;
+      return; // popup will message us once paired
+    }
+    let ws: WebSocket;
+    try {
+      ws = new WebSocket(bridgeUrl);
+    } catch (err) {
+      state.connecting = false;
+      console.warn(`[wabe-bridge] failed to open WS: ${(err as Error).message}`);
+      scheduleReconnect();
+      return;
+    }
+    state.ws = ws;
+    state.connecting = false;
+    ws.addEventListener('open', () => {
+      ws.send(
+        JSON.stringify({
+          type: 'hello',
+          protocol_version: PROTOCOL_VERSION,
+          extension_version: EXT_VERSION,
+          auth_token_hex: token,
+        }),
+      );
+    });
+    ws.addEventListener('message', (ev) => {
+      void handleBridgeMessage(ws, typeof ev.data === 'string' ? ev.data : '');
+    });
+    ws.addEventListener('close', () => {
+      state.ws = null;
+      scheduleReconnect();
+    });
+    ws.addEventListener('error', () => {
+      // Network failures will surface via the subsequent close event; no need to log twice.
+    });
+  }
+
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type === 'wabe-bridge:reconnect') {
+      if (state.ws) {
+        try {
+          state.ws.close();
+        } catch {
+          // ignore
+        }
+        state.ws = null;
+      }
+      if (state.reconnectTimer !== null) {
+        clearTimeout(state.reconnectTimer);
+        state.reconnectTimer = null;
+      }
+      state.reconnectDelayMs = 1_000;
+      void connect();
+      sendResponse({ ok: true });
+      return true;
+    }
+    return false;
+  });
+
+  // Single boot entry point — runs each time the event page wakes from idle.
+  // onInstalled/onStartup are kept for the install/Firefox-startup paths but
+  // rely on the same `connect()` mutex, so racing is harmless.
+  chrome.runtime.onInstalled.addListener(() => {
+    void connect();
+  });
+  chrome.runtime.onStartup.addListener(() => {
+    void connect();
+  });
+
+  chrome.alarms.create(KEEPALIVE_ALARM, { periodInMinutes: KEEPALIVE_MIN });
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name !== KEEPALIVE_ALARM) return;
+    if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+      void chrome.storage.local.set({ lastAliveAt: Date.now() });
+    } else {
+      void connect();
+    }
+  });
+
+  void connect();
+}
