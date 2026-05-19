@@ -16,12 +16,18 @@ export {};
  *     <- result
  *   <- sendMessage reply
  *  -> WS response back to bridge server
+ *
+ * IMPORTANT: chrome.storage and chrome.runtime.getManifest are NOT in the
+ * offscreen-document chrome.* subset. All persistent state is fetched from
+ * and written to chrome.storage.local indirectly via runtime.sendMessage to
+ * the SW (background.ts).
  */
 
 const DEFAULT_BRIDGE_URL = 'ws://127.0.0.1:8431/bridge';
 const PROTOCOL_VERSION = 1;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 const LIVENESS_TICK_MS = 10_000;
+const EXT_VERSION = '0.0.0';
 
 interface State {
   ws: WebSocket | null;
@@ -39,29 +45,6 @@ const state: State = {
   connecting: false,
 };
 
-// chrome.runtime.getManifest() is not exposed in offscreen documents (the
-// offscreen subset of chrome.runtime is limited to sendMessage/connect). The
-// version field is purely diagnostic — server doesn't gate on it — so we
-// ship a static string from build time.
-const EXT_VERSION = '0.0.0';
-
-async function readConfig(): Promise<{ bridgeUrl: string; token: string | null }> {
-  const cfg = await chrome.storage.local.get(['bridgeUrl', 'authToken']);
-  return {
-    bridgeUrl: (cfg.bridgeUrl as string | undefined) ?? DEFAULT_BRIDGE_URL,
-    token: (cfg.authToken as string | undefined) ?? null,
-  };
-}
-
-function scheduleReconnect(): void {
-  if (state.reconnectTimer !== null) return;
-  state.reconnectTimer = setTimeout(() => {
-    state.reconnectTimer = null;
-    void connect();
-  }, state.reconnectDelayMs);
-  state.reconnectDelayMs = Math.min(state.reconnectDelayMs * 2, MAX_RECONNECT_DELAY_MS);
-}
-
 interface BridgeRequestMessage {
   id: string;
   method: string;
@@ -75,6 +58,46 @@ interface InPageFetchResult {
   status: number;
   headers: Record<string, string>;
   body: string;
+}
+
+interface ConfigReply {
+  bridgeUrl: string;
+  token: string | null;
+}
+
+async function readConfig(): Promise<ConfigReply> {
+  try {
+    const reply = (await chrome.runtime.sendMessage({ type: 'wabe-bridge:get-config' })) as
+      | ConfigReply
+      | undefined;
+    if (reply && typeof reply === 'object') {
+      return {
+        bridgeUrl: reply.bridgeUrl ?? DEFAULT_BRIDGE_URL,
+        token: reply.token ?? null,
+      };
+    }
+  } catch (err) {
+    console.warn(`[wabe-bridge:offscreen] get-config failed: ${(err as Error).message}`);
+  }
+  return { bridgeUrl: DEFAULT_BRIDGE_URL, token: null };
+}
+
+/** Fire-and-forget. SW writes to chrome.storage.local on our behalf. */
+function recordState(patch: { lastConnectedAt?: number; lastAliveAt?: number; lastRequestAt?: number }): void {
+  void chrome.runtime
+    .sendMessage({ type: 'wabe-bridge:set-state', payload: patch })
+    .catch(() => {
+      /* SW may be busy; popup still reads via SW on next render */
+    });
+}
+
+function scheduleReconnect(): void {
+  if (state.reconnectTimer !== null) return;
+  state.reconnectTimer = setTimeout(() => {
+    state.reconnectTimer = null;
+    void connect();
+  }, state.reconnectDelayMs);
+  state.reconnectDelayMs = Math.min(state.reconnectDelayMs * 2, MAX_RECONNECT_DELAY_MS);
 }
 
 async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<void> {
@@ -93,7 +116,7 @@ async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<v
           body: reply.result.body,
         }),
       );
-      await chrome.storage.local.set({ lastRequestAt: Date.now() });
+      recordState({ lastRequestAt: Date.now() });
     } else {
       ws.send(
         JSON.stringify({
@@ -123,7 +146,7 @@ async function handleBridgeMessage(ws: WebSocket, raw: string): Promise<void> {
   }
   if (msg.type === 'welcome') {
     state.reconnectDelayMs = 1_000;
-    await chrome.storage.local.set({ lastConnectedAt: Date.now(), lastAliveAt: Date.now() });
+    recordState({ lastConnectedAt: Date.now(), lastAliveAt: Date.now() });
     if (!state.everPaired) {
       state.everPaired = true;
       console.log('[wabe-bridge:offscreen] paired with wabe agent');
@@ -208,7 +231,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
 setInterval(() => {
   if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-    void chrome.storage.local.set({ lastAliveAt: Date.now() });
+    recordState({ lastAliveAt: Date.now() });
   }
 }, LIVENESS_TICK_MS);
 

@@ -295,6 +295,31 @@ function installChromePath(): void {
         .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
       return true;
     }
+    if (message?.type === 'wabe-bridge:get-config') {
+      // Offscreen documents don't have chrome.storage in their subset; proxy.
+      void chrome.storage.local
+        .get(['bridgeUrl', 'authToken'])
+        .then((cfg) => {
+          sendResponse({
+            bridgeUrl: (cfg.bridgeUrl as string | undefined) ?? 'ws://127.0.0.1:8431/bridge',
+            token: (cfg.authToken as string | undefined) ?? null,
+          });
+        })
+        .catch(() => sendResponse({ bridgeUrl: 'ws://127.0.0.1:8431/bridge', token: null }));
+      return true;
+    }
+    if (message?.type === 'wabe-bridge:set-state') {
+      const payload = (message.payload ?? {}) as {
+        lastConnectedAt?: number;
+        lastAliveAt?: number;
+        lastRequestAt?: number;
+      };
+      void chrome.storage.local
+        .set(payload)
+        .then(() => sendResponse({ ok: true }))
+        .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
+      return true;
+    }
     return false;
   });
 }
