@@ -18,13 +18,14 @@ A Wabe **source** plugin that fetches Swiss rental listings from
 [Homegate](https://www.homegate.ch) by replaying the iOS app's anonymous
 search endpoint (`POST https://api.homegate.ch/search/listings`) against the
 canonical header set captured in
-[`docs/research/2026-05-18-homegate-capture-findings.md`](../../docs/research/2026-05-18-homegate-capture-findings.md).
+[`docs/research/2026-05-18-homegate-investigation.md`](../../docs/research/2026-05-18-homegate-investigation.md).
 
-The API is gated by **DataDome + Cloudflare** anti-bot, so the plugin
-piggybacks on [`@wabe/browser-runtime`](../../packages/browser-runtime)
-to harvest a fresh DataDome cookie via a headless stealth Chromium on first
-run (and again on 403). All subsequent search calls are cheap `undici` HTTP
-requests using those cookies.
+The API is gated by **DataDome + Cloudflare** anti-bot. Every request is
+dispatched through the Wabe browser bridge — a hidden tab loaded at the
+genuine Homegate origin runs `fetch` from page context via
+`chrome.scripting.executeScript({ world: 'MAIN' })`, so DataDome's hooked
+`window.fetch` signs the request. No cookie harvesting, no Playwright
+fallback — the bridge is the only supported transport.
 
 ## Install & enable
 
@@ -47,13 +48,7 @@ sources:
         page_size: 20
         max_pages: 5
         pace_ms: 2500
-        cookie_max_age_hours: 12
 ```
-
-> **Chromium download (~300MB) required on first run.** Either trigger it
-> upfront with `pnpm install:browsers` (recommended), or let the first
-> `bootstrap()` call lazy-install it on demand. Subsequent runs reuse the
-> same browser binary cached under `~/.cache/ms-playwright/`.
 
 ## Configuration reference
 
@@ -75,14 +70,19 @@ sources:
 | `fetch.page_size` | int | `20` | Page size (Homegate caps at 50). |
 | `fetch.max_pages` | int | `5` | Stop after this many pages per scan. |
 | `fetch.pace_ms` | int | `2500` | Sleep between page requests. |
-| `fetch.cookie_max_age_hours` | number | `12` | Max age of cached DataDome cookies before forcing a fresh bootstrap. |
 | `fetch.backoff.on` | int[] | `[429, 500, 502, 503, 504]` | Status codes that trigger retry. |
 | `fetch.backoff.retries` | int | `3` | Retry budget. |
 | `fetch.backoff.base_ms` | int | `2000` | Base for exponential backoff (`base * 2^attempt`). |
 
-> **403 handling is separate.** A single 403 invalidates the cached cookies
-> and triggers an immediate re-bootstrap; a second 403 in a row raises
-> `HomegateAntiBotError` and trips the orchestrator's circuit breaker.
+> **403 handling.** Bridge transports cannot refresh DataDome state from
+> Node — the cookie lives in the operator's real browser session. A 403
+> from `api.homegate.ch` surfaces immediately as `HomegateAntiBotError`
+> and trips the orchestrator's circuit breaker. The operator must reload
+> Homegate in the paired browser to recover.
+
+> **Legacy field.** `fetch.cookie_max_age_hours` is accepted for YAML
+> backwards compatibility and ignored — bridge transports do not manage
+> cookies.
 
 ## Rental term detection
 
@@ -99,42 +99,25 @@ multilingual classifier (`classifyRentalTerm` in `@wabe/core`) as
 2. **Unknown** when no signal is found — the orchestrator's
    `rental_term.yaml` config decides whether to keep or drop those.
 
-## How DataDome cookies are managed
+## OAuth bootstrap (optional, for user-account scoped endpoints)
 
-- Cookies are **harvested once** via headless Chromium against
-  `https://www.homegate.ch/rent` (driven by `@wabe/browser-runtime`).
-- They are **cached** at `${dataDir}/homegate-cookies.json` (mode 0600).
-  Default `dataDir` is `$WABE_DATA_DIR` / `$XDG_DATA_HOME/wabe` /
-  `~/.local/share/wabe`.
-- They are **auto-refreshed** when (a) the cached file is older than
-  `cookie_max_age_hours`, or (b) the API returns 403 once. A second 403
-  in a row raises `HomegateAntiBotError`.
+Anonymous search works **without** logging in — the bridge handles the
+DataDome challenge and no user token is required for `/search/listings`.
 
-The plugin also persists a per-install identity at
-`${dataDir}/homegate-install.json` — a stable UUID kept for future endpoint
-paths that bind to a per-client identity.
+A separate **Auth0 PKCE flow** is provided for endpoints that bind to a
+user account (favourites, saved searches, the future applicator). This
+is unrelated to the anonymous search path:
 
-> **⚠️ DataDome CAPTCHA — manual bootstrap required.** Live testing
-> (2026-05-18) confirms `api.homegate.ch` requires a high-friction
-> DataDome cookie that only the deep search URL issues, and only after
-> a CAPTCHA solve. Pure-headless automation cannot pass the challenge.
->
-> **Use `wabe homegate-bootstrap`** to launch a visible browser, manually
-> solve the CAPTCHA once, and harvest the cookie. Subsequent `wabe scan`
-> runs reuse the cached cookie for ~12h. See findings:
-> `docs/research/2026-05-18-homegate-web-xhr-probe.md`.
+- `wabe login homegate` — exchanges a PKCE authorization code (OOB
+  copy-paste flow) for refresh and access tokens, persisted at
+  `${dataDir}/secrets.json` with mode 0600.
+- The plugin's `auth.ts` handles refresh-token rotation on next scan
+  when the access token is close to expiry.
+- `wabe logout homegate` — revokes the refresh token at Auth0
+  (`/oauth/revoke`) and clears local credentials.
 
-## Authentication (optional)
-
-Anonymous search works **without** logging in. Run `wabe login homegate` to
-exchange an Auth0 PKCE authorization code (OOB copy-paste flow) for refresh
-and access tokens, persisted at `${dataDir}/secrets.json` with mode 0600.
-The plugin's `auth.ts` handles refresh-token rotation on next scan when the
-access token is close to expiry. `wabe logout homegate` revokes the
-refresh token at Auth0 (`/oauth/revoke`) and clears local credentials.
-User-bound endpoints (favourites, applicator) are not yet consumed by the
-v1 read-only search path — the plumbing ships ahead of the next applicator
-spec.
+User-bound endpoints are not yet consumed by the v1 read-only search
+path; the plumbing ships ahead of the next applicator spec.
 
 ## Known gaps (TODO)
 
@@ -144,21 +127,19 @@ spec.
   full lister object lives in a different fieldset.
 - Non-zipcode geoTags (city / canton / radius search) are not supported in
   v1. Use `zipcodes:` only.
-- `fetch.cookie_max_age_hours: 12` is a first-pass guess matching DataDome's
-  typical session window. The first week of production running will reveal
-  the right value — if 403→re-bootstrap loops every scan, drop to `3`; if
-  cookies last 24h cleanly, raise it.
 
 ## Troubleshooting
 
-- **`homegate anti-bot block (403) persisted after re-bootstrap`** — your IP
-  or browser fingerprint is being challenged hard. Delete
-  `${dataDir}/homegate-cookies.json` and re-run; if it persists, your
-  residential IP may be temporarily flagged.
+- **`source-homegate requires the Wabe browser bridge`** — no in-process
+  bridge (you're not running inside `wabe start`) and no daemon reachable
+  via `${dataDir}/bridge.status.json`. Start `wabe start` with the
+  extension paired, or run `wabe bridge pair` to set it up.
+- **`HomegateAntiBotError` (403)** — DataDome rejected a request that
+  was already routed through the bridge. The operator should reload
+  Homegate in the paired browser to refresh the page-context session;
+  the next scan should recover.
 - **`homegate HTTP 429 …`** — slow down. Increase `fetch.pace_ms` and/or
   raise `fetch.max_pages` retry budget.
-- **First run hangs on bootstrap** — Playwright is downloading Chromium
-  (~300MB). Watch `~/.cache/ms-playwright/`. Subsequent runs are fast.
 - **Listings missing photos** — Homegate occasionally returns localizations
   without `attachments`; the mapper falls back across `primary` → `de` →
   `en` → `fr` → `it`. If all are empty, photos will be `[]`.
@@ -168,7 +149,7 @@ spec.
 - Endpoint: `https://api.homegate.ch/search/listings` (iOS Homegate app
   v15.62.0 contract, captured 2026-05-18).
 - Reference investigation:
-  [`docs/research/2026-05-18-homegate-capture-findings.md`](../../docs/research/2026-05-18-homegate-capture-findings.md).
+  [`docs/research/2026-05-18-homegate-investigation.md`](../../docs/research/2026-05-18-homegate-investigation.md).
 - Inspired by the MIT-licensed
   [`denysvitali/homegate-rs`](https://github.com/denysvitali/homegate-rs)
   reference (now superseded by the captured Auth0 + DataDome contract).

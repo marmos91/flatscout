@@ -33,9 +33,10 @@ export interface FetchContext {
  * supplied `Transport`.
  *
  * Retries the configured backoff status codes with exponential backoff. On a
- * 403 the transport's `invalidateAndRetryOnce` hook is called — for the
- * Playwright transport this re-bootstraps cookies; for Bridge/Undici it
- * returns false and the 403 surfaces as `HomegateAntiBotError`.
+ * 403 the transport's `invalidateAndRetryOnce` hook is called; bridge
+ * transports cannot refresh DataDome state from Node (the operator must
+ * reload Homegate in their browser), so the hook returns false and the 403
+ * surfaces as `HomegateAntiBotError`.
  */
 export async function fetchSearch(body: SearchBody, ctx: FetchContext): Promise<SearchResponse> {
   const url = `${API_BASE}${SEARCH_PATH}`;
