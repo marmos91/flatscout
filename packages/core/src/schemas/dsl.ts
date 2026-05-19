@@ -9,7 +9,19 @@ export const OnMissingFilter = z.enum(['fail', 'pass', 'skip']).default('fail');
 /** Policy for scoring dimensions when the target metric is missing. */
 export const OnMissingDim = z.enum(['zero', 'skip_dim', 'fail']).default('zero');
 
-/** A single filter rule — either a field comparison or a JSONata expression. */
+/** Supported travel modes for the commute primitive. */
+export const CommuteMode = z.enum(['transit', 'cycling', 'walking', 'driving']);
+export type CommuteMode = z.infer<typeof CommuteMode>;
+
+/** Reusable commute primitive: resolves to minutes (or Infinity if unavailable). */
+export const CommutePrimitive = z.object({
+  kind: z.literal('commute'),
+  target: z.string().min(1),
+  mode: CommuteMode,
+});
+export type CommutePrimitive = z.infer<typeof CommutePrimitive>;
+
+/** A single filter rule — a field comparison, a JSONata expression, or a commute-time threshold. */
 export const FilterRule = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('field'),
@@ -21,6 +33,14 @@ export const FilterRule = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('expr'),
     expr: z.string(),
+    on_missing: OnMissingFilter,
+  }),
+  z.object({
+    kind: z.literal('commute'),
+    target: z.string().min(1),
+    mode: CommuteMode,
+    op: z.enum(['<', '<=', '==', '!=', '>=', '>']),
+    value: z.number(),
     on_missing: OnMissingFilter,
   }),
 ]);
@@ -63,11 +83,11 @@ export const NormCategorical = z.object({
 export const Normalize = z.discriminatedUnion('type', [NormLinear, NormStep, NormSigmoid, NormCategorical]);
 export type Normalize = z.infer<typeof Normalize>;
 
-const RuleDim = z.object({
+export const RuleDim = z.object({
   type: z.literal('rule'),
   name: z.string(),
   weight: z.number().positive(),
-  metric: z.string(),
+  metric: z.union([z.string(), CommutePrimitive]),
   normalize: Normalize,
   on_missing: OnMissingDim,
 });
