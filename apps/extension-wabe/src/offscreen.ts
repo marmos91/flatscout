@@ -39,7 +39,11 @@ const state: State = {
   connecting: false,
 };
 
-const EXT_VERSION = chrome.runtime.getManifest().version;
+// chrome.runtime.getManifest() is not exposed in offscreen documents (the
+// offscreen subset of chrome.runtime is limited to sendMessage/connect). The
+// version field is purely diagnostic — server doesn't gate on it — so we
+// ship a static string from build time.
+const EXT_VERSION = '0.0.0';
 
 async function readConfig(): Promise<{ bridgeUrl: string; token: string | null }> {
   const cfg = await chrome.storage.local.get(['bridgeUrl', 'authToken']);
