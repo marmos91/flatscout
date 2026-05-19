@@ -1,0 +1,13 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [8.5345, 47.3677] },
+      "properties": {
+        "label": "Brandschenkestrasse 178, 8002 Zürich, Switzerland",
+        "confidence": 0.95
+      }
+    }
+  ]
+}
