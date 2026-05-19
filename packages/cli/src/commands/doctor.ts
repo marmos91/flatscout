@@ -19,10 +19,13 @@ export function registerDoctor(prog: Command): void {
       const globalOpts = prog.opts<{ config?: string; dataDir?: string }>();
       const paths = resolvePaths({ config: globalOpts.config, dataDir: globalOpts.dataDir });
       let ok = true;
-      const result = (label: string, pass: boolean, detail?: string) => {
-        const tag = pass ? 'OK ' : 'FAIL';
+      type Severity = 'ok' | 'warn' | 'fail';
+      const result = (label: string, severity: Severity | boolean, detail?: string) => {
+        // Legacy boolean: true→ok, false→fail. New callers pass 'warn' for informational issues.
+        const s: Severity = typeof severity === 'boolean' ? (severity ? 'ok' : 'fail') : severity;
+        const tag = s === 'ok' ? 'OK  ' : s === 'warn' ? 'WARN' : 'FAIL';
         console.log(`[${tag}] ${label}${detail ? ` — ${detail}` : ''}`);
-        if (!pass) ok = false;
+        if (s === 'fail') ok = false;
       };
       let loadedCfg: Awaited<ReturnType<typeof loadConfig>> | null = null;
       let loadedSources: Array<{ name: string; plugin: { name: string } }> | null = null;
@@ -149,7 +152,7 @@ export function registerDoctor(prog: Command): void {
  */
 async function probeCommuteEndpoints(
   commuteCfgPath: string,
-  result: (label: string, pass: boolean, detail?: string) => void,
+  result: (label: string, severity: 'ok' | 'warn' | 'fail' | boolean, detail?: string) => void,
 ): Promise<void> {
   type CommuteEndpoints = { endpoints: { ors_url: string; motis_url: string; pelias_url: string } };
   let cfg: CommuteEndpoints;
@@ -173,11 +176,10 @@ async function probeCommuteEndpoints(
       const r = await request(url, { headersTimeout: 2000, bodyTimeout: 2000 });
       // Drain body so the connection releases.
       await r.body.dump();
-      // Pass informationally for any non-5xx; >=500 surfaces as a warning but
-      // still informational (does not toggle the overall exit code).
-      result(label, true, `HTTP ${r.statusCode}`);
+      // <500 = ok, >=500 = warn (still informational, doesn't fail doctor exit).
+      result(label, r.statusCode >= 500 ? 'warn' : 'ok', `HTTP ${r.statusCode}`);
     } catch (err) {
-      result(label, true, `unreachable: ${(err as Error).message}`);
+      result(label, 'warn', `unreachable: ${(err as Error).message}`);
     }
   }
 }
