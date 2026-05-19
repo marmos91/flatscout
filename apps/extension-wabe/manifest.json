@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Wabe Bridge",
+  "version": "0.0.0",
+  "description": "Proxies HTTPS requests from your real browser to a local Wabe agent over WebSocket (bypasses anti-bot walls).",
+  "background": {
+    "service_worker": "src/background.ts",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "Wabe Bridge"
+  },
+  "permissions": ["storage", "cookies", "alarms", "declarativeNetRequest", "tabs", "scripting"],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "wabe_origin_rewrite",
+        "enabled": true,
+        "path": "src/dnr-rules.json"
+      }
+    ]
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src ws://127.0.0.1:8431 ws://localhost:8431 https: wss:"
+  },
+  "host_permissions": [
+    "*://*.homegate.ch/*",
+    "*://api.homegate.ch/*",
+    "*://*.immoscout24.ch/*",
+    "*://api.immoscout24.ch/*",
+    "ws://127.0.0.1/*",
+    "http://127.0.0.1/*"
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "wabe-bridge@wabe.local",
+      "strict_min_version": "121.0"
+    }
+  }
+}

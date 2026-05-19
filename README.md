@@ -148,6 +148,64 @@ Five plugin interfaces (`Source`, `Enricher`, `Scorer`, `Notifier`, `Applicator`
 
 The slice ships `Source` and `Notifier` plugins; `Enricher`, `Scorer` (LLM), and `Applicator` are type contracts only — implementations land in later phases.
 
+## Browser bridge (optional)
+
+Some Swiss portals (Homegate, ImmoScout24) sit behind DataDome / Cloudflare anti-bot stacks that fingerprint TLS + HTTP/2 in addition to cookies. Wabe ships an opt-in **browser bridge** that turns the user's own Chrome or Firefox into the upstream HTTPS transport, so the request goes out as ordinary human browsing.
+
+Architecture:
+
+- `@wabe/browser-bridge` — a `127.0.0.1`-only WebSocket server inside `wabe start`. Pairs with one extension via a 64-hex shared secret. A heartbeat file at `${dataDir}/bridge.status.json` lets sibling commands (`wabe bridge status`, `wabe doctor`) read connection state without opening a second WS client.
+- `apps/extension-wabe` — manifest v3 WebExtension (Chrome + Firefox via separate `dist/chrome/` and `dist/firefox/` builds, since Firefox MV3 still ships with `background.service_worker` disabled and needs `background.scripts` instead). On a bridge request the extension opens (or reuses) a hidden tab loaded at the target's homepage and runs `chrome.scripting.executeScript({ world: 'MAIN' })` to perform `fetch()` inside the page's own context. This is critical: DataDome injects a JS hook on `window.fetch` that adds a fingerprint-derived header to every outgoing request — the page-context fetch picks that hook up automatically, so the request hitting api.homegate.ch looks identical to one initiated by the legitimate web app. A `declarative_net_request` rule additionally rewrites `Origin` / `Referer` at the network layer.
+- `source-homegate` and `source-immoscout24-sitemap` select their transport at startup: **bridge** (when the paired extension is connected to the bridge running in *this* process) → **playwright** (headless fallback) → **undici** (anonymous last resort). Bridge mode is daemon-only — one-shot commands like `wabe scan --source X` cannot dispatch through the daemon's bridge and will fall through to Playwright. IS24 additionally promotes from URL-only sitemap entries to full-detail listings (rooms / price / photos / description) when the bridge is connected.
+
+Setup:
+
+```bash
+# 1. Enable the bridge in config.yaml
+#    bridge:
+#      enabled: true
+#      port: 8431
+#      host: 127.0.0.1
+
+# 2. Build the extension (both Chrome + Firefox dists)
+pnpm --filter @wabe/extension-wabe build
+# Output: apps/extension-wabe/dist/chrome/ and dist/firefox/
+
+# 3. Start the daemon (this also starts the bridge)
+pnpm wabe start
+
+# 4. Get the pairing URL + token
+pnpm wabe bridge pair
+
+# 5. Load the extension
+#    Chrome:  chrome://extensions → Developer mode → Load unpacked → apps/extension-wabe/dist/chrome/
+#    Firefox: about:debugging → This Firefox → Load Temporary Add-on → apps/extension-wabe/dist/firefox/manifest.json
+# 6. Open the extension popup, paste URL + token, click Save & connect.
+
+# 7. Verify
+pnpm wabe bridge status     # expect: connected on port 8431 …
+pnpm wabe doctor            # expect: [OK ] browser bridge — connected …
+```
+
+Headless deployments (no GUI) can leave `bridge.enabled` off — `source-homegate` falls back to the Playwright transport automatically. The extension is only useful where you'd otherwise be fighting DataDome from a server.
+
+### Known limitations
+
+- **Firefox suspends background event pages on idle** (and Chrome service workers behave the same way under MV3). With DevTools open on the extension's background script the page stays warm; without it, the WebSocket is allowed to die and reconnects on the next `chrome.alarms` tick (~30 s). Offscreen-document keepalive is a deferred follow-up.
+- **First request to each origin opens a new tab.** The tab is hidden (`active: false`) but visible in the tab strip. The page must reach `complete` and run any DataDome JS challenge before the bridge can dispatch; subsequent requests reuse the same tab via `chrome.tabs.query`.
+- **The bridge is single-tenant.** One extension at a time per Wabe agent; a newer pairing preempts an older one server-side.
+
+### Cross-source lister normalisation
+
+When the upstream response carries agency / lister metadata, source plugins now emit it under a shared shape so downstream tooling (UI, dedup, notifier templates) can treat every source the same way:
+
+- `agency`: top-level string — legal/agency name.
+- `contact`: strict `{ phone?, email?, form_url? }` — schema-validated.
+- `enriched.lister`: source-specific richness (`legal_name`, `website`, `logo_url`, `inquiry_contact`, `viewing_contact`, `address_locality`, …) — schema-passthrough.
+- `location.region`, `location.neighborhood`, `available_from`: filled from raw response when available.
+
+Implemented for `source-homegate`, `source-flatfox`, `source-realadvisor`. Other sources continue to emit `null` / `{}` where the data isn't exposed by the upstream API.
+
 ## Plugin authoring 101
 
 A plugin is an npm package that default-exports `{ kind, plugin }`:

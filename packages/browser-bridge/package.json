@@ -1,13 +1,10 @@
 {
-  "name": "@wabe/source-homegate",
+  "name": "@wabe/browser-bridge",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": {
-    ".": "./dist/index.js",
-    "./dist/map.js": "./dist/map.js"
-  },
+  "exports": { ".": "./dist/index.js" },
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "build": "tsc -b",
@@ -15,16 +12,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@wabe/browser-bridge": "workspace:*",
-    "@wabe/browser-runtime": "workspace:*",
-    "@wabe/core": "workspace:*",
-    "@wabe/plugin-sdk": "workspace:*",
     "pino": "^9.4.0",
-    "undici": "^6.19.8",
+    "ws": "^8.18.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^22.7.4",
+    "@types/ws": "^8.5.13",
     "typescript": "^5.6.2",
     "vitest": "^2.1.1"
   }

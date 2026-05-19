@@ -72,13 +72,30 @@ export function mapHit(h: RawHit): RawListing | null {
     lease_until: null,
     rental_term: 'unknown',
     agency: h.agency_name ?? null,
-    contact: {
-      phone: h.agency_contact_phone_number ?? null,
-    },
-    enriched: {},
+    contact: buildContact(h),
+    enriched: buildEnriched(h),
     extra: {
       realadvisor_hit_id: idStr,
       portal: h.portal ?? null,
     },
   };
+}
+
+function buildContact(h: RawHit): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  const phone = h.agency_contact_phone_number ?? h.visit_contact_phone_number;
+  if (phone) out.phone = phone;
+  return out;
+}
+
+/** Mirrors `enriched.lister` shape used by source-homegate + source-flatfox. */
+function buildEnriched(h: RawHit): Record<string, unknown> {
+  const lister: Record<string, unknown> = {};
+  if (h.agency_name) lister.legal_name = h.agency_name;
+  if (h.agency_logo_url) lister.logo_url = h.agency_logo_url;
+  if (h.agency_contact_address) lister.address_locality = h.agency_contact_address;
+  if (h.visit_contact_person) lister.viewing_contact = h.visit_contact_person;
+  if (h.agency_rating != null) lister.rating = h.agency_rating;
+  if (h.agency_reviews_count != null) lister.reviews_count = h.agency_reviews_count;
+  return Object.keys(lister).length > 0 ? { lister } : {};
 }

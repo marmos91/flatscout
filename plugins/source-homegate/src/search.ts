@@ -35,7 +35,13 @@ export interface SearchBody {
   trackTotalHits: true;
   from: number;
   size: number;
-  fieldset: 'srp-list';
+  /**
+   * Optional fieldset selector. `'srp-list'` is the compact projection used by
+   * the iOS app's search-results page (drops `lister`, `availableFrom`,
+   * `externalIds`, …). Omit the field entirely to receive the full projection,
+   * which is what Wabe needs to populate agency / contact / availability.
+   */
+  fieldset?: 'srp-list';
   query: SearchQuery;
 }
 
@@ -83,7 +89,7 @@ export function buildSearchBody(cfg: SearchConfig, size: number, from: number): 
     trackTotalHits: true,
     from,
     size,
-    fieldset: 'srp-list',
+    // Intentionally omit `fieldset` to request the full projection.
     query,
   };
 }

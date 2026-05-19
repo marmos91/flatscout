@@ -27,4 +27,40 @@ describe('mapEntry', () => {
     expect(out?.rooms).toBeNull();
     expect(out?.price.total).toBeNull();
   });
+
+  it('fills full-detail fields when a JSON-LD detail payload is supplied', () => {
+    const detail = {
+      listing: {
+        '@type': 'RealEstateListing' as const,
+        numberOfRooms: 3.5,
+        floorSize: { value: 78 },
+        offers: { price: 2400, priceCurrency: 'CHF' },
+        address: {
+          streetAddress: 'Seestrasse 12',
+          postalCode: '8002',
+          addressLocality: 'Zürich',
+          addressRegion: 'ZH',
+        },
+        description: 'Sunny attic',
+        image: ['https://img/1.jpg', 'https://img/2.jpg'],
+      },
+    };
+    const out = mapEntry(
+      {
+        loc: 'https://www.immoscout24.ch/rent/123',
+        lastmod: null,
+        image_loc: 'https://cdn.example/old.jpg',
+        geo_location: '8002 Zürich, ZH',
+      },
+      detail,
+    );
+    expect(out?.rooms).toBe(3.5);
+    expect(out?.area_m2).toBe(78);
+    expect(out?.price.total).toBe(2400);
+    expect(out?.price.currency).toBe('CHF');
+    expect(out?.location.address).toBe('Seestrasse 12');
+    expect(out?.location.postal_code).toBe('8002');
+    expect(out?.description).toBe('Sunny attic');
+    expect(out?.photos).toEqual(['https://img/1.jpg', 'https://img/2.jpg']);
+  });
 });

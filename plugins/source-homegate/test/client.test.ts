@@ -1,127 +1,149 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MockAgent, setGlobalDispatcher, getGlobalDispatcher, type Dispatcher } from 'undici';
+import { describe, expect, it, vi } from 'vitest';
 import pino from 'pino';
-import type { BootstrapResult } from '@wabe/browser-runtime';
 import { fetchSearch } from '../src/client.js';
 import { HomegateAntiBotError, HomegateHttpError } from '../src/errors.js';
 import { buildSearchBody, SearchConfig } from '../src/search.js';
+import type { Transport, TransportRequestOpts, TransportResponse } from '../src/transport.js';
 
 const logger = pino({ level: 'silent' });
 
-function makeCookies(tag: string): BootstrapResult {
-  return {
-    cookieHeader: `datadome=${tag}`,
-    cookies: [{ name: 'datadome', value: tag, domain: '.homegate.ch', expires: null }],
-    capturedAt: Date.now(),
-    userAgent: 'test-ua',
+function makeTransport(opts: {
+  responses: Array<TransportResponse | (() => TransportResponse)>;
+  invalidateReturns?: boolean;
+  invalidateImpl?: () => Promise<boolean>;
+}): Transport & { calls: TransportRequestOpts[]; invalidations: number } {
+  let i = 0;
+  const calls: TransportRequestOpts[] = [];
+  let invalidations = 0;
+  const t: Transport & { calls: TransportRequestOpts[]; invalidations: number } = {
+    kind: 'undici',
+    calls,
+    invalidations: 0,
+    async request(o) {
+      calls.push(o);
+      const item = opts.responses[i++];
+      if (item === undefined) throw new Error(`no more stub responses (call #${i})`);
+      return typeof item === 'function' ? item() : item;
+    },
+    async invalidateAndRetryOnce() {
+      invalidations++;
+      t.invalidations = invalidations;
+      if (opts.invalidateImpl) return opts.invalidateImpl();
+      return opts.invalidateReturns ?? false;
+    },
   };
-}
-
-let originalDispatcher: Dispatcher;
-let agent: MockAgent;
-
-beforeEach(() => {
-  originalDispatcher = getGlobalDispatcher();
-  agent = new MockAgent();
-  agent.disableNetConnect();
-  setGlobalDispatcher(agent);
-});
-
-afterEach(async () => {
-  await agent.close();
-  setGlobalDispatcher(originalDispatcher);
-});
-
-function makeCtx(opts: {
-  ensureBootstrap: ReturnType<typeof vi.fn>;
-  retries?: number;
-  on?: number[];
-}) {
-  return {
-    dataDir: '/tmp/wabe-test',
-    paceMs: 0,
-    backoff: { on: opts.on ?? [429, 500, 502, 503, 504], retries: opts.retries ?? 2, base_ms: 1 },
-    signal: new AbortController().signal,
-    logger,
-    ensureBootstrap: opts.ensureBootstrap as unknown as Parameters<typeof fetchSearch>[1]['ensureBootstrap'],
-  };
+  return t;
 }
 
 const body = buildSearchBody(SearchConfig.parse({}), 5, 0);
 
+function ctxWith(transport: Transport, retries = 2, on: number[] = [429, 500, 502, 503, 504]) {
+  return {
+    paceMs: 0,
+    backoff: { on, retries, base_ms: 1 },
+    signal: new AbortController().signal,
+    logger,
+    transport,
+  };
+}
+
+const okBody = JSON.stringify({ from: 0, size: 5, total: 0, results: [] });
+
 describe('fetchSearch', () => {
   it('returns the happy-path response', async () => {
-    const ensureBootstrap = vi.fn().mockResolvedValue(makeCookies('happy'));
-    const pool = agent.get('https://api.homegate.ch');
-    pool
-      .intercept({ method: 'POST', path: '/search/listings' })
-      .reply(200, { from: 0, size: 5, total: 0, results: [] });
-
-    const res = await fetchSearch(body, makeCtx({ ensureBootstrap }));
+    const t = makeTransport({ responses: [{ status: 200, body: okBody }] });
+    const res = await fetchSearch(body, ctxWith(t));
     expect(res.results).toEqual([]);
-    expect(ensureBootstrap).toHaveBeenCalledTimes(1);
+    expect(t.calls).toHaveLength(1);
+    expect(t.calls[0]?.method).toBe('POST');
   });
 
-  it('on 403 invalidates cookies, re-bootstraps with force, retries', async () => {
-    const ensureBootstrap = vi
-      .fn()
-      .mockResolvedValueOnce(makeCookies('stale'))
-      .mockResolvedValueOnce(makeCookies('fresh'));
-
-    const seenCookies: string[] = [];
-    const pool = agent.get('https://api.homegate.ch');
-    pool
-      .intercept({ method: 'POST', path: '/search/listings' })
-      .reply((opts) => {
-        const cookie = (opts.headers as Record<string, string>).Cookie ?? '';
-        seenCookies.push(cookie);
-        if (seenCookies.length === 1) {
-          return { statusCode: 403, data: 'forbidden' };
-        }
-        return { statusCode: 200, data: { from: 0, size: 5, total: 0, results: [] } };
-      })
-      .times(2);
-
-    const res = await fetchSearch(body, makeCtx({ ensureBootstrap }));
+  it('on 403 calls invalidateAndRetryOnce and retries when the transport supports it', async () => {
+    const t = makeTransport({
+      responses: [
+        { status: 403, body: 'forbidden' },
+        { status: 200, body: okBody },
+      ],
+      invalidateReturns: true,
+    });
+    const res = await fetchSearch(body, ctxWith(t));
     expect(res.results).toEqual([]);
-    expect(ensureBootstrap).toHaveBeenCalledTimes(2);
-    // Second call must be forced.
-    expect(ensureBootstrap.mock.calls[1]?.[2]).toEqual(expect.objectContaining({ force: true }));
-    expect(seenCookies[0]).toContain('stale');
-    expect(seenCookies[1]).toContain('fresh');
+    expect(t.invalidations).toBe(1);
+    expect(t.calls).toHaveLength(2);
   });
 
-  it('throws HomegateAntiBotError on a second 403', async () => {
-    const ensureBootstrap = vi
-      .fn()
-      .mockResolvedValueOnce(makeCookies('first'))
-      .mockResolvedValueOnce(makeCookies('second'));
+  it('throws HomegateAntiBotError when the transport refuses to retry', async () => {
+    const t = makeTransport({
+      responses: [{ status: 403, body: 'blocked' }],
+      invalidateReturns: false,
+    });
+    await expect(fetchSearch(body, ctxWith(t))).rejects.toBeInstanceOf(HomegateAntiBotError);
+    expect(t.invalidations).toBe(1);
+    expect(t.calls).toHaveLength(1);
+  });
 
-    const pool = agent.get('https://api.homegate.ch');
-    pool.intercept({ method: 'POST', path: '/search/listings' }).reply(403, 'blocked').times(2);
-
-    await expect(fetchSearch(body, makeCtx({ ensureBootstrap }))).rejects.toBeInstanceOf(
-      HomegateAntiBotError,
-    );
+  it('throws HomegateAntiBotError on a second 403 even when transport keeps retrying', async () => {
+    const t = makeTransport({
+      responses: [
+        { status: 403, body: 'first' },
+        { status: 403, body: 'second' },
+      ],
+      invalidateReturns: true,
+    });
+    await expect(fetchSearch(body, ctxWith(t))).rejects.toBeInstanceOf(HomegateAntiBotError);
+    expect(t.invalidations).toBe(1);
   });
 
   it('retries on 429 then succeeds', async () => {
-    const ensureBootstrap = vi.fn().mockResolvedValue(makeCookies('x'));
-    const pool = agent.get('https://api.homegate.ch');
-    pool.intercept({ method: 'POST', path: '/search/listings' }).reply(429, 'rate limited').times(1);
-    pool
-      .intercept({ method: 'POST', path: '/search/listings' })
-      .reply(200, { from: 0, size: 5, total: 0, results: [] });
-    const res = await fetchSearch(body, makeCtx({ ensureBootstrap, retries: 2, on: [429] }));
+    const t = makeTransport({
+      responses: [
+        { status: 429, body: 'rate limited' },
+        { status: 200, body: okBody },
+      ],
+    });
+    const res = await fetchSearch(body, ctxWith(t, 2, [429]));
     expect(res.results).toEqual([]);
+    expect(t.calls).toHaveLength(2);
   });
 
   it('throws HomegateHttpError when 500 budget is exhausted', async () => {
-    const ensureBootstrap = vi.fn().mockResolvedValue(makeCookies('x'));
-    const pool = agent.get('https://api.homegate.ch');
-    pool.intercept({ method: 'POST', path: '/search/listings' }).reply(500, 'boom').times(3);
-    await expect(
-      fetchSearch(body, makeCtx({ ensureBootstrap, retries: 2, on: [500] })),
-    ).rejects.toBeInstanceOf(HomegateHttpError);
+    const t = makeTransport({
+      responses: [
+        { status: 500, body: 'boom' },
+        { status: 500, body: 'boom' },
+        { status: 500, body: 'boom' },
+      ],
+    });
+    await expect(fetchSearch(body, ctxWith(t, 2, [500]))).rejects.toBeInstanceOf(HomegateHttpError);
+  });
+
+  it('aborts when the AbortSignal fires before the next attempt', async () => {
+    const ac = new AbortController();
+    const t = makeTransport({
+      responses: [{ status: 429, body: 'rate limited' }],
+    });
+    const ctx = {
+      paceMs: 0,
+      backoff: { on: [429], retries: 5, base_ms: 50 },
+      signal: ac.signal,
+      logger,
+      transport: t,
+    };
+    const p = fetchSearch(body, ctx);
+    setTimeout(() => ac.abort(), 5);
+    await expect(p).rejects.toThrow(/aborted/);
+  });
+
+  it('also calls invalidate on the first 403 attempt (sanity)', async () => {
+    const inv = vi.fn(async () => true);
+    const t = makeTransport({
+      responses: [
+        { status: 403, body: 'a' },
+        { status: 200, body: okBody },
+      ],
+      invalidateImpl: inv,
+    });
+    await fetchSearch(body, ctxWith(t));
+    expect(inv).toHaveBeenCalledTimes(1);
   });
 });

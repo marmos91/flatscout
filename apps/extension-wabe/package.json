@@ -1,0 +1,22 @@
+{
+  "name": "@wabe/extension-wabe",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "pnpm build:chrome && pnpm build:firefox",
+    "build:chrome": "WABE_EXT_BROWSER=chrome vite build",
+    "build:firefox": "WABE_EXT_BROWSER=firefox vite build",
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.275",
+    "@types/node": "^22.7.4",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.10",
+    "vite-plugin-web-extension": "^4.4.1",
+    "vitest": "^2.1.1"
+  }
+}

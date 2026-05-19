@@ -49,7 +49,16 @@ export interface RawHit {
   renovation_year?: number | null;
   created_at?: string | null;
   agency_name?: string | null;
+  agency_id?: string | number | null;
+  agency_logo_url?: string | null;
   agency_contact_phone_number?: string | null;
+  agency_contact_address?: string | null;
+  agency_portal_id?: string | null;
+  agency_reference?: string | null;
+  agency_rating?: number | null;
+  agency_reviews_count?: number | null;
+  visit_contact_person?: string | null;
+  visit_contact_phone_number?: string | null;
 }
 
 export interface RealAdvisorPage {

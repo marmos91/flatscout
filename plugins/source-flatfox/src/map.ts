@@ -22,7 +22,18 @@ export interface FlatfoxApiResult {
   object_type?: string | null;
   status?: string | null;
   published?: string | null;
-  agency?: { name?: string | null } | null;
+  agency?: {
+    name?: string | null;
+    name_2?: string | null;
+    street?: string | null;
+    zipcode?: string | null;
+    city?: string | null;
+    country?: string | null;
+    logo?: { url?: string | null } | null;
+    phone?: string | null;
+    email?: string | null;
+    website?: string | null;
+  } | null;
   images?: Array<{ original_url?: string } | string> | null;
   /** Canonical relative path as returned by the API, e.g. `/en/flat/<slug>/<pk>/`. Preferred over pk-first variant since it avoids a 301 redirect. */
   url?: string | null;
@@ -92,8 +103,34 @@ export function mapFlatfoxListing(r: FlatfoxApiResult): RawListing {
     rental_term: classified.rental_term,
     agency: r.agency?.name ?? null,
     features: {},
-    contact: {},
-    enriched: {},
+    contact: buildContact(r.agency),
+    enriched: buildEnriched(r.agency),
     extra: {},
   };
+}
+
+/** Canonical `{phone, email, form_url}` only — extra lister data goes to enriched. */
+function buildContact(a: FlatfoxApiResult['agency']): Record<string, unknown> {
+  if (!a) return {};
+  const out: Record<string, unknown> = {};
+  if (a.phone) out.phone = a.phone;
+  if (a.email) out.email = a.email;
+  return out;
+}
+
+/** Source-side richness, schema-safe. Mirrors `enriched.lister` key set used by source-homegate. */
+function buildEnriched(a: FlatfoxApiResult['agency']): Record<string, unknown> {
+  if (!a) return {};
+  const lister: Record<string, unknown> = {};
+  if (a.name) lister.legal_name = a.name;
+  if (a.name_2) lister.legal_name_2 = a.name_2;
+  if (a.logo?.url) {
+    const url = a.logo.url;
+    lister.logo_url = url.startsWith('http') ? url : `https://flatfox.ch${url}`;
+  }
+  if (a.website) lister.website = a.website;
+  if (a.city || a.zipcode || a.street) {
+    lister.address_locality = a.city ?? null;
+  }
+  return Object.keys(lister).length > 0 ? { lister } : {};
 }

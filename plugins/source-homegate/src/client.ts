@@ -1,10 +1,7 @@
 import type { Logger } from 'pino';
-import { request } from 'undici';
-import { ensureBootstrap as defaultEnsureBootstrap } from './bootstrap.js';
-import { deleteCookies } from './cookies.js';
 import { HomegateAntiBotError, HomegateHttpError, HomegateParseError } from './errors.js';
-import { buildHeaders } from './headers.js';
 import type { SearchBody } from './search.js';
+import type { Transport } from './transport.js';
 
 const API_BASE = 'https://api.homegate.ch';
 const SEARCH_PATH = '/search/listings';
@@ -24,54 +21,41 @@ export interface SearchResponse {
 }
 
 export interface FetchContext {
-  dataDir: string;
   paceMs: number;
   backoff: { on: number[]; retries: number; base_ms: number };
   signal: AbortSignal;
   logger: Logger;
-  /** Cookie freshness window in ms. Defaults to the cookies module default (12h). */
-  cookieMaxAgeMs?: number;
-  /** Optional bearer accessor (Phase 3 will wire this; Phase 2 leaves it null). */
-  getBearer?: () => Promise<string | null>;
-  /** Injectable for tests; defaults to the real `ensureBootstrap`. */
-  ensureBootstrap?: typeof defaultEnsureBootstrap;
+  transport: Transport;
 }
 
 /**
- * Performs one `POST /search/listings` against the Homegate API with the
- * captured iOS-app header set.
+ * Performs one `POST /search/listings` against the Homegate API using the
+ * supplied `Transport`.
  *
  * Retries the configured backoff status codes with exponential backoff. On a
- * 403, treats it as a DataDome challenge: deletes the cached cookie file,
- * forces a re-bootstrap once, and retries with fresh cookies. A second 403
- * raises `HomegateAntiBotError`.
+ * 403 the transport's `invalidateAndRetryOnce` hook is called — for the
+ * Playwright transport this re-bootstraps cookies; for Bridge/Undici it
+ * returns false and the 403 surfaces as `HomegateAntiBotError`.
  */
 export async function fetchSearch(body: SearchBody, ctx: FetchContext): Promise<SearchResponse> {
-  const ensure = ctx.ensureBootstrap ?? defaultEnsureBootstrap;
   const url = `${API_BASE}${SEARCH_PATH}`;
-  const bearer = ctx.getBearer ? await ctx.getBearer() : null;
-
-  let cookies = await ensure(ctx.dataDir, ctx.logger, { maxAgeMs: ctx.cookieMaxAgeMs });
+  const payload = JSON.stringify(body);
   let antibotRetryUsed = false;
 
   for (let attempt = 0; attempt <= ctx.backoff.retries; ) {
     if (ctx.signal.aborted) throw new Error('aborted');
-    const headers = buildHeaders({
-      cookie: cookies.cookieHeader,
-      userAgent: cookies.userAgent,
-      bearer,
-      hasBody: true,
-    });
-    const res = await request(url, {
+    const res = await ctx.transport.request({
       method: 'POST',
-      headers,
-      body: JSON.stringify(body),
+      url,
+      hasBody: true,
+      body: payload,
       signal: ctx.signal,
+      logger: ctx.logger,
     });
-    if (res.statusCode >= 200 && res.statusCode < 300) {
+    if (res.status >= 200 && res.status < 300) {
       let parsed: unknown;
       try {
-        parsed = await res.body.json();
+        parsed = JSON.parse(res.body);
       } catch (err) {
         throw new HomegateParseError(`failed to parse homegate response: ${(err as Error).message}`);
       }
@@ -80,22 +64,19 @@ export async function fetchSearch(body: SearchBody, ctx: FetchContext): Promise<
       }
       return parsed as SearchResponse;
     }
-    const bodyText = await res.body.text();
-    if (res.statusCode === 403) {
+    if (res.status === 403) {
       if (antibotRetryUsed) {
-        throw new HomegateAntiBotError(url, bodyText);
+        throw new HomegateAntiBotError(url, res.body);
       }
       antibotRetryUsed = true;
-      ctx.logger.warn({ status: 403 }, 'homegate 403; invalidating cookies and re-bootstrapping');
-      await deleteCookies(ctx.dataDir);
-      cookies = await ensure(ctx.dataDir, ctx.logger, {
-        force: true,
-        maxAgeMs: ctx.cookieMaxAgeMs,
-      });
+      const retried = await ctx.transport.invalidateAndRetryOnce('403 anti-bot', ctx.logger);
+      if (!retried) {
+        throw new HomegateAntiBotError(url, res.body);
+      }
       continue;
     }
-    if (!ctx.backoff.on.includes(res.statusCode) || attempt === ctx.backoff.retries) {
-      throw new HomegateHttpError(res.statusCode, url, bodyText);
+    if (!ctx.backoff.on.includes(res.status) || attempt === ctx.backoff.retries) {
+      throw new HomegateHttpError(res.status, url, res.body);
     }
     await sleep(ctx.backoff.base_ms * 2 ** attempt, ctx.signal);
     attempt += 1;

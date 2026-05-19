@@ -5,6 +5,7 @@ import type { Context, PluginExport, Source } from '@wabe/plugin-sdk';
 import { fetchSearch, sleep } from './client.js';
 import { mapHomegateResult, HomegateApiSchema } from './map.js';
 import { buildSearchBody, SearchConfig } from './search.js';
+import { selectTransport } from './transport.js';
 
 const FetchConfig = z.object({
   page_size: z.number().int().positive().max(50).default(20),
@@ -51,19 +52,23 @@ const plugin: Source = {
     const dataDir = resolveDataDir();
 
     const cookieMaxAgeMs = cfg.fetch.cookie_max_age_hours * 3600_000;
+    const transport = selectTransport({
+      dataDir,
+      cookieMaxAgeMs,
+      logger: ctx.logger,
+      // Phase 3: getBearer will be wired to auth.getAccessToken; search is anonymous in Phase 2.
+    });
 
     for (let page = 0; page < cfg.fetch.max_pages; page += 1) {
       if (ctx.signal.aborted) return;
       const from = page * cfg.fetch.page_size;
       const body = buildSearchBody(cfg.search, cfg.fetch.page_size, from);
       const res = await fetchSearch(body, {
-        dataDir,
         paceMs: cfg.fetch.pace_ms,
         backoff: cfg.fetch.backoff,
-        cookieMaxAgeMs,
         signal: ctx.signal,
         logger: ctx.logger,
-        // Phase 3: getBearer will be wired to auth.getAccessToken; search is anonymous in Phase 2.
+        transport,
       });
 
       for (const raw of res.results) {
