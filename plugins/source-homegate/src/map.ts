@@ -138,8 +138,7 @@ const Listing = z
 export const HomegateApiSchema = z
   .object({
     id: z.string(),
-    /** Was a string in older API responses; current API ships an object with translations. Accept either. */
-    listingType: z.union([z.string(), z.record(z.string(), z.unknown()), z.unknown()]).optional(),
+    listingType: z.record(z.string(), z.unknown()).optional(),
     listing: Listing,
   })
   .passthrough();
