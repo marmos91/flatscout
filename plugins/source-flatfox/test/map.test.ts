@@ -31,7 +31,7 @@ describe('mapFlatfoxListing', () => {
     expect(r.price.total).toBe(2850);
     expect(r.rooms).toBe(2.0);
     expect(r.area_m2).toBe(85);
-    expect(r.location.coords).toEqual([47.385, 8.527]);
+    expect(r.location.coords).toEqual([8.527, 47.385]);
     expect(r.location.city).toBe('Zürich');
     expect(r.location.postal_code).toBe('8005');
     expect(r.agency).toBe('ACME Immo AG');

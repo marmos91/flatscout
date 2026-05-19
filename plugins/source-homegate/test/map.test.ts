@@ -26,7 +26,7 @@ describe('mapHomegateResult', () => {
     expect(r.floor).toBe(3);
     expect(r.built_year).toBe(1998);
     expect(r.renovated_year).toBe(2019);
-    expect(r.location.coords).toEqual([47.36023, 8.58447]);
+    expect(r.location.coords).toEqual([8.58447, 47.36023]);
     expect(r.location.address).toBe('Beispielstrasse 1');
     expect(r.location.postal_code).toBe('8053');
     expect(r.location.city).toBe('Zürich');
