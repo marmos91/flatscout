@@ -6,6 +6,9 @@ import { loadConfig, loadPlugins, loadSecrets, readHeartbeat } from '@wabe/serve
 import { openDb } from '@wabe/db';
 import { resolvePaths } from '../paths.js';
 
+/** Sources that route through DataDome-protected APIs and therefore require the bridge. */
+const DATADOME_SOURCES = ['source-homegate', 'source-immoscout24-sitemap'] as const;
+
 /** Compact relative-time formatter — `"3h ago"`, `"2d ago"`, `"45s ago"`. */
 function relAge(epochMs: number): string {
   const deltaS = Math.max(0, Math.floor((Date.now() - epochMs) / 1000));
@@ -30,6 +33,7 @@ export function registerDoctor(prog: Command): void {
         if (!pass) ok = false;
       };
       let loadedCfg: Awaited<ReturnType<typeof loadConfig>> | null = null;
+      let loadedSources: Array<{ name: string }> | null = null;
       try {
         const cfg = await loadConfig(paths.configDir);
         loadedCfg = cfg;
@@ -41,6 +45,7 @@ export function registerDoctor(prog: Command): void {
         result('rental_term policy', true, rentalDetail);
         try {
           const loaded = await loadPlugins(cfg);
+          loadedSources = loaded.sources;
           result(
             'plugins resolve + configs validate',
             true,
@@ -125,6 +130,32 @@ export function registerDoctor(prog: Command): void {
           const lastSeen =
             hb.last_seen_at === 0 ? 'unknown' : `${Math.round((Date.now() - hb.last_seen_at) / 1000)}s ago`;
           result('browser bridge', true, `connected on port ${hb.port}, extension last seen ${lastSeen}`);
+        }
+      }
+
+      // Hard-fail: DataDome-protected sources require a paired + connected bridge.
+      // Without it, those sources will error on every scan, so surface the misconfiguration
+      // early via a non-zero doctor exit.
+      const enabledDataDomeSources =
+        loadedSources
+          ?.filter((s) => (DATADOME_SOURCES as readonly string[]).includes(s.name))
+          .map((s) => s.name) ?? [];
+      if (enabledDataDomeSources.length > 0) {
+        const hb = readHeartbeat(paths.dataDir);
+        const bridgeOk =
+          loadedCfg?.top.bridge.enabled === true &&
+          hb !== null &&
+          hb.age_ms < 15_000 &&
+          hb.connected;
+        if (!bridgeOk) {
+          result(
+            'bridge required by DataDome sources',
+            false,
+            `sources [${enabledDataDomeSources.join(', ')}] need bridge paired+connected. ` +
+              'Enable `top.bridge.enabled` and run `wabe bridge pair` + `wabe start`.',
+          );
+        } else {
+          result('bridge required by DataDome sources', true, enabledDataDomeSources.join(', '));
         }
       }
 
