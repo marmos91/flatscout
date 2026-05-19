@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { type WebSocket, WebSocketServer } from 'ws';
 import {
-  type BridgeRequest,
+  BridgeRequest,
   type BridgeResponse,
   ClientHello,
   ClientMessage,
@@ -31,10 +31,13 @@ export interface BridgeServer {
   stop(): Promise<void>;
 }
 
+type Origin = WebSocket | 'in-process';
+
 interface Inflight {
   resolve: (r: BridgeResponse) => void;
   reject: (e: Error) => void;
   timer: NodeJS.Timeout;
+  origin: Origin;
 }
 
 /** Module-level pointer to the most-recently-started bridge for plugin code that wants implicit access. */
@@ -74,6 +77,7 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
   let activeSocket: WebSocket | null = null;
   let lastSeenAt = 0;
   const inflight = new Map<string, Inflight>();
+  const requesters = new Set<WebSocket>();
 
   wss.on('connection', (ws, req) => {
     const peer = `${req.socket.remoteAddress}:${req.socket.remotePort}`;
@@ -85,31 +89,88 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
       );
     if (role === 'requester') {
       let helloReceived = false;
+      requesters.add(ws);
       ws.on('message', (raw) => {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(String(raw));
+        } catch {
+          ws.close();
+          return;
+        }
         if (!helloReceived) {
-          try {
-            const parsed = JSON.parse(String(raw));
-            const hello = ClientHello.safeParse(parsed);
-            if (!hello.success || !validateToken(secret, hello.data.auth_token_hex)) {
-              ws.send(
-                JSON.stringify({
-                  type: 'reject',
-                  reason: hello.success ? 'bad token' : 'bad hello',
-                }),
-              );
-              ws.close();
-              return;
-            }
-            helloReceived = true;
-            ws.send(JSON.stringify({ type: 'welcome', protocol_version: PROTOCOL_VERSION }));
-            return;
-          } catch {
+          const hello = ClientHello.safeParse(parsed);
+          if (!hello.success) {
+            ws.send(JSON.stringify({ type: 'reject', reason: 'bad hello' }));
             ws.close();
+            return;
+          }
+          if (!validateToken(secret, hello.data.auth_token_hex)) {
+            ws.send(JSON.stringify({ type: 'reject', reason: 'bad token' }));
+            ws.close();
+            return;
+          }
+          helloReceived = true;
+          ws.send(JSON.stringify({ type: 'welcome', protocol_version: PROTOCOL_VERSION }));
+          return;
+        }
+        const reqMsg = BridgeRequest.safeParse(parsed);
+        if (!reqMsg.success) return;
+        if (!activeSocket || activeSocket.readyState !== activeSocket.OPEN) {
+          ws.send(
+            JSON.stringify({
+              type: 'error',
+              id: reqMsg.data.id,
+              message: 'bridge not connected (extension offline?)',
+            }),
+          );
+          return;
+        }
+        const timer = setTimeout(() => {
+          inflight.delete(reqMsg.data.id);
+          try {
+            ws.send(
+              JSON.stringify({
+                type: 'error',
+                id: reqMsg.data.id,
+                message: `bridge request ${reqMsg.data.id} timed out after ${reqMsg.data.timeout_ms}ms`,
+              }),
+            );
+          } catch {
+            // ignore
+          }
+        }, reqMsg.data.timeout_ms);
+        inflight.set(reqMsg.data.id, {
+          resolve: (r) => {
+            try {
+              ws.send(JSON.stringify(r));
+            } catch {
+              // ignore
+            }
+          },
+          reject: (e) => {
+            try {
+              ws.send(
+                JSON.stringify({ type: 'error', id: reqMsg.data.id, message: e.message }),
+              );
+            } catch {
+              // ignore
+            }
+          },
+          timer,
+          origin: ws,
+        });
+        activeSocket.send(JSON.stringify(reqMsg.data));
+      });
+      ws.on('close', () => {
+        requesters.delete(ws);
+        for (const [id, ifl] of inflight) {
+          if (ifl.origin === ws) {
+            clearTimeout(ifl.timer);
+            inflight.delete(id);
           }
         }
-        // post-hello requester messages are handled in Task 7.
       });
-      ws.on('close', () => {});
       return;
     }
     let helloReceived = false;
@@ -210,6 +271,7 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
           reject(e);
         },
         timer,
+        origin: 'in-process',
       });
       sock.send(JSON.stringify(req));
     });
@@ -238,6 +300,14 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
       }
       activeSocket = null;
     }
+    for (const r of requesters) {
+      try {
+        r.close();
+      } catch {
+        // ignore
+      }
+    }
+    requesters.clear();
     await new Promise<void>((resolve) => {
       wss.close(() => resolve());
     });

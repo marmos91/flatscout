@@ -65,3 +65,151 @@ describe('two-path bridge server', () => {
     expect(w.readyState).toBe(WebSocket.CLOSED);
   });
 });
+
+import type { BridgeRequest, BridgeResponse } from '../src/protocol.js';
+
+async function pairExtension(): Promise<WebSocket> {
+  const ws = new WebSocket(`ws://127.0.0.1:${port}/bridge`);
+  await open(ws);
+  await helloOk(ws);
+  return ws;
+}
+
+async function pairRequester(): Promise<WebSocket> {
+  const ws = new WebSocket(`ws://127.0.0.1:${port}/dispatch`);
+  await open(ws);
+  await helloOk(ws);
+  return ws;
+}
+
+function recvJson(ws: WebSocket, predicate: (m: unknown) => boolean): Promise<unknown> {
+  return new Promise((resolve) => {
+    const onMsg = (data: WebSocket.RawData): void => {
+      const parsed = JSON.parse(String(data));
+      if (predicate(parsed)) {
+        ws.off('message', onMsg);
+        resolve(parsed);
+      }
+    };
+    ws.on('message', onMsg);
+  });
+}
+
+describe('fan-out routing', () => {
+  it('routes a requester request through the extension and back to that requester', async () => {
+    const ext = await pairExtension();
+    const req1 = await pairRequester();
+    ext.on('message', (raw) => {
+      const parsed = JSON.parse(String(raw)) as Partial<BridgeRequest>;
+      if (parsed.type !== 'request') return;
+      ext.send(
+        JSON.stringify({
+          type: 'response',
+          id: parsed.id,
+          status: 200,
+          headers: {},
+          body: JSON.stringify({ ok: true, id: parsed.id }),
+        }),
+      );
+    });
+    const reqId = 'fan-1';
+    req1.send(
+      JSON.stringify({
+        type: 'request',
+        id: reqId,
+        method: 'GET',
+        url: 'https://www.homegate.ch/',
+        headers: {},
+        timeout_ms: 5_000,
+      }),
+    );
+    const msg = (await recvJson(req1, (m) => (m as { id?: string }).id === reqId)) as BridgeResponse;
+    expect(msg.type).toBe('response');
+    expect(msg.status).toBe(200);
+  });
+
+  it('does not cross-deliver responses between two concurrent requesters', async () => {
+    const ext = await pairExtension();
+    const r1 = await pairRequester();
+    const r2 = await pairRequester();
+    ext.on('message', (raw) => {
+      const p = JSON.parse(String(raw)) as Partial<BridgeRequest>;
+      if (p.type !== 'request') return;
+      setTimeout(() => {
+        ext.send(
+          JSON.stringify({
+            type: 'response',
+            id: p.id,
+            status: 200,
+            headers: {},
+            body: p.id ?? '',
+          }),
+        );
+      }, 10);
+    });
+    const send = (ws: WebSocket, id: string): void => {
+      ws.send(
+        JSON.stringify({
+          type: 'request',
+          id,
+          method: 'GET',
+          url: 'https://www.homegate.ch/',
+          headers: {},
+          timeout_ms: 5_000,
+        }),
+      );
+    };
+    send(r1, 'A');
+    send(r2, 'B');
+    const [a, b] = await Promise.all([
+      recvJson(r1, (m) => (m as { id?: string }).id === 'A') as Promise<BridgeResponse>,
+      recvJson(r2, (m) => (m as { id?: string }).id === 'B') as Promise<BridgeResponse>,
+    ]);
+    expect(a.body).toBe('A');
+    expect(b.body).toBe('B');
+  });
+
+  it('sends error reply to requester when no extension is paired', async () => {
+    const r = await pairRequester();
+    r.send(
+      JSON.stringify({
+        type: 'request',
+        id: 'lonely',
+        method: 'GET',
+        url: 'https://www.homegate.ch/',
+        headers: {},
+        timeout_ms: 5_000,
+      }),
+    );
+    const msg = (await recvJson(r, (m) => (m as { id?: string }).id === 'lonely')) as {
+      type: string;
+      message?: string;
+    };
+    expect(msg.type).toBe('error');
+    expect(msg.message).toMatch(/not connected/i);
+  });
+
+  it('drops inflight entries owned by a requester that disconnects mid-flight', async () => {
+    const ext = await pairExtension();
+    const r = await pairRequester();
+    // Extension intentionally never responds.
+    r.send(
+      JSON.stringify({
+        type: 'request',
+        id: 'orphan',
+        method: 'GET',
+        url: 'https://www.homegate.ch/',
+        headers: {},
+        timeout_ms: 30_000,
+      }),
+    );
+    await new Promise<void>((res) => setTimeout(res, 50));
+    expect(bridge.status().inflight).toBe(1);
+    r.close();
+    await new Promise<void>((res) => setTimeout(res, 50));
+    expect(bridge.status().inflight).toBe(0);
+    ext.send(
+      JSON.stringify({ type: 'response', id: 'orphan', status: 200, headers: {}, body: '' }),
+    );
+  });
+});
