@@ -4,6 +4,7 @@ import {
   CircuitBreaker,
   Quota,
   createLogger,
+  disposeSources,
   loadConfig,
   loadPlugins,
   runOnce,
@@ -56,6 +57,7 @@ export function registerStart(prog: Command): void {
       });
 
       const shutdownHooks: Array<() => Promise<void> | void> = [];
+      shutdownHooks.push(() => disposeSources(loaded.sources, logger));
 
       let bridge: BridgeServer | null = null;
       if (cfg.top.bridge.enabled) {

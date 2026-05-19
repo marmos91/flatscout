@@ -78,16 +78,9 @@ async function selectBridgeTransport(dataDir: string): Promise<SelectedTransport
   return null;
 }
 
-/**
- * `Source` with the (forthcoming) `dispose()` lifecycle hook. Task 11 will
- * fold this into `@wabe/plugin-sdk` formally; the local widening lets the
- * plugin export the hook today so the pipeline can close transports on shutdown.
- */
-type SourceWithDispose = Source & { dispose?(): Promise<void> };
-
 let activeSelected: SelectedTransport | undefined;
 
-const plugin: SourceWithDispose = {
+const plugin: Source = {
   name: 'source-immoscout24-sitemap',
   configSchema: ConfigSchema,
   async *fetch(ctx: Context) {

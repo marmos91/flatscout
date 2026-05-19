@@ -44,13 +44,6 @@ function resolveDataDir(): string {
   return join(xdgData, 'wabe');
 }
 
-/**
- * `Source` with the (forthcoming) `dispose()` lifecycle hook. Task 11 will
- * fold this into `@wabe/plugin-sdk` formally; the local widening lets the
- * plugin export the hook today so the pipeline can close transports on shutdown.
- */
-type SourceWithDispose = Source & { dispose?(): Promise<void> };
-
 let activeTransport: Transport | undefined;
 
 /**
@@ -59,7 +52,7 @@ let activeTransport: Transport | undefined;
  * requests originate from a real Homegate page context — bridge is the only
  * viable transport.
  */
-const plugin: SourceWithDispose = {
+const plugin: Source = {
   name: 'source-homegate',
   configSchema: ConfigSchema,
   async *fetch(ctx: Context) {

@@ -39,6 +39,29 @@ export async function runOnce(opts: RunOptions): Promise<void> {
 }
 
 /**
+ * Invokes `dispose()` on every source that defines it, in parallel, with
+ * per-plugin error isolation. Called once during daemon shutdown so plugins
+ * can release held resources (open WebSockets, file descriptors, timers).
+ * A throwing `dispose()` is logged but does not block sibling plugins.
+ */
+export async function disposeSources(
+  sources: LoadedPlugin<'source'>[],
+  logger: Logger,
+): Promise<void> {
+  await Promise.all(
+    sources.map(async (s) => {
+      const fn = s.plugin.dispose;
+      if (typeof fn !== 'function') return;
+      try {
+        await fn.call(s.plugin);
+      } catch (err) {
+        logger.warn({ err, plugin: s.name }, 'plugin dispose() threw');
+      }
+    }),
+  );
+}
+
+/**
  * Drives a single source end-to-end: fetch → upsert → filter → score → notify.
  *
  * If the source has an open circuit breaker we skip it. Otherwise we iterate
