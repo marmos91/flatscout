@@ -285,4 +285,19 @@ describe('DaemonBridgeTransport', () => {
     const t = await DaemonBridgeTransport.tryConnect(dir);
     expect(t).toBeNull();
   });
+
+  it('returns null when bridge-secret file is missing', async () => {
+    const tmp3 = mkdtempSync(join(tmpdir(), 'wabe-bridge-nosecret-'));
+    const status = {
+      connected: true,
+      inflight: 0,
+      port,
+      last_seen_at: Date.now(),
+      written_at: Date.now(),
+    };
+    writeFileSync(join(tmp3, 'bridge.status.json'), JSON.stringify(status));
+    const t = await DaemonBridgeTransport.tryConnect(tmp3);
+    expect(t).toBeNull();
+    rmSync(tmp3, { recursive: true, force: true });
+  });
 });

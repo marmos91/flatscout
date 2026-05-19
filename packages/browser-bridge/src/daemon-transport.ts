@@ -175,6 +175,7 @@ export class DaemonBridgeTransport implements Transport {
     this.closed = true;
     for (const [, ifl] of this.inflight) {
       clearTimeout(ifl.timer);
+      if (ifl.signal && ifl.onAbort) ifl.signal.removeEventListener('abort', ifl.onAbort);
       ifl.reject(new Error('daemon bridge transport closed by caller'));
     }
     this.inflight.clear();
