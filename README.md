@@ -15,8 +15,9 @@ Phases 1 + 2 (skeleton + Flatfox + Telegram notifier) are shipped. Subsequent sh
 - **Phase B — browser bridge.** Opt-in WebExtension (Chrome + Firefox) that proxies DataDome-walled requests through a hidden tab in the user's browser, bypassing TLS/HTTP/2 + JS-challenge fingerprinting on `api.homegate.ch` and `api.immoscout24.ch`.
 - **Phase B follow-up — bridge keepalive + cross-process fan-out.** Chrome offscreen-document keepalive keeps the WS warm; sibling processes (`wabe scan --source X`) dispatch through the daemon via `/dispatch` instead of failing fast.
 - **Phase C — agency registry + schema.org adapter.** User-owned YAML registry of agency portals; each enabled row expands into a synthetic source plugin keyed `agency:<platform>:<id>`. Generic `@wabe/source-schemaorg` adapter handles JSON-LD-bearing sites; `wabe agencies probe|probe-portal|validate|stats` for inspection.
+- **Enricher stage shipped.** Pipeline now invokes enrichers between upsert and the rental-term gate. First enricher: `@wabe/enricher-commute` — per-target × per-mode commute time via self-hosted ORS + Motis + Pelias, results consumable by filters and scoring through a new `commute(target, mode)` DSL primitive. Docker compose recipe in `docker/commute/`.
 
-Upcoming phases (not yet implemented): LLM "vibe" scoring, enrichers (geocoding, commute), a dossier vault, application drafting, and agency-portal applicators.
+Upcoming phases (not yet implemented): LLM "vibe" scoring, a dossier vault, application drafting, and agency-portal applicators.
 
 ## The problem
 
@@ -141,18 +142,20 @@ or expired offers without forcing a config decision on first run. The
 ## Architecture
 
 ```
-config.yaml + agencies.yaml  →  loader  →  pipeline
-                                              ├─ Sources (flatfox, homegate, immoscout24-sitemap,
-                                              │          realadvisor, immobilier-ch, schemaorg ×N)
-                                              ├─ Canonical-key dedup (cross-source)
-                                              ├─ Rental-term gate (long/short, expiry)
-                                              ├─ Filter (hard, AND-combined)
-                                              ├─ Scorer (rule DSL, 0..100)
-                                              ├─ Quota gate (daily UTC)
-                                              └─ Notifier (telegram)
+config.yaml + commute.yaml + agencies.yaml  →  loader  →  pipeline
+                                                              ├─ Sources (flatfox, homegate, immoscout24-sitemap,
+                                                              │          realadvisor, immobilier-ch, schemaorg ×N)
+                                                              ├─ Canonical-key dedup (cross-source)
+                                                              ├─ Enrichers (commute, …)
+                                                              ├─ Rental-term gate (long/short, expiry)
+                                                              ├─ Filter (hard, AND-combined)
+                                                              ├─ Scorer (rule DSL, 0..100)
+                                                              ├─ Quota gate (daily UTC)
+                                                              └─ Notifier (telegram)
 
-SQLite (Drizzle, FTS5) ←──── persists listings + scores + sends
+SQLite (Drizzle, FTS5) ←──── persists listings + scores + sends + commute cache
 Browser bridge (127.0.0.1 WS) ←── extension-wabe proxies DataDome-walled requests
+ORS + Motis + Pelias (docker) ←── @wabe/enricher-commute
 ```
 
 Five plugin interfaces (`Source`, `Enricher`, `Scorer`, `Notifier`, `Applicator`); plugins are normal npm packages loaded dynamically by name from `config.yaml`'s `enabled:` list. Each plugin owns its own Zod-validated config slice.
