@@ -36,16 +36,26 @@ function fmtAge(ts: number | undefined): string {
   return `${Math.round(ms / 3_600_000)}h ago`;
 }
 
-async function render(): Promise<void> {
-  const s = (await chrome.storage.local.get([
+async function loadState(): Promise<StoredState> {
+  return (await chrome.storage.local.get([
     'bridgeUrl',
     'authToken',
     'lastConnectedAt',
     'lastRequestAt',
     'lastAliveAt',
   ])) as StoredState;
+}
+
+/** Initial render — populates input fields once on popup open. */
+async function initInputs(): Promise<void> {
+  const s = await loadState();
   bridgeUrlEl.value = s.bridgeUrl ?? DEFAULT_BRIDGE_URL;
   tokenEl.value = s.authToken ?? '';
+}
+
+/** Status-only refresh — runs every second; does NOT touch input fields. */
+async function renderStatus(): Promise<void> {
+  const s = await loadState();
   if (!s.authToken) {
     setStatus('unpaired', 'not paired — paste URL + token below.');
     return;
@@ -74,16 +84,18 @@ saveBtn.addEventListener('click', async () => {
   await chrome.runtime.sendMessage({ type: 'wabe-bridge:reconnect' });
   setStatus('disconnected', 'saved — reconnecting…');
   setTimeout(() => {
-    void render();
+    void renderStatus();
   }, 1_500);
 });
 
 forgetBtn.addEventListener('click', async () => {
-  await chrome.storage.local.remove(['authToken', 'lastConnectedAt', 'lastRequestAt']);
+  await chrome.storage.local.remove(['authToken', 'lastConnectedAt', 'lastRequestAt', 'lastAliveAt']);
   await chrome.runtime.sendMessage({ type: 'wabe-bridge:reconnect' });
-  await render();
+  tokenEl.value = '';
+  await renderStatus();
 });
 
-void render();
-// Re-render once a second so age/freshness stay current while the popup is open.
-setInterval(() => void render(), 1_000);
+void initInputs().then(() => renderStatus());
+// Refresh only the status text every second so age/freshness stay current.
+// Inputs are populated once at open — never overwritten while the user types.
+setInterval(() => void renderStatus(), 1_000);
