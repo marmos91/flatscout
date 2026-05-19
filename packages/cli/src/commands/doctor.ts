@@ -143,16 +143,12 @@ export function registerDoctor(prog: Command): void {
       if (enabledDataDomeSources.length > 0) {
         const hb = readHeartbeat(paths.dataDir);
         const bridgeOk =
-          loadedCfg?.top.bridge.enabled === true &&
-          hb !== null &&
-          hb.age_ms < 15_000 &&
-          hb.connected;
+          loadedCfg?.top.bridge.enabled === true && hb !== null && hb.age_ms < 15_000 && hb.connected;
         if (!bridgeOk) {
           result(
             'bridge required by DataDome sources',
             false,
-            `sources [${enabledDataDomeSources.join(', ')}] need bridge paired+connected. ` +
-              'Enable `top.bridge.enabled` and run `wabe bridge pair` + `wabe start`.',
+            `sources [${enabledDataDomeSources.join(', ')}] need bridge paired+connected. Enable \`top.bridge.enabled\` and run \`wabe bridge pair\` + \`wabe start\`.`,
           );
         } else {
           result('bridge required by DataDome sources', true, enabledDataDomeSources.join(', '));

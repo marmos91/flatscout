@@ -100,9 +100,7 @@ const plugin: Source = {
     let detailFetched = 0;
 
     if (cfg.enrich_via_bridge && !selected) {
-      ctx.logger.warn(
-        'immoscout24: enrich_via_bridge=true but no bridge available; emitting URL-only',
-      );
+      ctx.logger.warn('immoscout24: enrich_via_bridge=true but no bridge available; emitting URL-only');
     } else if (selected) {
       ctx.logger.info({ kind: selected.kind }, 'immoscout24: enriching via browser bridge');
     }
@@ -114,10 +112,7 @@ const plugin: Source = {
         try {
           entries = await fetchSitemapLeaf(leafUrl, ctx.signal);
         } catch (err) {
-          ctx.logger.warn(
-            { leafUrl, err: (err as Error).message },
-            'sitemap leaf failed; skipping',
-          );
+          ctx.logger.warn({ leafUrl, err: (err as Error).message }, 'sitemap leaf failed; skipping');
           continue;
         }
         for (const e of entries) {

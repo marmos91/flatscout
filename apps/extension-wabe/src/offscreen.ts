@@ -138,10 +138,7 @@ async function handleBridgeMessage(ws: WebSocket, raw: string): Promise<void> {
 
 async function connect(): Promise<void> {
   if (state.connecting) return;
-  if (
-    state.ws &&
-    (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)
-  ) {
+  if (state.ws && (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)) {
     return;
   }
   state.connecting = true;

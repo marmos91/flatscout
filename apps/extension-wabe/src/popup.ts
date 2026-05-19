@@ -50,11 +50,7 @@ async function render(): Promise<void> {
     setStatus('unpaired', 'not paired — paste URL + token below.');
     return;
   }
-  const lastSeen = Math.max(
-    s.lastConnectedAt ?? 0,
-    s.lastRequestAt ?? 0,
-    s.lastAliveAt ?? 0,
-  );
+  const lastSeen = Math.max(s.lastConnectedAt ?? 0, s.lastRequestAt ?? 0, s.lastAliveAt ?? 0);
   const stale = lastSeen === 0 || Date.now() - lastSeen > STALE_AFTER_MS;
   if (stale) {
     setStatus('disconnected', `disconnected (last seen ${fmtAge(lastSeen || undefined)}).`);

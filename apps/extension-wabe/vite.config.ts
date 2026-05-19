@@ -52,9 +52,7 @@ export default defineConfig(() => {
       webExtension({
         manifest: () => manifest,
         additionalInputs:
-          browser === 'chrome'
-            ? ['src/popup.html', 'src/offscreen.html']
-            : ['src/popup.html'],
+          browser === 'chrome' ? ['src/popup.html', 'src/offscreen.html'] : ['src/popup.html'],
         browser,
       }),
       copyRawAssets([{ from: 'src/dnr-rules.json', to: 'src/dnr-rules.json' }]),

@@ -235,8 +235,7 @@ async function executeProxyRequest(msg: BridgeRequestMessage): Promise<InPageFet
 
 // --------- Path selection ---------
 
-const HAS_OFFSCREEN =
-  typeof (chrome as typeof chrome & { offscreen?: unknown }).offscreen !== 'undefined';
+const HAS_OFFSCREEN = typeof (chrome as typeof chrome & { offscreen?: unknown }).offscreen !== 'undefined';
 
 if (HAS_OFFSCREEN) {
   installChromePath();

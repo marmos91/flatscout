@@ -44,10 +44,7 @@ export async function runOnce(opts: RunOptions): Promise<void> {
  * can release held resources (open WebSockets, file descriptors, timers).
  * A throwing `dispose()` is logged but does not block sibling plugins.
  */
-export async function disposeSources(
-  sources: LoadedPlugin<'source'>[],
-  logger: Logger,
-): Promise<void> {
+export async function disposeSources(sources: LoadedPlugin<'source'>[], logger: Logger): Promise<void> {
   await Promise.all(
     sources.map(async (s) => {
       const fn = s.plugin.dispose;
