@@ -10,15 +10,21 @@ let dir: string;
 let bridge: BridgeServer;
 let port: number;
 let secret: string;
+let lastExt: WebSocket | undefined;
 
 beforeEach(async () => {
   dir = mkdtempSync(join(tmpdir(), 'wabe-bridge-abort-'));
   secret = loadOrGenerateSecret(dir);
   bridge = await startBridgeServer({ dataDir: dir, port: 0 });
   port = bridge.port;
+  lastExt = undefined;
 });
 
 afterEach(async () => {
+  if (lastExt && lastExt.readyState !== WebSocket.CLOSED) {
+    lastExt.close();
+  }
+  lastExt = undefined;
   await bridge.stop();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -38,6 +44,7 @@ async function pairMockExtension(): Promise<WebSocket> {
     }),
   );
   await new Promise<void>((r) => ws.once('message', () => r()));
+  lastExt = ws;
   return ws;
 }
 
