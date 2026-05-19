@@ -14,7 +14,7 @@
         "duration": 1740,
         "transfers": 1,
         "departure": { "time": 1747545300, "schedule_time": 1747545300 },
-        "arrival":   { "time": 1747547040, "schedule_time": 1747547040 }
+        "arrival": { "time": 1747547040, "schedule_time": 1747547040 }
       },
       {
         "duration": 2100,

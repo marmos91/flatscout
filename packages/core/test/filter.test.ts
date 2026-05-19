@@ -87,7 +87,9 @@ describe('evaluateFilters - commute branch', () => {
     id: 'a',
     source: 's',
     url: 'https://x/a',
-    enriched: { commute: { work: { transit: { duration_min: 25, distance_km: 8, computed_at: new Date() } } } },
+    enriched: {
+      commute: { work: { transit: { duration_min: 25, distance_km: 8, computed_at: new Date() } } },
+    },
   } as unknown;
 
   it('passes when commute duration <= threshold', async () => {

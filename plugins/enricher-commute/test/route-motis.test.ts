@@ -33,12 +33,9 @@ function deps(): MotisDeps {
 
 describe('routeMotis', () => {
   it('picks the fastest connection', async () => {
-    mock
-      .get('http://motis.local')
-      .intercept({ path: '/api/v1/plan', method: 'POST' })
-      .reply(200, FIXTURE);
+    mock.get('http://motis.local').intercept({ path: '/api/v1/plan', method: 'POST' }).reply(200, FIXTURE);
     const out = await routeMotis(
-      { from: [47.37, 8.54], to: [47.40, 8.55] },
+      { from: [47.37, 8.54], to: [47.4, 8.55] },
       new Date('2026-05-18T08:30:00Z'),
       deps(),
     );
@@ -51,7 +48,7 @@ describe('routeMotis', () => {
       .intercept({ path: '/api/v1/plan', method: 'POST' })
       .reply(200, { content_type: 'RoutingResponse', content: { connections: [] } });
     const out = await routeMotis(
-      { from: [47.37, 8.54], to: [47.40, 8.55] },
+      { from: [47.37, 8.54], to: [47.4, 8.55] },
       new Date('2026-05-18T08:30:00Z'),
       deps(),
     );
@@ -59,12 +56,9 @@ describe('routeMotis', () => {
   });
 
   it('returns null on 5xx', async () => {
-    mock
-      .get('http://motis.local')
-      .intercept({ path: '/api/v1/plan', method: 'POST' })
-      .reply(503, 'down');
+    mock.get('http://motis.local').intercept({ path: '/api/v1/plan', method: 'POST' }).reply(503, 'down');
     const out = await routeMotis(
-      { from: [47.37, 8.54], to: [47.40, 8.55] },
+      { from: [47.37, 8.54], to: [47.4, 8.55] },
       new Date('2026-05-18T08:30:00Z'),
       deps(),
     );

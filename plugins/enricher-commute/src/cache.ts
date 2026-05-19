@@ -94,11 +94,7 @@ export class CommuteCache {
     return { lat: row.lat, lng: row.lng, computedAt: new Date(row.computed_at) };
   }
 
-  upsertGeocode(
-    addressNorm: string,
-    coords: { lat: number; lng: number },
-    computedAt: Date,
-  ): void {
+  upsertGeocode(addressNorm: string, coords: { lat: number; lng: number }, computedAt: Date): void {
     this.db
       .prepare(
         `INSERT OR REPLACE INTO geocode_cache (address_norm, lat, lng, computed_at)

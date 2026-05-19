@@ -22,7 +22,9 @@ describe('quantize', () => {
 
 describe('normalizeAddress', () => {
   it('lowercases + collapses whitespace + trims', () => {
-    expect(normalizeAddress('  Brandschenkestrasse 178,  8002   Zürich  ')).toBe('brandschenkestrasse 178, 8002 zürich');
+    expect(normalizeAddress('  Brandschenkestrasse 178,  8002   Zürich  ')).toBe(
+      'brandschenkestrasse 178, 8002 zürich',
+    );
   });
 });
 
@@ -37,45 +39,82 @@ describe('CommuteCache', () => {
 
   it('returns undefined on miss', () => {
     const r = cache.getCommute({
-      from: [47.3674, 8.5400], target: 'work', mode: 'transit', weekday: 'mon', arriveByMin: 510,
+      from: [47.3674, 8.54],
+      target: 'work',
+      mode: 'transit',
+      weekday: 'mon',
+      arriveByMin: 510,
     });
     expect(r).toBeUndefined();
   });
 
   it('persists and retrieves a commute row', () => {
-    cache.upsertCommute({
-      from: [47.3674, 8.5400], target: 'work', mode: 'transit', weekday: 'mon', arriveByMin: 510,
-    }, { durationS: 1500, distanceM: 8000, computedAt: new Date(2026, 4, 18) });
+    cache.upsertCommute(
+      {
+        from: [47.3674, 8.54],
+        target: 'work',
+        mode: 'transit',
+        weekday: 'mon',
+        arriveByMin: 510,
+      },
+      { durationS: 1500, distanceM: 8000, computedAt: new Date(2026, 4, 18) },
+    );
     const r = cache.getCommute({
-      from: [47.3674, 8.5400], target: 'work', mode: 'transit', weekday: 'mon', arriveByMin: 510,
+      from: [47.3674, 8.54],
+      target: 'work',
+      mode: 'transit',
+      weekday: 'mon',
+      arriveByMin: 510,
     });
     expect(r).toMatchObject({ durationS: 1500, distanceM: 8000 });
   });
 
   it('quantizes coords for cache key', () => {
-    cache.upsertCommute({
-      from: [47.3674123, 8.5400123], target: 'work', mode: 'transit', weekday: 'mon', arriveByMin: 510,
-    }, { durationS: 1500, distanceM: 8000, computedAt: new Date() });
+    cache.upsertCommute(
+      {
+        from: [47.3674123, 8.5400123],
+        target: 'work',
+        mode: 'transit',
+        weekday: 'mon',
+        arriveByMin: 510,
+      },
+      { durationS: 1500, distanceM: 8000, computedAt: new Date() },
+    );
     const r = cache.getCommute({
-      from: [47.3674456, 8.5400456], target: 'work', mode: 'transit', weekday: 'mon', arriveByMin: 510,
+      from: [47.3674456, 8.5400456],
+      target: 'work',
+      mode: 'transit',
+      weekday: 'mon',
+      arriveByMin: 510,
     });
     expect(r?.durationS).toBe(1500);
   });
 
   it('different mode → cache miss', () => {
-    cache.upsertCommute({
-      from: [47.3674, 8.5400], target: 'work', mode: 'transit', weekday: 'mon', arriveByMin: 510,
-    }, { durationS: 1500, distanceM: 8000, computedAt: new Date() });
+    cache.upsertCommute(
+      {
+        from: [47.3674, 8.54],
+        target: 'work',
+        mode: 'transit',
+        weekday: 'mon',
+        arriveByMin: 510,
+      },
+      { durationS: 1500, distanceM: 8000, computedAt: new Date() },
+    );
     const r = cache.getCommute({
-      from: [47.3674, 8.5400], target: 'work', mode: 'cycling', weekday: 'mon', arriveByMin: 510,
+      from: [47.3674, 8.54],
+      target: 'work',
+      mode: 'cycling',
+      weekday: 'mon',
+      arriveByMin: 510,
     });
     expect(r).toBeUndefined();
   });
 
   it('persists and retrieves geocode rows', () => {
-    cache.upsertGeocode('brandschenkestrasse 178, 8002 zürich', { lat: 47.367, lng: 8.540 }, new Date());
+    cache.upsertGeocode('brandschenkestrasse 178, 8002 zürich', { lat: 47.367, lng: 8.54 }, new Date());
     const r = cache.getGeocode('brandschenkestrasse 178, 8002 zürich');
-    expect(r).toMatchObject({ lat: 47.367, lng: 8.540 });
+    expect(r).toMatchObject({ lat: 47.367, lng: 8.54 });
   });
 
   it('returns undefined for unknown geocode address', () => {
@@ -83,12 +122,23 @@ describe('CommuteCache', () => {
   });
 
   it('clear() empties the commute table', () => {
-    cache.upsertCommute({
-      from: [47.3674, 8.5400], target: 'work', mode: 'transit', weekday: 'mon', arriveByMin: 510,
-    }, { durationS: 1500, distanceM: 8000, computedAt: new Date() });
+    cache.upsertCommute(
+      {
+        from: [47.3674, 8.54],
+        target: 'work',
+        mode: 'transit',
+        weekday: 'mon',
+        arriveByMin: 510,
+      },
+      { durationS: 1500, distanceM: 8000, computedAt: new Date() },
+    );
     cache.clear();
     const r = cache.getCommute({
-      from: [47.3674, 8.5400], target: 'work', mode: 'transit', weekday: 'mon', arriveByMin: 510,
+      from: [47.3674, 8.54],
+      target: 'work',
+      mode: 'transit',
+      weekday: 'mon',
+      arriveByMin: 510,
     });
     expect(r).toBeUndefined();
   });

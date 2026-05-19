@@ -25,7 +25,9 @@ export async function evaluateFilters(rules: FilterRule[], listing: unknown): Pr
 
 async function evaluateOne(rule: FilterRule, listing: unknown): Promise<FilterResult> {
   if (rule.kind === 'commute') {
-    const listingObj = listing as { enriched?: { commute?: Record<string, Record<string, { duration_min?: number }>> } };
+    const listingObj = listing as {
+      enriched?: { commute?: Record<string, Record<string, { duration_min?: number }>> };
+    };
     const cell = listingObj.enriched?.commute?.[rule.target]?.[rule.mode];
     const minutes = typeof cell?.duration_min === 'number' ? cell.duration_min : Number.POSITIVE_INFINITY;
     if (minutes === Number.POSITIVE_INFINITY) {
@@ -33,7 +35,10 @@ async function evaluateOne(rule: FilterRule, listing: unknown): Promise<FilterRe
     }
     return compareOp(rule.op, minutes, rule.value)
       ? { passed: true }
-      : { passed: false, reason: `commute(${rule.target},${rule.mode}) ${minutes} !${rule.op} ${rule.value}` };
+      : {
+          passed: false,
+          reason: `commute(${rule.target},${rule.mode}) ${minutes} !${rule.op} ${rule.value}`,
+        };
   }
   if (rule.kind === 'expr') {
     let result: unknown;

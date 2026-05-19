@@ -29,9 +29,7 @@ export function registerCache(prog: Command): void {
         return;
       }
       truncate(db);
-      console.log(
-        `cleared commute_cache (${counts.commute} rows) + geocode_cache (${counts.geocode} rows)`,
-      );
+      console.log(`cleared commute_cache (${counts.commute} rows) + geocode_cache (${counts.geocode} rows)`);
     });
 }
 

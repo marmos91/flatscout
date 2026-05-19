@@ -121,9 +121,9 @@ describe('pipeline enricher stage', () => {
       quota: new Quota(testDb, 100),
     });
 
-    const row = testDb._raw
-      .prepare('SELECT payload FROM listings WHERE id = ?')
-      .get('stub:1') as { payload: string } | undefined;
+    const row = testDb._raw.prepare('SELECT payload FROM listings WHERE id = ?').get('stub:1') as
+      | { payload: string }
+      | undefined;
     expect(row).toBeDefined();
     const payload = JSON.parse(row!.payload);
     expect(payload.enriched.marker).toBe('hit');
@@ -161,9 +161,9 @@ describe('pipeline enricher stage', () => {
       quota: new Quota(testDb, 100),
     });
 
-    const row = testDb._raw
-      .prepare('SELECT payload FROM listings WHERE id = ?')
-      .get('stub:1') as { payload: string } | undefined;
+    const row = testDb._raw.prepare('SELECT payload FROM listings WHERE id = ?').get('stub:1') as
+      | { payload: string }
+      | undefined;
     expect(row).toBeDefined();
     const payload = JSON.parse(row!.payload);
     expect(payload.enriched.marker).toBe('hit');
@@ -190,9 +190,9 @@ describe('pipeline enricher stage', () => {
       quota: new Quota(testDb, 100),
     });
 
-    const row = testDb._raw
-      .prepare('SELECT payload FROM listings WHERE id = ?')
-      .get('stub:1') as { payload: string } | undefined;
+    const row = testDb._raw.prepare('SELECT payload FROM listings WHERE id = ?').get('stub:1') as
+      | { payload: string }
+      | undefined;
     expect(row).toBeDefined();
   });
 });

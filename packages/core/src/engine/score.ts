@@ -60,7 +60,9 @@ export async function scoreListing(dims: ScoringDim[], listing: unknown): Promis
 
 async function resolveMetric(metric: string | CommutePrimitive, listing: unknown): Promise<unknown> {
   if (typeof metric === 'object' && metric !== null && 'kind' in metric && metric.kind === 'commute') {
-    const root = listing as { enriched?: { commute?: Record<string, Record<string, { duration_min?: number }>> } };
+    const root = listing as {
+      enriched?: { commute?: Record<string, Record<string, { duration_min?: number }>> };
+    };
     const cell = root.enriched?.commute?.[metric.target]?.[metric.mode];
     return typeof cell?.duration_min === 'number' ? cell.duration_min : undefined;
   }

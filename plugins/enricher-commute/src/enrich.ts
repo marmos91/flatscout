@@ -134,7 +134,10 @@ export async function enrichCommute(
   }
 
   const limit = pLimit(4);
-  const result: Record<string, Record<string, { duration_min: number; distance_km: number; computed_at: Date }>> = {};
+  const result: Record<
+    string,
+    Record<string, { duration_min: number; distance_km: number; computed_at: Date }>
+  > = {};
 
   const jobs: Promise<void>[] = [];
   for (const [tid, t] of Object.entries(cfg.targets)) {
@@ -143,7 +146,18 @@ export async function enrichCommute(
     for (const mode of t.modes) {
       jobs.push(
         limit(async () => {
-          const r = await computeOne(listingCoords, to, tid, mode, t.weekday, t.arrive_by, cfg, cache, logger, signal);
+          const r = await computeOne(
+            listingCoords,
+            to,
+            tid,
+            mode,
+            t.weekday,
+            t.arrive_by,
+            cfg,
+            cache,
+            logger,
+            signal,
+          );
           if (!r) return;
           if (!result[tid]) result[tid] = {};
           const tidResult = result[tid];

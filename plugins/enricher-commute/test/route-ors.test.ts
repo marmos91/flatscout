@@ -37,7 +37,7 @@ describe('routeOrs', () => {
       .get('http://ors.local')
       .intercept({ path: '/v2/directions/cycling-regular', method: 'POST' })
       .reply(200, FIXTURE);
-    const out = await routeOrs({ from: [47.37, 8.54], to: [47.40, 8.55] }, 'cycling', deps());
+    const out = await routeOrs({ from: [47.37, 8.54], to: [47.4, 8.55] }, 'cycling', deps());
     expect(out).toEqual({ durationS: Math.round(1320.7), distanceM: Math.round(6234.5) });
   });
 
@@ -51,7 +51,7 @@ describe('routeOrs', () => {
         .get('http://ors.local')
         .intercept({ path: `/v2/directions/${profile}`, method: 'POST' })
         .reply(200, FIXTURE);
-      const out = await routeOrs({ from: [47.37, 8.54], to: [47.40, 8.55] }, mode, deps());
+      const out = await routeOrs({ from: [47.37, 8.54], to: [47.4, 8.55] }, mode, deps());
       expect(out).not.toBeNull();
     }
   });
@@ -61,7 +61,7 @@ describe('routeOrs', () => {
       .get('http://ors.local')
       .intercept({ path: '/v2/directions/cycling-regular', method: 'POST' })
       .reply(503, 'down');
-    const out = await routeOrs({ from: [47.37, 8.54], to: [47.40, 8.55] }, 'cycling', deps());
+    const out = await routeOrs({ from: [47.37, 8.54], to: [47.4, 8.55] }, 'cycling', deps());
     expect(out).toBeNull();
   });
 
@@ -70,7 +70,7 @@ describe('routeOrs', () => {
       .get('http://ors.local')
       .intercept({ path: '/v2/directions/cycling-regular', method: 'POST' })
       .reply(200, { routes: [] });
-    const out = await routeOrs({ from: [47.37, 8.54], to: [47.40, 8.55] }, 'cycling', deps());
+    const out = await routeOrs({ from: [47.37, 8.54], to: [47.4, 8.55] }, 'cycling', deps());
     expect(out).toBeNull();
   });
 });

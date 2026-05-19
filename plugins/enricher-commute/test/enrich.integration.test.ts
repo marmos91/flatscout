@@ -48,34 +48,63 @@ const cfg: CommuteConfig = {
 };
 
 const listingWithCoords = {
-  id: 'a', source: 's', url: 'https://x/a',
-  first_seen_at: new Date(), last_seen_at: new Date(),
+  id: 'a',
+  source: 's',
+  url: 'https://x/a',
+  first_seen_at: new Date(),
+  last_seen_at: new Date(),
   price: { rent_net: null, total: null, extras: null, currency: 'CHF', deposit_months: null },
-  rooms: null, area_m2: null, floor: null, total_floors: null, built_year: null, renovated_year: null,
+  rooms: null,
+  area_m2: null,
+  floor: null,
+  total_floors: null,
+  built_year: null,
+  renovated_year: null,
   location: {
     coords: [8.54, 47.37] as [number, number],
-    address: null, postal_code: null, city: null, region: null, country: 'CH', neighborhood: null,
+    address: null,
+    postal_code: null,
+    city: null,
+    region: null,
+    country: 'CH',
+    neighborhood: null,
   },
-  features: {}, description: null, photos: [], available_from: null, lease_until: null,
-  rental_term: 'unknown' as const, agency: null, contact: {}, enriched: {}, extra: {},
-  canonical_key: '', source_priority: 50, seen_on_sources: [],
+  features: {},
+  description: null,
+  photos: [],
+  available_from: null,
+  lease_until: null,
+  rental_term: 'unknown' as const,
+  agency: null,
+  contact: {},
+  enriched: {},
+  extra: {},
+  canonical_key: '',
+  source_priority: 50,
+  seen_on_sources: [],
 };
 
 describe('enrichCommute', () => {
   it('populates enriched.commute for both modes', async () => {
     const db = freshDb();
-    mock.get('http://ors.local').intercept({ path: '/v2/directions/cycling-regular', method: 'POST' }).reply(200, ORS);
+    mock
+      .get('http://ors.local')
+      .intercept({ path: '/v2/directions/cycling-regular', method: 'POST' })
+      .reply(200, ORS);
     mock.get('http://motis.local').intercept({ path: '/api/v1/plan', method: 'POST' }).reply(200, MOTIS);
     const out = await enrichCommute(listingWithCoords, cfg, db, logger, new AbortController().signal);
     expect(out.enriched.commute).toBeDefined();
     const work = (out.enriched.commute as Record<string, Record<string, { duration_min: number }>>).work;
-    expect(work.cycling.duration_min).toBe(22);   // 1320.7s → round(1321/60) = 22min
-    expect(work.transit.duration_min).toBe(29);   // 1740s → 29min
+    expect(work.cycling.duration_min).toBe(22); // 1320.7s → round(1321/60) = 22min
+    expect(work.transit.duration_min).toBe(29); // 1740s → 29min
   });
 
   it('omits failed mode but keeps the rest', async () => {
     const db = freshDb();
-    mock.get('http://ors.local').intercept({ path: '/v2/directions/cycling-regular', method: 'POST' }).reply(503, 'down');
+    mock
+      .get('http://ors.local')
+      .intercept({ path: '/v2/directions/cycling-regular', method: 'POST' })
+      .reply(503, 'down');
     mock.get('http://motis.local').intercept({ path: '/api/v1/plan', method: 'POST' }).reply(200, MOTIS);
     const out = await enrichCommute(listingWithCoords, cfg, db, logger, new AbortController().signal);
     const work = (out.enriched.commute as Record<string, Record<string, unknown>>).work;
@@ -85,15 +114,24 @@ describe('enrichCommute', () => {
 
   it('returns listing unchanged when listing has no coords and pelias fails', async () => {
     const db = freshDb();
-    const noCoords = { ...listingWithCoords, location: { ...listingWithCoords.location, coords: null, address: 'X' } };
-    mock.get('http://pelias.local').intercept({ path: /\/v1\/search\?.*/, method: 'GET' }).reply(503, 'down');
+    const noCoords = {
+      ...listingWithCoords,
+      location: { ...listingWithCoords.location, coords: null, address: 'X' },
+    };
+    mock
+      .get('http://pelias.local')
+      .intercept({ path: /\/v1\/search\?.*/, method: 'GET' })
+      .reply(503, 'down');
     const out = await enrichCommute(noCoords, cfg, db, logger, new AbortController().signal);
     expect(out.enriched.commute).toBeUndefined();
   });
 
   it('hits cache on second call (no HTTP traffic)', async () => {
     const db = freshDb();
-    mock.get('http://ors.local').intercept({ path: '/v2/directions/cycling-regular', method: 'POST' }).reply(200, ORS);
+    mock
+      .get('http://ors.local')
+      .intercept({ path: '/v2/directions/cycling-regular', method: 'POST' })
+      .reply(200, ORS);
     mock.get('http://motis.local').intercept({ path: '/api/v1/plan', method: 'POST' }).reply(200, MOTIS);
     await enrichCommute(listingWithCoords, cfg, db, logger, new AbortController().signal);
     // Second call — no new MockAgent interceptors registered → would throw on HTTP attempt.
