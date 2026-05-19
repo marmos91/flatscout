@@ -25,7 +25,7 @@ Apartment hunting in Zurich is brutal: best listings get hundreds of application
 
 ## Status
 
-Phases 1, 2, A, B, B-followup, and C shipped. Five live sources + agency registry + browser bridge proven end-to-end against real Swiss portals. Not yet a production scout — LLM scoring, enrichers, and applicators are next.
+Phases 1, 2, A, B, B-followup, and C shipped, plus the first enricher (commute calc). Five live sources + agency registry + browser bridge + ORS/Motis/Pelias-backed commute scoring proven end-to-end against real Swiss portals. Not yet a production scout — LLM scoring and applicators are next.
 
 ## Install
 
