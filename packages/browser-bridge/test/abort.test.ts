@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
 import { loadOrGenerateSecret } from '../src/secret.js';
 import { type BridgeServer, newRequestId, startBridgeServer } from '../src/server.js';
+import { BrowserBridgeTransport } from '../src/transport.js';
 
 let dir: string;
 let bridge: BridgeServer;
@@ -91,5 +92,21 @@ describe('BridgeServer.dispatch AbortSignal', () => {
     );
     await new Promise<void>((r) => setTimeout(r, 50));
     expect(bridge.status().inflight).toBe(0);
+  });
+});
+
+describe('BrowserBridgeTransport abort', () => {
+  it('aborts after dispatch starts', async () => {
+    await pairMockExtension();
+    const t = new BrowserBridgeTransport(bridge);
+    const ctrl = new AbortController();
+    const p = t.request({
+      method: 'GET',
+      url: 'https://www.homegate.ch/',
+      signal: ctrl.signal,
+    });
+    await new Promise<void>((r) => setTimeout(r, 50));
+    ctrl.abort();
+    await expect(p).rejects.toThrow(/abort/i);
   });
 });

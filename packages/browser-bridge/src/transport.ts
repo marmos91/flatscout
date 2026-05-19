@@ -51,7 +51,7 @@ export class BrowserBridgeTransport implements Transport {
       body: opts.body,
       timeout_ms: opts.timeout_ms ?? 30_000,
     };
-    const resp = await bridge.dispatch(req);
+    const resp = await bridge.dispatch(req, { signal: opts.signal });
     return { status: resp.status, headers: resp.headers, body: resp.body };
   }
 }
