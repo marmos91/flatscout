@@ -138,3 +138,44 @@ describe('scoreListing', () => {
     expect(r.breakdown.orient).toBeCloseTo(1);
   });
 });
+
+describe('scoring - commute primitive metric', () => {
+  const listing = {
+    id: 'a',
+    source: 's',
+    url: 'https://x/a',
+    price: { rent_net: 2000, total: 2200, extras: 200, currency: 'CHF', deposit_months: 2 },
+    rooms: 3,
+    area_m2: 70,
+    location: { coords: null, address: null, postal_code: null, city: null, region: null, country: 'CH', neighborhood: null },
+    enriched: { commute: { work: { transit: { duration_min: 20, distance_km: 6, computed_at: new Date() } } } },
+  };
+
+  it('resolves commute primitive to minutes', async () => {
+    const score = await scoreListing(
+      [{
+        type: 'rule', name: 'work', weight: 1,
+        metric: { kind: 'commute', target: 'work', mode: 'transit' },
+        normalize: { type: 'linear', best: 0, worst: 60, invert: false },
+        on_missing: 'zero',
+      }],
+      listing,
+    );
+    // Linear at 20 between best=0 (score 10) and worst=60 (score 0): normalized ≈ 0.667; final ≈ 67
+    expect(score.final).toBeGreaterThan(60);
+    expect(score.final).toBeLessThan(75);
+  });
+
+  it('uses on_missing:zero when target absent', async () => {
+    const score = await scoreListing(
+      [{
+        type: 'rule', name: 'gym', weight: 1,
+        metric: { kind: 'commute', target: 'gym', mode: 'transit' },
+        normalize: { type: 'linear', best: 0, worst: 60, invert: false },
+        on_missing: 'zero',
+      }],
+      listing,
+    );
+    expect(score.final).toBe(0);
+  });
+});

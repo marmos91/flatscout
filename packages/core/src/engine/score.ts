@@ -1,4 +1,4 @@
-import type { ScoringDim } from '../schemas/dsl.js';
+import type { CommutePrimitive, ScoringDim } from '../schemas/dsl.js';
 import { evalJsonata } from './jsonata.js';
 import { normalize } from './normalize.js';
 import { resolvePath } from './path.js';
@@ -40,7 +40,9 @@ export async function scoreListing(dims: ScoringDim[], listing: unknown): Promis
     const raw = await resolveMetric(dim.metric, listing);
     if (raw === undefined) {
       if (dim.on_missing === 'fail')
-        throw new ScoringFailure(`missing metric ${dim.metric} for dim ${dim.name}`);
+        throw new ScoringFailure(
+          `missing metric ${typeof dim.metric === 'object' ? JSON.stringify(dim.metric) : dim.metric} for dim ${dim.name}`,
+        );
       if (dim.on_missing === 'skip_dim') continue;
       // 'zero': contribute 0 with full weight
       breakdown[dim.name] = 0;
@@ -56,9 +58,17 @@ export async function scoreListing(dims: ScoringDim[], listing: unknown): Promis
   return { final, breakdown };
 }
 
-async function resolveMetric(metric: string, listing: unknown): Promise<unknown> {
-  if (metric.startsWith('=')) {
-    return evalJsonata(metric.slice(1), listing);
+async function resolveMetric(metric: string | CommutePrimitive, listing: unknown): Promise<unknown> {
+  if (typeof metric === 'object' && metric !== null && 'kind' in metric && metric.kind === 'commute') {
+    const root = listing as { enriched?: { commute?: Record<string, Record<string, { duration_min?: number }>> } };
+    const cell = root.enriched?.commute?.[metric.target]?.[metric.mode];
+    return typeof cell?.duration_min === 'number' ? cell.duration_min : undefined;
   }
-  return resolvePath(listing, metric);
+  if (typeof metric === 'string') {
+    if (metric.startsWith('=')) {
+      return evalJsonata(metric.slice(1), listing);
+    }
+    return resolvePath(listing, metric);
+  }
+  return undefined;
 }
