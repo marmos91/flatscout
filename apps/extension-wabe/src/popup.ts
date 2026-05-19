@@ -6,7 +6,7 @@ export {};
  */
 
 const DEFAULT_BRIDGE_URL = 'ws://127.0.0.1:8431/bridge';
-const STALE_AFTER_MS = 30_000;
+const STALE_AFTER_MS = 90_000;
 const HEX64 = /^[0-9a-f]{64}$/;
 
 const statusEl = document.getElementById('status') as HTMLDivElement;
@@ -20,6 +20,7 @@ interface StoredState {
   authToken?: string;
   lastConnectedAt?: number;
   lastRequestAt?: number;
+  lastAliveAt?: number;
 }
 
 function setStatus(cls: 'connected' | 'disconnected' | 'unpaired', text: string): void {
@@ -41,6 +42,7 @@ async function render(): Promise<void> {
     'authToken',
     'lastConnectedAt',
     'lastRequestAt',
+    'lastAliveAt',
   ])) as StoredState;
   bridgeUrlEl.value = s.bridgeUrl ?? DEFAULT_BRIDGE_URL;
   tokenEl.value = s.authToken ?? '';
@@ -48,7 +50,11 @@ async function render(): Promise<void> {
     setStatus('unpaired', 'not paired — paste URL + token below.');
     return;
   }
-  const lastSeen = Math.max(s.lastConnectedAt ?? 0, s.lastRequestAt ?? 0);
+  const lastSeen = Math.max(
+    s.lastConnectedAt ?? 0,
+    s.lastRequestAt ?? 0,
+    s.lastAliveAt ?? 0,
+  );
   const stale = lastSeen === 0 || Date.now() - lastSeen > STALE_AFTER_MS;
   if (stale) {
     setStatus('disconnected', `disconnected (last seen ${fmtAge(lastSeen || undefined)}).`);
