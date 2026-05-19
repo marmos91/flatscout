@@ -154,9 +154,9 @@ Some Swiss portals (Homegate, ImmoScout24) sit behind DataDome / Cloudflare anti
 
 Architecture:
 
-- `@wabe/browser-bridge` — a `127.0.0.1`-only WebSocket server inside `wabe start`. Pairs with one extension via a 64-hex shared secret.
-- `apps/extension-wabe` — manifest v3 WebExtension (Chrome + Firefox). Service worker holds the WS, performs `fetch()` with `credentials: 'include'` on receipt of a request message, ships the response back.
-- `source-homegate` and `source-immoscout24-sitemap` select their transport at runtime: **bridge** (if a paired extension is connected) → **playwright** (headless fallback) → **undici** (anonymous last resort). IS24 additionally promotes from URL-only sitemap entries to full-detail listings (rooms / price / photos / description) when the bridge is connected.
+- `@wabe/browser-bridge` — a `127.0.0.1`-only WebSocket server inside `wabe start`. Pairs with one extension via a 64-hex shared secret. A heartbeat file at `${dataDir}/bridge.status.json` lets sibling commands (`wabe bridge status`, `wabe doctor`) read connection state without opening a second WS client.
+- `apps/extension-wabe` — manifest v3 WebExtension (Chrome + Firefox via separate `dist/chrome/` and `dist/firefox/` builds, since Firefox MV3 still ships with `background.service_worker` disabled and needs `background.scripts` instead). On a bridge request the extension opens (or reuses) a hidden tab loaded at the target's homepage and runs `chrome.scripting.executeScript({ world: 'MAIN' })` to perform `fetch()` inside the page's own context. This is critical: DataDome injects a JS hook on `window.fetch` that adds a fingerprint-derived header to every outgoing request — the page-context fetch picks that hook up automatically, so the request hitting api.homegate.ch looks identical to one initiated by the legitimate web app. A `declarative_net_request` rule additionally rewrites `Origin` / `Referer` at the network layer.
+- `source-homegate` and `source-immoscout24-sitemap` select their transport at startup: **bridge** (when the paired extension is connected to the bridge running in *this* process) → **playwright** (headless fallback) → **undici** (anonymous last resort). Bridge mode is daemon-only — one-shot commands like `wabe scan --source X` cannot dispatch through the daemon's bridge and will fall through to Playwright. IS24 additionally promotes from URL-only sitemap entries to full-detail listings (rooms / price / photos / description) when the bridge is connected.
 
 Setup:
 
@@ -188,6 +188,23 @@ pnpm wabe doctor            # expect: [OK ] browser bridge — connected …
 ```
 
 Headless deployments (no GUI) can leave `bridge.enabled` off — `source-homegate` falls back to the Playwright transport automatically. The extension is only useful where you'd otherwise be fighting DataDome from a server.
+
+### Known limitations
+
+- **Firefox suspends background event pages on idle** (and Chrome service workers behave the same way under MV3). With DevTools open on the extension's background script the page stays warm; without it, the WebSocket is allowed to die and reconnects on the next `chrome.alarms` tick (~30 s). Offscreen-document keepalive is a deferred follow-up.
+- **First request to each origin opens a new tab.** The tab is hidden (`active: false`) but visible in the tab strip. The page must reach `complete` and run any DataDome JS challenge before the bridge can dispatch; subsequent requests reuse the same tab via `chrome.tabs.query`.
+- **The bridge is single-tenant.** One extension at a time per Wabe agent; a newer pairing preempts an older one server-side.
+
+### Cross-source lister normalisation
+
+When the upstream response carries agency / lister metadata, source plugins now emit it under a shared shape so downstream tooling (UI, dedup, notifier templates) can treat every source the same way:
+
+- `agency`: top-level string — legal/agency name.
+- `contact`: strict `{ phone?, email?, form_url? }` — schema-validated.
+- `enriched.lister`: source-specific richness (`legal_name`, `website`, `logo_url`, `inquiry_contact`, `viewing_contact`, `address_locality`, …) — schema-passthrough.
+- `location.region`, `location.neighborhood`, `available_from`: filled from raw response when available.
+
+Implemented for `source-homegate`, `source-flatfox`, `source-realadvisor`. Other sources continue to emit `null` / `{}` where the data isn't exposed by the upstream API.
 
 ## Plugin authoring 101
 

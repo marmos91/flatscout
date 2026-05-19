@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Repository overview
 
-Wabe is a self-hosted, AGPL-3.0 apartment-hunting agent for the Swiss market. This is the **Phase 1 + 2 vertical slice** — a monorepo containing the core engine, plugin SDK, one source plugin (Flatfox public REST), one Telegram notifier, persistence (SQLite + Drizzle), and a CLI. A Homegate source was originally scoped but is deferred to its own future spec; see `docs/research/2026-05-18-homegate-investigation.md` for findings (Auth0 + DataDome + Cloudflare).
+Wabe is a self-hosted, AGPL-3.0 apartment-hunting agent for the Swiss market. The monorepo ships the core engine, plugin SDK, five source plugins (Flatfox, Homegate, ImmoScout24 sitemap, RealAdvisor, Immobilier.ch + the generic schema.org adapter), a Telegram notifier, persistence (SQLite + Drizzle), a CLI, and the browser-bridge subsystem (`@wabe/browser-bridge` + `apps/extension-wabe`) used to bypass anti-bot stacks on DataDome/Cloudflare-protected portals.
 
 ## Key commands
 
@@ -25,9 +25,13 @@ pnpm wabe <command>        # run the CLI from built output
 - `packages/core` — Zod schemas (`Listing`, `FilterRule`, `ScoringDim`, `NotifyConfig`) + scoring engine (normalize primitives + weighted-sum reducer + JSONata wrapper).
 - `packages/db` — Drizzle ORM tables + better-sqlite3 driver + migrations.
 - `packages/plugin-sdk` — 5 plugin interface contracts: `Source`, `Enricher`, `Scorer`, `Notifier`, `Applicator`.
-- `packages/server` — orchestrator: plugin loader (dynamic `import` by name + Zod validation), pipeline, node-cron scheduler, daily quota gate, per-source circuit-breaker.
-- `packages/cli` — commander-based `wabe` binary: `init` / `scan` / `start` / `list` / `migrate` / `doctor`.
+- `packages/server` — orchestrator: plugin loader (dynamic `import` by name + Zod validation), pipeline, node-cron scheduler, daily quota gate, per-source circuit-breaker, shutdown-hook lifecycle. Starts `@wabe/browser-bridge` when `top.bridge.enabled` is true.
+- `packages/cli` — commander-based `wabe` binary: `init` / `scan` / `start` / `list` / `migrate` / `doctor` / `bridge {pair,status}`.
+- `packages/browser-bridge` — `@wabe/browser-bridge`: 127.0.0.1-only WebSocket server + shared-secret handshake + heartbeat file + `Transport` interface + `BrowserBridgeTransport` adapter consumed by source plugins.
+- `apps/extension-wabe` — manifest v3 WebExtension (Chrome + Firefox via separate `dist/<browser>/` builds). Service worker / event-page proxies bridge requests by running `chrome.scripting.executeScript({ world: 'MAIN' })` inside a hidden tab on the target origin, so DataDome's JS-challenge hook on `window.fetch` signs the request.
 - `plugins/source-flatfox` — pure-TS client for Flatfox's public `/api/v1/public-listing/` (no auth).
+- `plugins/source-homegate` — paginated iOS-style search API; runtime transport selector (bridge → playwright → undici), full-projection response (no `fieldset='srp-list'`).
+- `plugins/source-immoscout24-sitemap` — Phase A sitemap discovery; Phase B PDP enrichment through the bridge.
 - `plugins/notifier-telegram` — grammY send-only (URL buttons; no callback handling).
 
 ## Where to add things
@@ -47,8 +51,10 @@ pnpm wabe <command>        # run the CLI from built output
 - **NEVER auto-submit applications.** Final send is always a human tap. (This is enforced in the spec; do not weaken it.)
 - Commit messages are concise. No mention of Claude / AI / co-authored-by tags.
 - Sign commits when possible (`git commit -S`).
-- Slice-only: `@wabe/server`'s `dependencies` lists the shipping plugins (`source-flatfox`, `notifier-telegram`) so the loader's dynamic `import()` resolves them at runtime from `packages/server/node_modules/` out-of-the-box.
+- Slice-only: `@wabe/server`'s `dependencies` lists the shipping plugins so the loader's dynamic `import()` resolves them at runtime from `packages/server/node_modules/` out-of-the-box.
 - Published-package distribution (users `npm install @wabe/<plugin>` separately) is deferred to a later spec.
+- Cross-source lister normalisation: source plugins emit agency / contact / lister metadata under a shared shape — `agency` (top-level string), strict `contact { phone?, email?, form_url? }`, and `enriched.lister` for source-specific richness (`legal_name`, `website`, `logo_url`, `inquiry_contact`, `viewing_contact`, `address_locality`). Mirror this convention when adding new sources.
+- Bridge mode is daemon-only. `BrowserBridgeTransport` dispatches via an in-process `getCurrentBridge()` singleton, so sibling processes (`wabe scan --source X`) cannot route through the daemon's bridge and fall through to Playwright. Cross-process bridge access (CLI command sharing the daemon's extension) is a future task.
 
 ## License compliance
 
@@ -61,6 +67,14 @@ AGPL-3.0. New dependencies must be AGPL-compatible (MIT/BSD/Apache-2/ISC/MPL all
 - Integration test in `@wabe/server` uses an in-test stub source + stub notifier + in-memory SQLite — verifies the full pipeline.
 - Gate test in `examples/zurich-family/` enforces that example configs only reference fields the shipping sources actually populate.
 
-## Deferred sources
+## Browser bridge
 
-A Homegate source plugin (`@wabe/source-homegate`) was originally scoped in this slice and was modeled on the MIT-licensed [denysvitali/homegate-rs](https://github.com/denysvitali/homegate-rs) reference. The Homegate API has since moved to Auth0 OAuth2 (Google SSO) with a DataDome + Cloudflare anti-bot stack on the public search endpoint, which is out of scope for this slice. See `docs/research/2026-05-18-homegate-investigation.md` for the captured findings and the candidate re-implementation paths.
+DataDome on `api.homegate.ch` (and equivalents on ImmoScout24) fingerprints the request beyond cookies — TLS JA3/JA4, HTTP/2 frame order, and a JS-challenge-derived header injected by the page's hooked `fetch`. The bridge bypasses all of this by routing the request through `chrome.scripting.executeScript({ world: 'MAIN' })` inside a hidden tab loaded at the target's homepage; the request goes out from the genuine page context with the genuine hooked fetch.
+
+- Server: `@wabe/browser-bridge` starts inside `wabe start` on `127.0.0.1:8431`.
+- Pairing: `wabe bridge pair` prints URL + 64-hex token; the extension's popup persists both in `chrome.storage.local`.
+- Status: `wabe bridge status` and `wabe doctor` read `${dataDir}/bridge.status.json` (no second WS client).
+- Headers: a `declarative_net_request` ruleset on the extension rewrites `Origin` / `Referer` for `api.homegate.ch` + `api.immoscout24.ch` requests.
+- Known gap: Firefox/Chrome MV3 suspends idle background contexts; the WS drops and re-pairs on the next 30 s alarm tick. Keeping DevTools open on the background page disables suspension. Offscreen-document keepalive is deferred.
+
+See `docs/research/2026-05-18-homegate-investigation.md` for the original DataDome / Auth0 investigation that motivated this design.

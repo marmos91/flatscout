@@ -2,7 +2,11 @@
 
 Server-side WebSocket bridge that lets a paired Wabe browser extension proxy HTTPS requests from the user's real Chrome/Firefox session into the Wabe agent.
 
-The point of the bridge: source plugins that target DataDome/Cloudflare-protected hosts (Homegate, ImmoScout24) call `BrowserBridgeTransport.request(...)`; the request is forwarded to the connected extension, the extension performs `fetch()` inside the genuine browser (with the user's session cookies attached), and the response is shipped back. From the target's anti-bot stack the request is indistinguishable from human browsing because it *is* human browsing.
+The point of the bridge: source plugins that target DataDome/Cloudflare-protected hosts (Homegate, ImmoScout24) call `BrowserBridgeTransport.request(...)`; the request is forwarded to the connected extension, which runs `fetch()` inside a hidden tab loaded at the target's homepage via `chrome.scripting.executeScript({ world: 'MAIN' })`. The page's own DataDome-hooked `window.fetch` signs the request, so the upstream sees a legitimate web-app call. The response is shipped back over the WS.
+
+## Daemon-only
+
+`BrowserBridgeTransport.request()` dispatches through an in-process `getCurrentBridge()` singleton. That means **only the process running `wabe start` can route requests through the bridge** — sibling commands (`wabe scan --source homegate`) cannot, even when they see a fresh heartbeat file. Source plugins detect this and fall back to Playwright transparently.
 
 ## Components
 
