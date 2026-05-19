@@ -84,9 +84,7 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
     const role: 'extension' | 'requester' =
       (ws as WebSocket & { _path?: string })._path === '/dispatch' ? 'requester' : 'extension';
     if (process.env.WABE_BRIDGE_DEBUG)
-      console.log(
-        `[bridge] connect from ${peer} role=${role} ua=${req.headers['user-agent'] ?? 'n/a'}`,
-      );
+      console.log(`[bridge] connect from ${peer} role=${role} ua=${req.headers['user-agent'] ?? 'n/a'}`);
     if (role === 'requester') {
       let helloReceived = false;
       ws.on('message', (raw) => {
@@ -117,8 +115,7 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
         const reqMsg = BridgeRequest.safeParse(parsed);
         if (!reqMsg.success) {
           const rawObj = parsed as Record<string, unknown> | null;
-          const id =
-            rawObj && typeof rawObj.id === 'string' ? (rawObj.id as string) : 'unknown';
+          const id = rawObj && typeof rawObj.id === 'string' ? (rawObj.id as string) : 'unknown';
           try {
             ws.send(
               JSON.stringify({
@@ -166,9 +163,7 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
           },
           reject: (e) => {
             try {
-              ws.send(
-                JSON.stringify({ type: 'error', id: reqMsg.data.id, message: e.message }),
-              );
+              ws.send(JSON.stringify({ type: 'error', id: reqMsg.data.id, message: e.message }));
             } catch {
               // ignore
             }
@@ -252,10 +247,7 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
     });
   });
 
-  function dispatch(
-    req: BridgeRequest,
-    opts?: { signal?: AbortSignal },
-  ): Promise<BridgeResponse> {
+  function dispatch(req: BridgeRequest, opts?: { signal?: AbortSignal }): Promise<BridgeResponse> {
     const signal = opts?.signal;
     if (signal?.aborted) {
       return Promise.reject(new Error('aborted'));
