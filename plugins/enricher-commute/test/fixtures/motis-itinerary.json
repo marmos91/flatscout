@@ -1,0 +1,25 @@
+{
+  "content_type": "RoutingResponse",
+  "content": {
+    "connections": [
+      {
+        "stops": [],
+        "trips": [],
+        "transports": [],
+        "attributes": [],
+        "free_texts": [],
+        "problems": [],
+        "night_penalty": 0,
+        "db_costs": 0,
+        "duration": 1740,
+        "transfers": 1,
+        "departure": { "time": 1747545300, "schedule_time": 1747545300 },
+        "arrival":   { "time": 1747547040, "schedule_time": 1747547040 }
+      },
+      {
+        "duration": 2100,
+        "transfers": 0
+      }
+    ]
+  }
+}
