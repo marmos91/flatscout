@@ -69,36 +69,47 @@ const plugin: SourceWithDispose = {
     const transport = await selectTransport({ dataDir, logger: ctx.logger });
     activeTransport = transport;
 
-    for (let page = 0; page < cfg.fetch.max_pages; page += 1) {
-      if (ctx.signal.aborted) return;
-      const from = page * cfg.fetch.page_size;
-      const body = buildSearchBody(cfg.search, cfg.fetch.page_size, from);
-      const res = await fetchSearch(body, {
-        paceMs: cfg.fetch.pace_ms,
-        backoff: cfg.fetch.backoff,
-        signal: ctx.signal,
-        logger: ctx.logger,
-        transport,
-      });
+    try {
+      for (let page = 0; page < cfg.fetch.max_pages; page += 1) {
+        if (ctx.signal.aborted) return;
+        const from = page * cfg.fetch.page_size;
+        const body = buildSearchBody(cfg.search, cfg.fetch.page_size, from);
+        const res = await fetchSearch(body, {
+          paceMs: cfg.fetch.pace_ms,
+          backoff: cfg.fetch.backoff,
+          signal: ctx.signal,
+          logger: ctx.logger,
+          transport,
+        });
 
-      for (const raw of res.results) {
-        const parsed = HomegateApiSchema.safeParse(raw);
-        if (!parsed.success) {
-          ctx.logger.warn(
-            { err: parsed.error.message, listing_id: (raw as { id?: string }).id },
-            'skipping malformed homegate result',
-          );
-          continue;
+        for (const raw of res.results) {
+          const parsed = HomegateApiSchema.safeParse(raw);
+          if (!parsed.success) {
+            ctx.logger.warn(
+              { err: parsed.error.message, listing_id: (raw as { id?: string }).id },
+              'skipping malformed homegate result',
+            );
+            continue;
+          }
+          yield mapHomegateResult(parsed.data);
         }
-        yield mapHomegateResult(parsed.data);
-      }
 
-      // Stop on last page / empty page / explicit cap.
-      const next = from + res.results.length;
-      if (res.results.length < cfg.fetch.page_size) break;
-      if (next >= res.total) break;
-      if (res.maxFrom != null && next >= res.maxFrom) break;
-      if (page + 1 < cfg.fetch.max_pages) await sleep(cfg.fetch.pace_ms, ctx.signal);
+        // Stop on last page / empty page / explicit cap.
+        const next = from + res.results.length;
+        if (res.results.length < cfg.fetch.page_size) break;
+        if (next >= res.total) break;
+        if (res.maxFrom != null && next >= res.maxFrom) break;
+        if (page + 1 < cfg.fetch.max_pages) await sleep(cfg.fetch.pace_ms, ctx.signal);
+      }
+    } finally {
+      // CLOSE GUARANTEE: each fetch invocation closes its own transport, even
+      // if a concurrent invocation reassigned `activeTransport`. The module
+      // singleton is only kept around so `dispose()` can act as a safety net
+      // for abrupt shutdown (signal handlers, crashed pipelines).
+      if (activeTransport === transport) activeTransport = undefined;
+      if (transport.close) {
+        await transport.close();
+      }
     }
   },
   async dispose() {
