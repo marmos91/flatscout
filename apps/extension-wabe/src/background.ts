@@ -138,7 +138,11 @@ async function ensureTabForOrigin(origin: string): Promise<number> {
   if (pending) return pending;
   const homepage = TAB_HOMEPAGE[origin] ?? `${origin}/`;
   const p = (async (): Promise<number> => {
-    const tab = await chrome.tabs.create({ url: homepage, active: false });
+    // `pinned: true` collapses the tab to its favicon at the left of the tab
+    // strip. Chrome MV3 has no real `tabs.hide()` API (Firefox-only), so this
+    // is the minimum-footprint option: small, recognisable, and resistant
+    // to accidental close.
+    const tab = await chrome.tabs.create({ url: homepage, active: false, pinned: true });
     if (tab.id === undefined) throw new Error('tab created with no id');
     await waitForTabComplete(tab.id);
     return tab.id;
