@@ -22,7 +22,7 @@ export function registerDoctor(prog: Command): void {
         if (!pass) ok = false;
       };
       let loadedCfg: Awaited<ReturnType<typeof loadConfig>> | null = null;
-      let loadedSources: Array<{ name: string }> | null = null;
+      let loadedSources: Array<{ name: string; plugin: { name: string } }> | null = null;
       try {
         const cfg = await loadConfig(paths.configDir);
         loadedCfg = cfg;
@@ -106,10 +106,13 @@ export function registerDoctor(prog: Command): void {
       // Hard-fail: DataDome-protected sources require a paired + connected bridge.
       // Without it, those sources will error on every scan, so surface the misconfiguration
       // early via a non-zero doctor exit.
+      // Match against the PLUGIN package name (`s.plugin.name` = "source-homegate"),
+      // not the YAML INSTANCE name (`s.name` = e.g. "homegate-zurich") — instance
+      // names are user-defined and won't match DATADOME_SOURCES.
       const enabledDataDomeSources =
         loadedSources
-          ?.filter((s) => (DATADOME_SOURCES as readonly string[]).includes(s.name))
-          .map((s) => s.name) ?? [];
+          ?.filter((s) => (DATADOME_SOURCES as readonly string[]).includes(s.plugin.name))
+          .map((s) => `${s.name} (${s.plugin.name})`) ?? [];
       if (enabledDataDomeSources.length > 0) {
         const hb = readHeartbeat(paths.dataDir);
         const bridgeOk =

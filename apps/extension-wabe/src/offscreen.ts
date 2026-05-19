@@ -247,6 +247,11 @@ async function connect(): Promise<void> {
   });
   ws.addEventListener('close', () => {
     state.ws = null;
+    // Clear all liveness signals so popup flips to "disconnected" within one
+    // render tick instead of waiting for STALE_AFTER_MS wall-clock to elapse.
+    // Popup takes Math.max of all three — clearing only one leaves popup
+    // anchored to the older surviving value.
+    recordState({ lastAliveAt: 0, lastConnectedAt: 0, lastRequestAt: 0 });
     scheduleReconnect();
   });
   ws.addEventListener('error', () => {

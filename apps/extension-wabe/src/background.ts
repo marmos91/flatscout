@@ -475,6 +475,9 @@ function installFirefoxPath(): void {
     });
     ws.addEventListener('close', () => {
       state.ws = null;
+      // Clear liveness signals so popup flips to "disconnected" within a
+      // render tick instead of waiting for STALE_AFTER_MS to elapse.
+      void chrome.storage.local.set({ lastAliveAt: 0, lastConnectedAt: 0, lastRequestAt: 0 });
       scheduleReconnect();
     });
     ws.addEventListener('error', () => {
