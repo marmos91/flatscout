@@ -1,0 +1,9 @@
+{
+  "logger": { "level": "info" },
+  "esclient": { "apiVersion": "7.16", "hosts": [{ "host": "pelias-elasticsearch" }] },
+  "api": { "host": "0.0.0.0", "port": 4000 },
+  "imports": {
+    "openstreetmap": { "datapath": "/data/openstreetmap", "leveldbpath": "/tmp" },
+    "openaddresses": { "datapath": "/data/openaddresses", "files": [] }
+  }
+}
