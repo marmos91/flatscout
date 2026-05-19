@@ -48,11 +48,6 @@ const TAB_HOMEPAGE: Record<string, string> = {
 /** In-flight tab-ready promises, dedup parallel requests for the same origin. */
 const tabReady = new Map<string, Promise<number>>();
 
-function originFromHostUrl(url: string): string {
-  const u = new URL(url);
-  return `${u.protocol}//${u.host}`;
-}
-
 function urlMatchPattern(origin: string): string {
   // chrome.tabs.query needs a match pattern, not a literal origin.
   return `${origin}/*`;
@@ -155,10 +150,6 @@ async function ensureTabForOrigin(origin: string): Promise<number> {
     tabReady.delete(origin);
   }
 }
-
-// originFromHostUrl is only used inside executeProxyRequest below. Referenced
-// here to keep linters happy in builds that strip dead code aggressively.
-void originFromHostUrl;
 
 interface InPageFetchArgs {
   method: string;
@@ -296,9 +287,11 @@ function installChromePath(): void {
       return true; // async response
     }
     if (message?.type === 'wabe-bridge:reconnect') {
-      // Forward to offscreen so it resets its socket; sender is the popup.
+      // Don't forward — the popup's sendMessage already broadcasts to the
+      // offscreen document directly. We just ensure offscreen exists in case
+      // Chrome evicted it. The offscreen's own onMessage listener handles
+      // the reconnect.
       void ensureOffscreen()
-        .then(() => chrome.runtime.sendMessage({ type: 'wabe-bridge:reconnect' }))
         .then(() => sendResponse({ ok: true }))
         .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
       return true;
