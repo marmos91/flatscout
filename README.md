@@ -165,7 +165,6 @@ Setup:
 #    bridge:
 #      enabled: true
 #      port: 8431
-#      host: 127.0.0.1
 
 # 2. Build the extension (both Chrome + Firefox dists)
 pnpm --filter @wabe/extension-wabe build
