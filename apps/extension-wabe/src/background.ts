@@ -245,6 +245,8 @@ if (HAS_OFFSCREEN) {
 
 // --------- Chrome path ---------
 
+let offscreenCreating: Promise<void> | null = null;
+
 async function ensureOffscreen(): Promise<void> {
   const offscreenAny = (
     chrome as typeof chrome & {
@@ -258,13 +260,26 @@ async function ensureOffscreen(): Promise<void> {
       };
     }
   ).offscreen;
-  const exists = await offscreenAny.hasDocument();
-  if (exists) return;
-  await offscreenAny.createDocument({
-    url: OFFSCREEN_URL,
-    reasons: ['WORKERS'],
-    justification: 'persistent WebSocket to local Wabe agent',
-  });
+  if (await offscreenAny.hasDocument()) return;
+  if (offscreenCreating) {
+    await offscreenCreating;
+    return;
+  }
+  offscreenCreating = offscreenAny
+    .createDocument({
+      url: OFFSCREEN_URL,
+      reasons: ['WORKERS'],
+      justification: 'persistent WebSocket to local Wabe agent',
+    })
+    .catch((err: Error) => {
+      // Concurrent callers raced through `hasDocument()`; another won.
+      // Chrome surfaces this as "Only a single offscreen document may be created."
+      if (!/single offscreen document/i.test(err.message)) throw err;
+    })
+    .finally(() => {
+      offscreenCreating = null;
+    });
+  await offscreenCreating;
 }
 
 function installChromePath(): void {
