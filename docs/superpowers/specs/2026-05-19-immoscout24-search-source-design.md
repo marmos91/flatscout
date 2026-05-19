@@ -43,6 +43,12 @@ geocoordinates / cross-portal flags. One round trip per page replaces 20.
 - Cross-portal dedup using `platforms[]` — stored in `enriched.cross_listed_on`
   for future heuristics, but not consumed by canonical-key.
 - IS24 BUY listings. RENT only, same as current.
+- **One-row-per-logical-listing collapse across sources.** Today the `listings`
+  table holds one row per (source, listing) pair joined by `canonical_key`;
+  `shouldNotify` dedups notifications cross-source but not DB rows.
+  Collapsing to one row per `canonical_key` (with second-source arrivals
+  enriching the existing row) is a project-wide refactor — separate spec,
+  not a blocker for this plugin.
 
 ## Architecture
 
