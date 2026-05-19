@@ -13,6 +13,17 @@ Make the Wabe browser bridge usable in unattended, multi-process operation:
 
 Concurrently, accept that the Playwright fallback is dead for DataDome-protected sources (Homegate, ImmoScout24) and remove it.
 
+## In scope (drive-by fixes from PR #1 review)
+
+Folded in because they touch files this spec already modifies:
+
+- **Loopback enforcement on bridge server.** Today `opts.host` is trusted verbatim; user can set `0.0.0.0` and bind publicly. Hard-enforce: ignore `opts.host`, always bind `127.0.0.1`. Drop the `host?: string` field from `StartOpts`.
+- **CSP / `host_permissions` cleanup in extension manifest.** `connect-src` hard-codes `ws://127.0.0.1:8431`; widen to `ws://127.0.0.1:* ws://localhost:*` so non-default ports work. Drop the invalid `ws://127.0.0.1/*` and `http://127.0.0.1/*` entries from `host_permissions` (MV3 only accepts http/https/file/etc. there).
+- **DNR rule scope (immoscout24).** Rule #2 currently matches `||immoscout24.ch/` with `resourceTypes: ["xmlhttprequest","main_frame","sub_frame"]` — rewrites Origin/Referer on normal page navigation across the whole site. Narrow to `||api.immoscout24.ch/` and `resourceTypes: ["xmlhttprequest"]` to match rule #1's homegate pattern.
+- **Liveness signal for popup status.** `popup.ts` infers "disconnected" from `lastConnectedAt` / `lastRequestAt`; an idle-but-healthy WS goes stale. With offscreen owning the WS (Chrome) and the SW alarm still firing (Firefox), write a `lastAliveAt` to `chrome.storage.local` on every liveness tick: offscreen writes it on its own internal interval (e.g. every 10s); Firefox SW writes it from the existing alarm handler when WS state is OPEN. Popup uses `lastAliveAt` instead of `lastConnectedAt + lastRequestAt`.
+- **Firefox alarm cadence.** `chrome.alarms` clamps `periodInMinutes` to ≥1 in Chrome (and Firefox honors it). Current `KEEPALIVE_MIN = 0.5` is silently rounded. Chrome path deletes the alarm entirely (offscreen never sleeps). Firefox path sets `KEEPALIVE_MIN = 1`. Popup `STALE_AFTER_MS` widens to `90_000` to span at least one full alarm cycle plus jitter.
+- **Abort signal propagation in transports.** `BrowserBridgeTransport.request()` and `DaemonBridgeTransport.request()` race `bridge.dispatch()` against the abort signal; on abort, remove the inflight entry early. `BridgeServer.dispatch(req, opts?)` gains an optional `AbortSignal` so the in-process caller can cancel; on abort, the server clears the inflight entry and `reject`s without waiting for the extension. (No cancel sent over the wire to the extension — the in-page fetch will finish but its result is discarded.)
+
 ## Non-goals
 
 - Firefox-equivalent offscreen behavior. No public API exists; Firefox stays on the existing 30s reconnect loop. Documented limitation.
@@ -79,6 +90,7 @@ Responsibilities:
 - On `request` from server: `chrome.runtime.sendMessage({ type: 'wabe-bridge:proxy', payload: msg })` to SW, await reply, send `response` or `error` on WS.
 - Reconnect loop (1s → 30s exponential, same as today).
 - Listen for `wabe-bridge:reconnect` messages (popup-triggered, forwarded by SW) and reset the socket.
+- Liveness tick: on a `setInterval` (10s), if WS is OPEN, write `lastAliveAt: Date.now()` to `chrome.storage.local`. Powers the popup status without depending on traffic.
 
 ### offscreen.html (new)
 
@@ -95,7 +107,12 @@ Responsibilities:
 
 ### background.ts (Firefox path)
 
-Unchanged. Feature-detect at the top of `background.ts`:
+Mostly unchanged. Two tweaks:
+
+- `KEEPALIVE_MIN` becomes `1` (Chrome/Firefox clamp `periodInMinutes` to ≥1 anyway).
+- On each alarm tick when `state.ws.readyState === OPEN`, write `lastAliveAt: Date.now()` to `chrome.storage.local` (same key offscreen uses on Chrome). Single popup code path.
+
+Feature-detect at the top of `background.ts`:
 
 ```ts
 const HAS_OFFSCREEN = typeof chrome.offscreen !== 'undefined';
@@ -128,6 +145,8 @@ New message direction: requester → server can send `BridgeRequest`. Server →
 
 ### Server changes (`packages/browser-bridge/src/server.ts`)
 
+- Drop `host` from `StartOpts`. Always bind `127.0.0.1`. Loopback is part of the trust model; making it configurable was a footgun.
+- `dispatch(req, opts?: { signal?: AbortSignal })` — on abort, clear inflight entry and reject immediately. Extension still finishes its in-page fetch but the result is discarded by the server when it arrives (id no longer in `inflight`).
 - WS server matches `req.url`:
   - `/bridge` → extension client (existing path; preserved).
   - `/dispatch` → requester client.
@@ -160,9 +179,11 @@ export class DaemonBridgeTransport implements Transport {
 
 `request`:
 
+- If `opts.signal?.aborted` → reject immediately with `Error('aborted')`.
 - If socket not open → reject with `Error('daemon bridge socket closed')`.
 - Generate request id; record local inflight map; send `BridgeRequest` over WS.
 - Resolve on incoming `response` for that id; reject on `error`; reject on socket close (drains all pending) or `timeout_ms` timer.
+- If `opts.signal` fires mid-flight → remove local inflight entry, reject. (No cancel sent to daemon; the extension finishes its fetch and its response is dropped when it arrives without a matching inflight id.)
 
 `close`:
 
@@ -228,11 +249,14 @@ Source plugin interface gains an optional `async dispose()` hook. `DaemonBridgeT
 
 | Path | Change |
 |------|--------|
-| `apps/extension-wabe/manifest.json` | + `"offscreen"` permission (Chrome dist only — build script split) |
-| `apps/extension-wabe/src/background.ts` | Feature-detect offscreen; Chrome path shrinks to spawn + executeScript-only |
+| `apps/extension-wabe/manifest.json` | + `"offscreen"` permission (Chrome dist only — build script split); widen `connect-src` to `ws://127.0.0.1:* ws://localhost:*`; drop invalid `ws://` and `http://` entries from `host_permissions` |
+| `apps/extension-wabe/src/background.ts` | Feature-detect offscreen; Chrome path shrinks to spawn + executeScript-only; Firefox path sets `KEEPALIVE_MIN = 1` and writes `lastAliveAt` on alarm |
+| `apps/extension-wabe/src/popup.ts` | Use `lastAliveAt` for staleness; widen `STALE_AFTER_MS` to 90s |
+| `apps/extension-wabe/src/dnr-rules.json` | Narrow rule #2 to `||api.immoscout24.ch/` + `resourceTypes: ["xmlhttprequest"]` |
 | `apps/extension-wabe/vite.config.ts` | Add offscreen entry, Chrome-only |
 | `apps/extension-wabe/README.md` | Document Chrome offscreen behavior + Firefox limitation |
-| `packages/browser-bridge/src/server.ts` | Two paths `/bridge` + `/dispatch`; requester set; origin-tagged inflight |
+| `packages/browser-bridge/src/server.ts` | Two paths `/bridge` + `/dispatch`; requester set; origin-tagged inflight; drop `host` from `StartOpts` (hard-enforce loopback); add `AbortSignal` to `dispatch` |
+| `packages/browser-bridge/src/transport.ts` | `BrowserBridgeTransport` propagates `signal` to `dispatch` |
 | `packages/browser-bridge/src/index.ts` | Export `DaemonBridgeTransport` |
 | `plugins/source-homegate/src/index.ts` | New transport selector; hard error when no bridge |
 | `plugins/source-homegate/src/transport.ts` | Delete `PlaywrightTransport` |
@@ -261,6 +285,7 @@ Source plugin interface gains an optional `async dispose()` hook. `DaemonBridgeT
 ## Testing
 
 - `packages/browser-bridge/test/fanout.test.ts` — in-process WS server; mock "extension" connects on `/bridge` and echoes canned responses; 3 concurrent requesters open on `/dispatch` and assert (a) each sees its own response, (b) ids do not cross, (c) requester close mid-flight rejects only that requester's inflight, (d) extension absent → requester gets `error` reply.
+- `packages/browser-bridge/test/abort.test.ts` (new) — covers `dispatch(req, { signal })` aborting in-process and `BrowserBridgeTransport` / `DaemonBridgeTransport` propagating `opts.signal`.
 - Daemon fan-out integration in `packages/server` — extend existing in-process pipeline test with a second worker that uses `DaemonBridgeTransport` against the same in-process bridge. Verify both paths share the mock extension cleanly. (Real subprocess test deferred.)
 - Offscreen path: vitest cannot host MV3 context. Manual smoke test required (already the rule for extension changes). Add a checklist to `apps/extension-wabe/README.md`:
   - Load unpacked Chrome dist; pair via popup; close DevTools.
