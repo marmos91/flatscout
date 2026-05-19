@@ -13,8 +13,6 @@ export interface StartOpts {
   dataDir: string;
   /** Pass 0 to let the OS pick a free port (used in tests). */
   port: number;
-  /** Default 127.0.0.1. Never bind to 0.0.0.0 — local-only by design. */
-  host?: string;
 }
 
 export interface BridgeStatus {
@@ -51,8 +49,7 @@ export function newRequestId(): string {
 
 export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> {
   const secret = loadOrGenerateSecret(opts.dataDir);
-  const host = opts.host ?? '127.0.0.1';
-  const wss = new WebSocketServer({ host, port: opts.port, path: '/bridge' });
+  const wss = new WebSocketServer({ host: '127.0.0.1', port: opts.port, path: '/bridge' });
   await new Promise<void>((resolve, reject) => {
     wss.once('listening', () => resolve());
     wss.once('error', reject);
