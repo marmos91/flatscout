@@ -15,6 +15,7 @@
     "@wabe/browser-bridge": "workspace:*",
     "@wabe/core": "workspace:*",
     "@wabe/db": "workspace:*",
+    "@wabe/enricher-commute": "workspace:*",
     "@wabe/notifier-telegram": "workspace:*",
     "@wabe/plugin-sdk": "workspace:*",
     "@wabe/source-flatfox": "workspace:*",
