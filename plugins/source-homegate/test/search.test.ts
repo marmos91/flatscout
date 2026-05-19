@@ -10,12 +10,12 @@ describe('buildSearchBody', () => {
       trackTotalHits: true,
       from: 0,
       size: 20,
-      fieldset: 'srp-list',
       query: {
         offerType: 'RENT',
         propertyType: 'APARTMENT_OR_HOUSE',
       },
     });
+    expect(body.fieldset).toBeUndefined();
   });
 
   it('translates zipcodes to geo-zipcode-NNNN tags', () => {
