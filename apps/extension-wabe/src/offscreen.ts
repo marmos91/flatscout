@@ -233,6 +233,15 @@ async function handleBridgeMessage(ws: WebSocket, raw: string): Promise<void> {
       state.everPaired = true;
       console.log('[wabe-bridge:offscreen] paired with wabe agent');
     }
+    if (typeof msg.bundle_hash === 'string') {
+      void maybeSelfReload(msg.bundle_hash);
+    }
+    return;
+  }
+  if (msg.type === 'heartbeat') {
+    if (typeof msg.bundle_hash === 'string') {
+      void maybeSelfReload(msg.bundle_hash);
+    }
     return;
   }
   if (msg.type === 'reject') {
@@ -247,6 +256,42 @@ async function handleBridgeMessage(ws: WebSocket, raw: string): Promise<void> {
   if (msg.type === 'request') {
     await proxyRequest(ws, msg as unknown as BridgeRequestMessage);
   }
+}
+
+/**
+ * Self-reload when the daemon-reported background.js hash diverges from
+ * ours. Chrome's `chrome.runtime.reload()` is callable from offscreen
+ * documents and tears down everything (offscreen included), then Chrome
+ * spawns the SW + offscreen fresh against the new dist.
+ */
+let selfBundleHash: string | null = null;
+async function getSelfBundleHash(): Promise<string | null> {
+  if (selfBundleHash) return selfBundleHash;
+  try {
+    const url = chrome.runtime.getURL('src/background.js');
+    const res = await fetch(url);
+    const buf = await res.arrayBuffer();
+    const digest = await crypto.subtle.digest('SHA-256', buf);
+    selfBundleHash = [...new Uint8Array(digest)]
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    return selfBundleHash;
+  } catch (err) {
+    console.warn('[wabe-bridge:offscreen] failed to hash own bundle:', (err as Error).message);
+    return null;
+  }
+}
+
+let reloadScheduled = false;
+async function maybeSelfReload(daemonHash: string): Promise<void> {
+  if (reloadScheduled) return;
+  const own = await getSelfBundleHash();
+  if (!own || own === daemonHash) return;
+  reloadScheduled = true;
+  console.log(
+    `[wabe-bridge:offscreen] bundle hash drifted (own=${own.slice(0, 8)} daemon=${daemonHash.slice(0, 8)}); reloading`,
+  );
+  setTimeout(() => chrome.runtime.reload(), 250);
 }
 
 async function connect(): Promise<void> {
