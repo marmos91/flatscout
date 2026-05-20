@@ -44,12 +44,33 @@ function adapterFor(platform: AgencyEntry['platform']): string | null {
 }
 
 /**
+ * Geo allowlist propagated into every expanded agency's inline config. The
+ * adapter applies this filter post-extraction so we never enrich/persist
+ * listings outside the user's area of interest — saves on commute routing
+ * calls and keeps the DB focused on the actually-relevant zone.
+ */
+export interface ExpandRegionFilter {
+  postal_codes?: string[];
+  cities?: string[];
+  cantons?: string[];
+}
+
+export interface ExpandOptions {
+  /** Global region allowlist applied to every expanded agency. Per-agency overrides are not supported in this round. */
+  regionFilter?: ExpandRegionFilter;
+}
+
+/**
  * Expands enabled agency rows into synthetic source-plugin entries that the
  * regular plugin loader can resolve. Rows referencing a platform whose adapter
  * isn't bundled in the current Wabe build go into `skipped` (never throws),
  * keeping registries forward-compatible with future bundled adapters.
  */
-export function expandRegistry(reg: AgencyRegistry, bundledAdapterNames: Set<string>): ExpandResult {
+export function expandRegistry(
+  reg: AgencyRegistry,
+  bundledAdapterNames: Set<string>,
+  opts: ExpandOptions = {},
+): ExpandResult {
   const expanded: ExpandedSource[] = [];
   const skipped: SkippedAgency[] = [];
   for (const a of reg.agencies) {
@@ -78,6 +99,20 @@ export function expandRegistry(reg: AgencyRegistry, bundledAdapterNames: Set<str
     };
     if (a.feed_url) inlineConfig.feed_url = a.feed_url;
     if (a.detail_url_template) inlineConfig.detail_url_template = a.detail_url_template;
+    if (opts.regionFilter) {
+      const rf = opts.regionFilter;
+      const hasAny =
+        (rf.postal_codes?.length ?? 0) > 0 ||
+        (rf.cities?.length ?? 0) > 0 ||
+        (rf.cantons?.length ?? 0) > 0;
+      if (hasAny) {
+        inlineConfig.region_filter = {
+          postal_codes: rf.postal_codes ?? [],
+          cities: rf.cities ?? [],
+          cantons: rf.cantons ?? [],
+        };
+      }
+    }
     expanded.push({
       name: `agency:${a.platform}:${a.id}`,
       plugin: adapter,

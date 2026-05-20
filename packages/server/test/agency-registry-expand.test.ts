@@ -42,6 +42,30 @@ describe('expandRegistry', () => {
     expect(zeni).toBeDefined();
     expect(zeni?.plugin).toBe('source-schemaorg');
   });
+
+  it('threads regionFilter into each expanded entry inline config when configured', () => {
+    const r = expandRegistry(reg, BUNDLED, {
+      regionFilter: { postal_codes: ['8008', '8053'], cities: ['Zürich'] },
+    });
+    const walde = r.expanded.find((e) => e.name === 'agency:schemaorg:walde');
+    expect(walde).toBeDefined();
+    const b64 = walde!.config.replace(/^inline:/, '');
+    const cfg = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+    expect(cfg.region_filter).toEqual({
+      postal_codes: ['8008', '8053'],
+      cities: ['Zürich'],
+      cantons: [],
+    });
+  });
+
+  it('omits region_filter inline when all lists are empty', () => {
+    const r = expandRegistry(reg, BUNDLED, {
+      regionFilter: { postal_codes: [], cities: [], cantons: [] },
+    });
+    const walde = r.expanded.find((e) => e.name === 'agency:schemaorg:walde');
+    const cfg = JSON.parse(Buffer.from(walde!.config.replace(/^inline:/, ''), 'base64').toString('utf8'));
+    expect(cfg.region_filter).toBeUndefined();
+  });
   it('skips disabled rows', () => {
     const r = expandRegistry(reg, BUNDLED);
     expect(r.expanded.some((e) => e.name.includes('nobilis'))).toBe(false);

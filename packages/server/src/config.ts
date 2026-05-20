@@ -58,6 +58,21 @@ export const TopConfig = z.object({
       external_seeds: z.array(z.string().url()).default([]),
       /** When true, newly discovered rows ship with `enabled: true` so they get scanned next cycle without manual approval. */
       auto_enable: z.boolean().default(false),
+      /**
+       * Geo allowlist applied to every agency-scrape pass. Adapter drops
+       * listings whose `postal_code` / `city` / `region` doesn't match any
+       * configured value. Listings with all three location fields null are
+       * dropped conservatively. Filter is OR across the three lists.
+       */
+      region_filter: z
+        .object({
+          postal_codes: z
+            .array(z.string().regex(/^\d{4}$/, 'PLZ must be a 4-digit Swiss postal code'))
+            .default([]),
+          cities: z.array(z.string().min(1)).default([]),
+          cantons: z.array(z.string().length(2)).default([]),
+        })
+        .default({ postal_codes: [], cities: [], cantons: [] }),
     })
     .default({
       enabled: true,
@@ -68,6 +83,7 @@ export const TopConfig = z.object({
       new_build_only: false,
       external_seeds: [],
       auto_enable: false,
+      region_filter: { postal_codes: [], cities: [], cantons: [] },
     }),
 });
 export type TopConfig = z.infer<typeof TopConfig>;
@@ -220,7 +236,16 @@ async function expandAgenciesIfPresent(
   }
 
   if (!registry) return null;
-  const { expanded, skipped } = expandRegistry(registry, BUNDLED_ADAPTERS as Set<string>);
+  const rf = top.discovery?.region_filter;
+  const { expanded, skipped } = expandRegistry(registry, BUNDLED_ADAPTERS as Set<string>, {
+    regionFilter: rf
+      ? {
+          postal_codes: rf.postal_codes,
+          cities: rf.cities,
+          cantons: rf.cantons,
+        }
+      : undefined,
+  });
   return {
     expandedSources: expanded.map((e) => ({ name: e.name, plugin: e.plugin, config: e.config })),
     skipped,

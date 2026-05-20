@@ -31,8 +31,43 @@ const ConfigSchema = z.object({
    * base64 carrier.
    */
   detail_url_pattern: z.string().optional(),
+  /**
+   * Geo pre-filter applied to extracted listings. A listing is kept when ANY
+   * configured allowlist (postal_codes / cities / cantons) matches its
+   * location fields; configuring zero allowlists disables the filter
+   * entirely. Listings whose `location` is null on every probed field are
+   * conservatively rejected when ANY filter is configured — we'd rather drop
+   * an ambiguous listing than notify on something potentially outside the
+   * user's zone.
+   */
+  region_filter: z
+    .object({
+      postal_codes: z.array(z.string().regex(/^\d{4}$/, 'PLZ must be a 4-digit Swiss postal code')).default([]),
+      cities: z.array(z.string().min(1)).default([]),
+      cantons: z.array(z.string().length(2)).default([]),
+    })
+    .default({ postal_codes: [], cities: [], cantons: [] }),
 });
 type Config = z.infer<typeof ConfigSchema>;
+
+/**
+ * Returns true when the listing's location matches at least one configured
+ * allowlist (PLZ / city / canton). Caller has already ensured at least one
+ * allowlist is non-empty. A listing whose `location` is null on every probed
+ * field fails — better to drop ambiguous units than notify out-of-zone.
+ */
+function matchesRegion(
+  listing: import('@wabe/core').RawListing,
+  plz: Set<string>,
+  cities: Set<string>,
+  cantons: Set<string>,
+): boolean {
+  const { postal_code, city, region } = listing.location;
+  if (plz.size > 0 && postal_code && plz.has(postal_code)) return true;
+  if (cities.size > 0 && city && cities.has(city.toLowerCase())) return true;
+  if (cantons.size > 0 && region && cantons.has(region.toUpperCase())) return true;
+  return false;
+}
 
 async function sleep(ms: number, signal: AbortSignal): Promise<void> {
   if (ms <= 0) return;
@@ -59,7 +94,15 @@ const plugin: Source = {
     const entries = await fetchSitemap(sitemapUrl, ctx.signal);
     entries.sort((a, b) => (b.lastmod ?? '').localeCompare(a.lastmod ?? ''));
     const detailPattern = cfg.detail_url_pattern ? new RegExp(cfg.detail_url_pattern) : null;
+    const regionEnabled =
+      cfg.region_filter.postal_codes.length > 0 ||
+      cfg.region_filter.cities.length > 0 ||
+      cfg.region_filter.cantons.length > 0;
+    const allowedPlz = new Set(cfg.region_filter.postal_codes);
+    const allowedCities = new Set(cfg.region_filter.cities.map((c) => c.toLowerCase()));
+    const allowedCantons = new Set(cfg.region_filter.cantons.map((c) => c.toUpperCase()));
     let scanned = 0;
+    let droppedByRegion = 0;
     for (const e of entries) {
       if (ctx.signal.aborted) return;
       if (scanned >= cfg.max_details_per_scan) break;
@@ -69,8 +112,22 @@ const plugin: Source = {
         const detail = await fetchDetail(e.loc, ctx.signal);
         const extracted = extractListing(detail.html, e.loc);
         const mapped = mapDetail(agencyId, e.loc, extracted);
-        if (mapped) yield mapped;
-        else ctx.logger.debug({ url: e.loc }, 'schemaorg: no listing extracted');
+        if (!mapped) {
+          ctx.logger.debug({ url: e.loc }, 'schemaorg: no listing extracted');
+        } else if (regionEnabled && !matchesRegion(mapped, allowedPlz, allowedCities, allowedCantons)) {
+          droppedByRegion += 1;
+          ctx.logger.debug(
+            {
+              url: e.loc,
+              postal_code: mapped.location.postal_code,
+              city: mapped.location.city,
+              region: mapped.location.region,
+            },
+            'schemaorg: dropped by region_filter',
+          );
+        } else {
+          yield mapped;
+        }
       } catch (err) {
         ctx.logger.warn({ url: e.loc, err: (err as Error).message }, 'schemaorg detail failed');
       }
@@ -81,6 +138,12 @@ const plugin: Source = {
         // sleep rejects on abort; treat as graceful termination of the scan loop.
         return;
       }
+    }
+    if (regionEnabled && droppedByRegion > 0) {
+      ctx.logger.info(
+        { dropped: droppedByRegion, scanned },
+        'schemaorg: region_filter dropped listings',
+      );
     }
   },
 };
