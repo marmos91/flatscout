@@ -3,10 +3,19 @@ import { z } from 'zod';
 /**
  * Canonical normalised listing record passed between pipeline stages and
  * persisted as the JSON `payload` column.
+ *
+ * After the cross-source row collapse (migration 0005), there is one row per
+ * logical listing keyed by `canonical_key`. Per-source ids contributing to a
+ * canonical row are preserved under `enriched.external_ids`. `source` and
+ * `url` follow the authoritative source (highest `source_priority` among
+ * contributors; ties broken by older `first_seen_at`).
  */
 export const Listing = z.object({
+  /** = canonical_key (sha256 hex). Constant per row across second-source merges. */
   id: z.string(),
+  /** Authoritative source for the canonical row (priority-wins; tie-break: older first_seen_at). */
   source: z.string(),
+  /** URL from the authoritative source. */
   url: z.string().url(),
   first_seen_at: z.coerce.date(),
   last_seen_at: z.coerce.date(),

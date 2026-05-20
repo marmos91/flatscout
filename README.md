@@ -11,7 +11,7 @@
 
 Phases 1 + 2 (skeleton + Flatfox + Telegram notifier) are shipped. Subsequent shipped milestones:
 
-- **Phase A — multi-source + dedup.** Five live sources (Flatfox, Homegate, ImmoScout24 sitemap, RealAdvisor, Immobilier.ch) behind a cross-source canonical-key deduper.
+- **Phase A — multi-source + dedup.** Five live sources (Flatfox, Homegate, ImmoScout24 sitemap, RealAdvisor, Immobilier.ch) collapsed into one row per logical listing keyed by `canonical_key`. Second-source observations enrich the existing row via a priority-wins reducer (`@wabe/core/resolveFields`): authoritative `source`/`url` follow the highest-priority contributor, scalars use null-skip, photos union, `enriched.*` deep-merge. Notification fires only on the first canonical-row insert.
 - **Phase B — browser bridge.** Opt-in WebExtension (Chrome + Firefox) that proxies DataDome-walled requests through a hidden tab in the user's browser, bypassing TLS/HTTP/2 + JS-challenge fingerprinting on `api.homegate.ch` and `api.immoscout24.ch`.
 - **Phase B follow-up — bridge keepalive + cross-process fan-out.** Chrome offscreen-document keepalive keeps the WS warm; sibling processes (`wabe scan --source X`) dispatch through the daemon via `/dispatch` instead of failing fast.
 - **Phase C — agency registry + schema.org adapter.** User-owned YAML registry of agency portals; each enabled row expands into a synthetic source plugin keyed `agency:<platform>:<id>`. Generic `@wabe/source-schemaorg` adapter handles JSON-LD-bearing sites; `wabe agencies probe|probe-portal|validate|stats` for inspection.
