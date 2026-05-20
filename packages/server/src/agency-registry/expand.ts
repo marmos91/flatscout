@@ -24,13 +24,20 @@ export interface ExpandResult {
   skipped: SkippedAgency[];
 }
 
-/** Map an agency `platform` value to the bundled adapter's npm name. */
+/**
+ * Map an agency `platform` value to the bundled adapter's npm name. Casasoft
+ * routes to `source-schemaorg` because CasaWP — the dominant WordPress
+ * implementation of the casasoft.ch platform — already emits full
+ * `RealEstateListing`/`Apartment`/`Offer` JSON-LD on every property page, so
+ * the schemaorg adapter extracts it without any casasoft-specific code.
+ * ImmoMig and other family platforms still need bespoke adapters.
+ */
 function adapterFor(platform: AgencyEntry['platform']): string | null {
   switch (platform) {
     case 'schemaorg':
+    case 'casasoft':
       return 'source-schemaorg';
     case 'immomig':
-    case 'casasoft':
     case 'custom':
       return null;
   }

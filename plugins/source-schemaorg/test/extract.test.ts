@@ -29,6 +29,57 @@ describe('extractListing — tier 1 (jsonld)', () => {
     expect(r?.geo.lat).toBe(47.37);
     expect(r?.geo.lon).toBe(8.54);
   });
+
+  it('merges a CasaWP-style split graph (RealEstateListing + Apartment + Offer)', () => {
+    const casawp = `<script type="application/ld+json">${JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'RealEstateListing',
+          '@id': 'https://x.ch/p/42#listing',
+          name: 'Maisonette',
+          image: ['https://cdn.casasoft.com/p/42/cover.jpg'],
+          offers: { '@id': 'https://x.ch/p/42#offer' },
+          mainEntity: { '@id': 'https://x.ch/p/42#property' },
+        },
+        {
+          '@type': 'Apartment',
+          '@id': 'https://x.ch/p/42#property',
+          name: 'Maisonette',
+          numberOfRooms: 2.5,
+          floorSize: { '@type': 'QuantitativeValue', value: 56, unitCode: 'MTK' },
+          address: {
+            '@type': 'PostalAddress',
+            streetAddress: 'Witikonerstrasse 423',
+            postalCode: '8053',
+            addressLocality: 'Zürich',
+            addressRegion: 'ZH',
+          },
+          geo: { '@type': 'GeoCoordinates', latitude: 47.36, longitude: 8.59 },
+        },
+        {
+          '@type': 'Offer',
+          '@id': 'https://x.ch/p/42#offer',
+          priceCurrency: 'CHF',
+          priceSpecification: {
+            '@type': 'UnitPriceSpecification',
+            price: 2350,
+            priceCurrency: 'CHF',
+            unitText: 'MONTH',
+          },
+        },
+      ],
+    })}</script>`;
+    const r = extractListing(casawp, 'https://x.ch/p/42');
+    expect(r).not.toBeNull();
+    expect(r?.tier).toBe('jsonld');
+    expect(r?.price_chf).toBe(2350);
+    expect(r?.rooms).toBe(2.5);
+    expect(r?.area_m2).toBe(56);
+    expect(r?.address.postal_code).toBe('8053');
+    expect(r?.geo.lat).toBe(47.36);
+    expect(r?.photos).toContain('https://cdn.casasoft.com/p/42/cover.jpg');
+  });
 });
 
 describe('extractListing — tier 2 (open graph + regex)', () => {

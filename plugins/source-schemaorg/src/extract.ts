@@ -1,4 +1,4 @@
-import { extractJsonLd, type JsonLdListing } from './detail.js';
+import { collectJsonLdFacts, type JsonLdListing } from './detail.js';
 
 export interface ExtractedListing {
   /** Which extraction tier produced this listing — useful for downstream confidence weighting. */
@@ -28,25 +28,93 @@ function toNum(v: unknown): number | null {
 
 /**
  * Tier 1 — turn a parsed JSON-LD listing object into the unified shape.
+ *
+ * Pulls fields from the anchor first, falling back to auxiliary graph nodes
+ * for facts that the anchor doesn't carry inline. CasaWP for example places
+ * `numberOfRooms`/`floorSize`/`address`/`geo` on a separate `Apartment` node
+ * and the price under `Offer.priceSpecification.price` (UnitPriceSpecification).
  */
-function fromJsonLd(l: JsonLdListing, url: string): ExtractedListing {
+function fromJsonLd(
+  l: JsonLdListing,
+  url: string,
+  aux?: ReturnType<typeof collectJsonLdFacts>,
+): ExtractedListing {
+  const apartmentAux = aux?.anchorCandidates.find(
+    (c) => (c['@type'] as string) === 'Apartment' && c !== l,
+  );
+  const houseAux = aux?.anchorCandidates.find(
+    (c) =>
+      (c['@type'] as string) === 'House' ||
+      (c['@type'] as string) === 'SingleFamilyResidence',
+  );
+  const sup = apartmentAux ?? houseAux;
+  const supAddress = (sup?.address ?? l.address) as JsonLdListing['address'];
+  const supGeo = (sup?.geo ?? l.geo) as JsonLdListing['geo'];
+  const supFloor = (sup?.floorSize ?? l.floorSize) as JsonLdListing['floorSize'];
+  const supRooms = (sup as { numberOfRooms?: unknown } | undefined)?.numberOfRooms ?? l.numberOfRooms;
+
+  // Price: anchor offer → first Offer node in graph → first PriceSpecification
+  let price: number | null = toNum(l.offers?.price);
+  let currency: string | undefined = l.offers?.priceCurrency;
+  if (price === null && aux?.offers.length) {
+    for (const o of aux.offers) {
+      const direct = toNum((o as { price?: unknown }).price);
+      if (direct !== null) {
+        price = direct;
+        currency = currency ?? ((o as { priceCurrency?: string }).priceCurrency ?? undefined);
+        break;
+      }
+      const spec = (o as { priceSpecification?: { price?: unknown; priceCurrency?: string } })
+        .priceSpecification;
+      if (spec) {
+        const sp = toNum(spec.price);
+        if (sp !== null) {
+          price = sp;
+          currency = currency ?? spec.priceCurrency ?? undefined;
+          break;
+        }
+      }
+    }
+  }
+  if (price === null && aux?.priceSpecs.length) {
+    for (const ps of aux.priceSpecs) {
+      const sp = toNum((ps as { price?: unknown }).price);
+      if (sp !== null) {
+        price = sp;
+        currency = currency ?? ((ps as { priceCurrency?: string }).priceCurrency ?? undefined);
+        break;
+      }
+    }
+  }
+
+  // Photos: anchor → Apartment aux → first ImageObject seen anywhere
+  let photos: string[] = Array.isArray(l.image) ? l.image : l.image ? [l.image] : [];
+  if (photos.length === 0 && sup) {
+    const supImg = (sup as { image?: unknown }).image;
+    photos = Array.isArray(supImg)
+      ? (supImg.filter((x) => typeof x === 'string') as string[])
+      : typeof supImg === 'string'
+        ? [supImg]
+        : [];
+  }
+
   return {
     tier: 'jsonld',
-    title: l.name ?? null,
+    title: l.name ?? (sup as { name?: string } | undefined)?.name ?? null,
     description: l.description ?? null,
     url,
-    photos: Array.isArray(l.image) ? l.image : l.image ? [l.image] : [],
-    price_chf: toNum(l.offers?.price),
-    currency: l.offers?.priceCurrency ?? 'CHF',
-    rooms: toNum(l.numberOfRooms),
-    area_m2: toNum(l.floorSize?.value),
+    photos,
+    price_chf: price,
+    currency: currency ?? 'CHF',
+    rooms: toNum(supRooms),
+    area_m2: toNum(supFloor?.value),
     address: {
-      street: l.address?.streetAddress ?? null,
-      postal_code: l.address?.postalCode ?? null,
-      city: l.address?.addressLocality ?? null,
-      region: l.address?.addressRegion ?? null,
+      street: supAddress?.streetAddress ?? null,
+      postal_code: supAddress?.postalCode ?? null,
+      city: supAddress?.addressLocality ?? null,
+      region: supAddress?.addressRegion ?? null,
     },
-    geo: { lat: toNum(l.geo?.latitude), lon: toNum(l.geo?.longitude) },
+    geo: { lat: toNum(supGeo?.latitude), lon: toNum(supGeo?.longitude) },
   };
 }
 
@@ -156,7 +224,7 @@ export function extractOpenGraph(html: string, url: string): ExtractedListing | 
  * only when both tiers fail. Pages that match Tier 1 never fall through.
  */
 export function extractListing(html: string, url: string): ExtractedListing | null {
-  const jsonLd = extractJsonLd(html);
-  if (jsonLd) return fromJsonLd(jsonLd, url);
+  const facts = collectJsonLdFacts(html);
+  if (facts.anchor) return fromJsonLd(facts.anchor, url, facts);
   return extractOpenGraph(html, url);
 }
