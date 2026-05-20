@@ -15,6 +15,12 @@ export function registerDiscover(parent: Command): void {
     .option('--no-legal-names', 'skip heuristic-domain resolution from lister.legal_name')
     .option('--no-pdp-urls', 'skip Path B (scanning listing descriptions for URLs)')
     .option('--new-build-only', 'restrict Path B to listings whose description contains Erstbezug/Neubau/...')
+    .option(
+      '--seed <url>',
+      'extra external seed URL to crawl for outgoing links; pass multiple times',
+      (v: string, prev: string[]) => prev.concat(v),
+      [] as string[],
+    )
     .option('--enable', 'mark discovered rows enabled: true (default: disabled)')
     .action(
       async (opts: {
@@ -23,6 +29,7 @@ export function registerDiscover(parent: Command): void {
         legalNames: boolean;
         pdpUrls: boolean;
         newBuildOnly: boolean;
+        seed: string[];
         enable: boolean;
       }) => {
         const paths = resolvePaths();
@@ -41,6 +48,7 @@ export function registerDiscover(parent: Command): void {
           resolveLegalNames: opts.legalNames,
           mineDescriptionUrls: opts.pdpUrls,
           newBuildOnly: opts.newBuildOnly,
+          externalSeeds: opts.seed,
           enabledByDefault: opts.enable,
           signal: ac.signal,
           log: (m) => console.log(`  ${m}`),

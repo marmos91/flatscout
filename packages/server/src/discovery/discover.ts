@@ -9,6 +9,7 @@ import {
   pdpUrlCandidates,
   resolveLegalNameToWebsite,
 } from './candidates.js';
+import { crawlAllSeeds } from './external-seeds.js';
 import { readDiscoveredRegistry, writeDiscoveredRegistry } from './registry-io.js';
 
 export interface DiscoverOptions {
@@ -26,6 +27,13 @@ export interface DiscoverOptions {
   mineDescriptionUrls?: boolean;
   /** Scope Path B to listings whose description carries a new-build phrase. */
   newBuildOnly?: boolean;
+  /**
+   * External seed URLs to crawl for outgoing links — news pages, list pages,
+   * blog posts. Each URL produces a batch of Candidate rows fed into the
+   * same fingerprint pipeline as the DB-mined paths. Useful for surfacing
+   * developer marketing sites that never reach the rental portals.
+   */
+  externalSeeds?: string[];
   /** Default canton tag for newly discovered rows. */
   defaultCanton?: AgencyEntry['canton'];
   /** Default `enabled` flag — false by default so user reviews before scanning. */
@@ -73,6 +81,7 @@ export async function discoverAgencies(opts: DiscoverOptions): Promise<DiscoverS
     resolveLegalNames = true,
     mineDescriptionUrls = true,
     newBuildOnly = false,
+    externalSeeds = [],
     defaultCanton = 'ZH',
     enabledByDefault = false,
     signal,
@@ -96,11 +105,14 @@ export async function discoverAgencies(opts: DiscoverOptions): Promise<DiscoverS
   const legalNames = resolveLegalNames ? distinctLegalNames(db) : [];
   // Path B — scan listing descriptions for external URLs (new-build links etc.).
   const pdp = mineDescriptionUrls ? pdpUrlCandidates(db, { newBuildOnly }) : [];
+  // Plan (b) — fetch external seed URLs and harvest outgoing links.
+  const seeded = externalSeeds.length > 0 ? await crawlAllSeeds(externalSeeds, signal, log) : [];
 
   // Dedupe candidates by `id` before any expensive work.
   const byId = new Map<string, Candidate>();
   for (const c of direct) if (!byId.has(c.id)) byId.set(c.id, c);
   for (const c of pdp) if (!byId.has(c.id)) byId.set(c.id, c);
+  for (const c of seeded) if (!byId.has(c.id)) byId.set(c.id, c);
   summary.total_candidates = byId.size + legalNames.length;
 
   const newAgencies: AgencyEntry[] = [...existingAgencies];

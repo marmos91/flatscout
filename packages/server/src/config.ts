@@ -54,6 +54,8 @@ export const TopConfig = z.object({
       mine_description_urls: z.boolean().default(true),
       /** When true, Path B scopes to listings whose description carries new-build phrases. */
       new_build_only: z.boolean().default(false),
+      /** Plan (b) — external seed URLs (news pages, list pages) to crawl for outgoing links. */
+      external_seeds: z.array(z.string().url()).default([]),
       /** When true, newly discovered rows ship with `enabled: true` so they get scanned next cycle without manual approval. */
       auto_enable: z.boolean().default(false),
     })
@@ -64,6 +66,7 @@ export const TopConfig = z.object({
       resolve_legal_names: true,
       mine_description_urls: true,
       new_build_only: false,
+      external_seeds: [],
       auto_enable: false,
     }),
 });

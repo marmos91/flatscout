@@ -33,6 +33,7 @@ export async function runDiscoveryCycle(opts: CycleHookOpts): Promise<void> {
       resolveLegalNames: d.resolve_legal_names,
       mineDescriptionUrls: d.mine_description_urls,
       newBuildOnly: d.new_build_only,
+      externalSeeds: d.external_seeds,
       enabledByDefault: d.auto_enable,
       signal: opts.signal,
       log: (m) => opts.logger.debug({ discovery: true }, m),
