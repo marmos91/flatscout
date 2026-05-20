@@ -628,7 +628,13 @@ function installFirefoxPath(): void {
       void handleBridgeMessage(ws, typeof ev.data === 'string' ? ev.data : '');
     });
     ws.addEventListener('close', () => {
-      state.ws = null;
+      // Only clear state.ws when this exact socket is still the current one.
+      // A second connect() may have already replaced state.ws while we were
+      // closing; nulling unconditionally would yank the new connection out
+      // from under tickKeepalive.
+      if (state.ws === ws) {
+        state.ws = null;
+      }
       // Clear liveness signals so popup flips to "disconnected" within a
       // render tick instead of waiting for STALE_AFTER_MS to elapse.
       void chrome.storage.local.set({ lastAliveAt: 0, lastConnectedAt: 0, lastRequestAt: 0 });
@@ -689,13 +695,23 @@ function installFirefoxPath(): void {
    */
   function tickKeepalive(): void {
     if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+      let sent = false;
       try {
         state.ws.send(JSON.stringify({ type: 'ping' }));
+        sent = true;
       } catch {
         /* close will surface separately */
       }
-      void chrome.storage.local.set({ lastAliveAt: Date.now() });
-    } else if (!state.connecting) {
+      // Only mark the bridge alive when the ping actually went out — a failed
+      // send means the socket is closing and the next tick will reconnect.
+      if (sent) {
+        void chrome.storage.local.set({ lastAliveAt: Date.now() });
+      }
+    } else if (!state.connecting && (state.ws === null || state.ws.readyState === WebSocket.CLOSED)) {
+      // Avoid racing a CONNECTING/CLOSING handshake: only reconnect once the
+      // previous socket is fully gone. The close handler will null state.ws
+      // for CLOSED sockets; CONNECTING sockets are owned by connect()'s
+      // state.connecting guard.
       void connect();
     }
   }

@@ -188,6 +188,25 @@ describe('startBridgeServer status', () => {
     await new Promise((r) => setTimeout(r, 50));
     expect(bridge.status().connected).toBe(false);
   });
+
+  it('bumps last_seen_at on a post-handshake ping (unknown message type)', async () => {
+    const ws = client();
+    await open(ws);
+    await hello(ws);
+    const baseline = bridge.status().last_seen_at;
+    // Wait one ms tick so the next bump is observably later than the hello bump.
+    await new Promise((r) => setTimeout(r, 5));
+    // The extension's in-page setInterval sends {type:'ping'} as a keepalive.
+    // Unknown message types must still refresh last_seen_at; the daemon parses
+    // after bumping so the heartbeat continues to register even if the schema
+    // were to evolve.
+    ws.send(JSON.stringify({ type: 'ping' }));
+    // Give the server a tick to process.
+    await new Promise((r) => setTimeout(r, 20));
+    expect(bridge.status().last_seen_at).toBeGreaterThan(baseline);
+    ws.close();
+    await new Promise((r) => setTimeout(r, 50));
+  });
 });
 
 describe('startBridgeServer loopback enforcement', () => {
