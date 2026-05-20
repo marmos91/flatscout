@@ -86,7 +86,9 @@ function extractPiniaState(html: string): DetailPayload {
     return { listing: null };
   }
   type PiniaShape = {
-    listing?: { listing?: { lister?: ListerObject; address?: Record<string, unknown>; meta?: { createdAt?: string } } };
+    listing?: {
+      listing?: { lister?: ListerObject; address?: Record<string, unknown>; meta?: { createdAt?: string } };
+    };
   };
   const root = blob as PiniaShape;
   const lst = root.listing?.listing;
@@ -123,9 +125,7 @@ function applyLister(out: DetailListing, lister: ListerObject): void {
     out.email = email;
   }
   const websiteUrl =
-    typeof lister.website === 'string'
-      ? lister.website
-      : (lister.website?.value ?? undefined);
+    typeof lister.website === 'string' ? lister.website : (lister.website?.value ?? undefined);
   if (lister.legalName || websiteUrl) {
     out.provider = {};
     if (lister.legalName) out.provider.name = lister.legalName;
