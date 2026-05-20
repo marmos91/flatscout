@@ -289,9 +289,17 @@ async function maybeSelfReload(daemonHash: string): Promise<void> {
   if (!own || own === daemonHash) return;
   reloadScheduled = true;
   console.log(
-    `[wabe-bridge:offscreen] bundle hash drifted (own=${own.slice(0, 8)} daemon=${daemonHash.slice(0, 8)}); reloading`,
+    `[wabe-bridge:offscreen] bundle hash drifted (own=${own.slice(0, 8)} daemon=${daemonHash.slice(0, 8)}); requesting reload`,
   );
-  setTimeout(() => chrome.runtime.reload(), 250);
+  // Offscreen documents don't have `chrome.runtime.reload` — delegate to the
+  // service worker, which holds the full chrome.runtime surface.
+  setTimeout(() => {
+    void chrome.runtime
+      .sendMessage({ type: 'wabe-bridge:reload-extension' })
+      .catch((err: Error) => {
+        console.warn('[wabe-bridge:offscreen] reload request failed:', err.message);
+      });
+  }, 250);
 }
 
 async function connect(): Promise<void> {

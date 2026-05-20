@@ -486,6 +486,15 @@ function installChromePath(): void {
         .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
       return true;
     }
+    if (message?.type === 'wabe-bridge:reload-extension') {
+      // Offscreen-initiated reload (Chrome). The SW has chrome.runtime.reload
+      // even though the offscreen doc doesn't. Mirrors the Firefox path where
+      // the BG itself calls reload().
+      console.log('[wabe-bridge] reload request from offscreen; reloading');
+      chrome.runtime.reload();
+      sendResponse({ ok: true });
+      return true;
+    }
     return false;
   });
 }
