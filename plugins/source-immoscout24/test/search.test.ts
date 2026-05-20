@@ -38,7 +38,7 @@ describe('buildSrpUrl', () => {
     expect(url).toBe('https://www.immoscout24.ch/en/real-estate/rent?an=G&pn=1&wzip=5000%2C5001');
   });
 
-  it('translates filter fields into query params', () => {
+  it('translates verified filter fields into query params', () => {
     const cfg = SearchConfig.parse({
       zipcodes: [8001],
       price_min: 1500,
@@ -46,19 +46,15 @@ describe('buildSrpUrl', () => {
       rooms_min: 2,
       rooms_max: 4,
       surface_min: 60,
-      sort_by: 'price',
-      sort_direction: 'asc',
     });
     const url = buildSrpUrl(cfg, 3);
     expect(url).toContain('/en/real-estate/rent/city-zurich');
     expect(url).toContain('&pn=3');
-    expect(url).toContain('&ps=1500');
-    expect(url).toContain('&pe=3000');
+    expect(url).toContain('&pf=1500');
+    expect(url).toContain('&pt=3000');
     expect(url).toContain('&nrf=2');
     expect(url).toContain('&nrt=4');
     expect(url).toContain('&slf=60');
-    expect(url).toContain('&srt=price');
-    expect(url).toContain('&sdt=asc');
   });
 
   it('honors language', () => {
@@ -66,8 +62,18 @@ describe('buildSrpUrl', () => {
     expect(url).toContain('/de/immobilien/mieten');
   });
 
-  it('encodes property_type as category param when not the default', () => {
-    const url = buildSrpUrl(SearchConfig.parse({ property_type: 'HOUSE' }), 1);
-    expect(url).toContain('&cat=house');
+  it('does NOT emit URL params for filters whose wire format is unverified', () => {
+    const cfg = SearchConfig.parse({
+      zipcodes: [8001],
+      has_balcony: true,
+      has_elevator: true,
+      property_type: 'HOUSE',
+      sort_by: 'price',
+      sort_direction: 'asc',
+    });
+    const url = buildSrpUrl(cfg, 1);
+    // Live probes against IS24 showed none of the obvious param names worked
+    // for these filters; emit nothing rather than ineffective params.
+    expect(url).not.toMatch(/[&?](bal|balc|hasBalcony|lif|elv|hasElevator|cat|co|ot|srt|sdt|se|so|sort)=/);
   });
 });
