@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { resolveFields } from '../src/merge.js';
 import { Listing, type RawListing } from '../src/schemas/listing.js';
 
-function baseExisting(overrides: Partial<unknown> = {}): Listing {
+function baseExisting(overrides: Record<string, unknown> = {}): Listing {
   return Listing.parse({
     id: 'ck-abc',
     source: 'source-flatfox',
@@ -331,6 +331,86 @@ describe('resolveFields — enriched deep-merge + external_ids', () => {
     expect((next.enriched.commute as Record<string, unknown>).office).toEqual({ duration_s: 600 });
     expect(next.enriched.external_ids).toEqual({ 'source-flatfox': 'ff-1', 'source-realadvisor': 'ra-2' });
   });
+
+  it('preserves existing.external_ids when incoming has no external_ids', () => {
+    const existing = baseExisting({
+      enriched: { external_ids: { 'source-flatfox': 'ff-1' } },
+    });
+    const raw: RawListing = {
+      source: 'source-realadvisor',
+      url: 'https://realadvisor.ch/2',
+      first_seen_at: new Date('2026-05-19T09:00:00Z'),
+      last_seen_at: new Date('2026-05-19T09:00:00Z'),
+      price: { rent_net: null, extras: null, total: 3200, currency: 'CHF', deposit_months: null },
+      rooms: 4.5,
+      area_m2: 112,
+      floor: null,
+      total_floors: null,
+      built_year: null,
+      renovated_year: null,
+      location: {
+        coords: null,
+        address: null,
+        postal_code: '8008',
+        city: 'Zürich',
+        region: null,
+        country: 'CH',
+        neighborhood: null,
+      },
+      features: {},
+      description: null,
+      photos: [],
+      available_from: null,
+      lease_until: null,
+      rental_term: 'unknown',
+      agency: null,
+      contact: {},
+      enriched: {},
+      extra: {},
+    };
+    const { next } = resolveFields(existing, raw, 50);
+    expect(next.enriched.external_ids).toEqual({ 'source-flatfox': 'ff-1' });
+  });
+
+  it('on external_ids key collision, incoming wins (more recent)', () => {
+    const existing = baseExisting({
+      enriched: { external_ids: { 'source-flatfox': 'ff-old' } },
+    });
+    const raw: RawListing = {
+      source: 'source-flatfox',
+      url: 'https://flatfox.ch/1',
+      first_seen_at: new Date('2026-05-19T09:00:00Z'),
+      last_seen_at: new Date('2026-05-19T09:00:00Z'),
+      price: { rent_net: null, extras: null, total: 3200, currency: 'CHF', deposit_months: null },
+      rooms: 4.5,
+      area_m2: 112,
+      floor: null,
+      total_floors: null,
+      built_year: null,
+      renovated_year: null,
+      location: {
+        coords: null,
+        address: null,
+        postal_code: '8008',
+        city: 'Zürich',
+        region: null,
+        country: 'CH',
+        neighborhood: null,
+      },
+      features: {},
+      description: null,
+      photos: [],
+      available_from: null,
+      lease_until: null,
+      rental_term: 'unknown',
+      agency: null,
+      contact: {},
+      enriched: { external_ids: { 'source-flatfox': 'ff-new' } },
+      extra: {},
+    };
+    const { next } = resolveFields(existing, raw, 80);
+    expect(next.enriched.external_ids).toEqual({ 'source-flatfox': 'ff-new' });
+  });
 });
 
 describe('resolveFields — seen_on_sources', () => {
@@ -402,5 +482,38 @@ describe('resolveFields — conservative changed flag', () => {
     };
     const { changed } = resolveFields(existing, raw, existing.source_priority);
     expect(changed).toBe(false);
+  });
+
+  it('returns changed=true when a lower-priority source fills a null primitive', () => {
+    const existing = baseExisting({
+      price: { rent_net: null, extras: null, total: 3200, currency: 'CHF', deposit_months: null },
+    });
+    const raw: RawListing = {
+      source: 'source-realadvisor',
+      url: 'https://realadvisor.ch/2',
+      first_seen_at: new Date('2026-05-19T09:00:00Z'),
+      last_seen_at: new Date('2026-05-19T09:00:00Z'),
+      price: { rent_net: 2800, extras: null, total: 3200, currency: 'CHF', deposit_months: null },
+      rooms: existing.rooms,
+      area_m2: existing.area_m2,
+      floor: existing.floor,
+      total_floors: existing.total_floors,
+      built_year: existing.built_year,
+      renovated_year: existing.renovated_year,
+      location: existing.location,
+      features: existing.features,
+      description: existing.description,
+      photos: existing.photos,
+      available_from: existing.available_from,
+      lease_until: existing.lease_until,
+      rental_term: existing.rental_term,
+      agency: existing.agency,
+      contact: existing.contact,
+      enriched: existing.enriched,
+      extra: existing.extra,
+    };
+    const { next, changed } = resolveFields(existing, raw, 50);
+    expect(next.price.rent_net).toBe(2800);
+    expect(changed).toBe(true);
   });
 });

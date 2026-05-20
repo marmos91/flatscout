@@ -23,9 +23,13 @@ export function resolveFields(
   incomingPriority: number,
 ): { next: Listing; changed: boolean } {
   const existingPriority = existing.source_priority;
+  // Treat raw.first_seen_at as required at this call site (pipeline stamps it before invoking).
+  // Fallback to existing.first_seen_at keeps the tie-break clock-free and stable (existing wins).
+  const incomingFirstSeen = raw.first_seen_at ?? existing.first_seen_at;
+  const incomingLastSeen = raw.last_seen_at ?? existing.last_seen_at;
   const existingIsAuthoritative =
     existingPriority > incomingPriority ||
-    (existingPriority === incomingPriority && existing.first_seen_at <= (raw.first_seen_at ?? new Date()));
+    (existingPriority === incomingPriority && existing.first_seen_at <= incomingFirstSeen);
 
   const winner = existingIsAuthoritative ? existing : raw;
   const loser = existingIsAuthoritative ? raw : existing;
@@ -39,8 +43,8 @@ export function resolveFields(
     source: authoritativeSource,
     url: authoritativeUrl,
     source_priority: authoritativePriority,
-    first_seen_at: minDate(existing.first_seen_at, raw.first_seen_at),
-    last_seen_at: maxDate(existing.last_seen_at, raw.last_seen_at),
+    first_seen_at: minDate(existing.first_seen_at, incomingFirstSeen),
+    last_seen_at: maxDate(existing.last_seen_at, incomingLastSeen),
 
     price: {
       currency: pickNonNull(winner.price?.currency, loser.price?.currency, existing.price.currency) ?? 'CHF',
@@ -93,7 +97,13 @@ export function resolveFields(
       existingIsAuthoritative ? (raw.photos ?? []) : existing.photos,
     ),
 
-    enriched: deepMergeEnriched(existing.enriched, raw.enriched ?? {}, incomingPriority, existingPriority),
+    enriched: deepMergeEnriched(
+      existing.enriched,
+      raw.enriched ?? {},
+      incomingPriority,
+      existingPriority,
+      existingIsAuthoritative,
+    ),
 
     seen_on_sources: sortedUnion(existing.seen_on_sources, [raw.source]),
   };
@@ -115,7 +125,6 @@ function canonicalize(value: unknown): string {
 
 function normalizeForCompare(value: unknown): unknown {
   if (value === null || value === undefined) return null;
-  if (value instanceof Date) return value.toISOString();
   if (Array.isArray(value)) return value.map(normalizeForCompare);
   if (isPlainObject(value)) {
     const out: Record<string, unknown> = {};
@@ -177,6 +186,7 @@ function deepMergeEnriched(
   incoming: Record<string, unknown>,
   incomingPriority: number,
   existingPriority: number,
+  existingIsAuthoritative: boolean,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = { ...existing };
   for (const [k, v] of Object.entries(incoming)) {
@@ -185,6 +195,12 @@ function deepMergeEnriched(
       continue;
     }
     const cur = out[k];
+    // external_ids accumulates per-source. Never priority-wins-overwrite individual keys.
+    // On key collision incoming wins (more recent). Only applies when both sides are objects.
+    if (k === 'external_ids' && isPlainObject(cur) && isPlainObject(v)) {
+      out[k] = { ...(cur as Record<string, unknown>), ...(v as Record<string, unknown>) };
+      continue;
+    }
     if (Array.isArray(cur) && Array.isArray(v)) {
       out[k] = Array.from(new Set([...cur, ...v]));
       continue;
@@ -195,17 +211,11 @@ function deepMergeEnriched(
         v as Record<string, unknown>,
         incomingPriority,
         existingPriority,
+        existingIsAuthoritative,
       );
       continue;
     }
-    if (incomingPriority > existingPriority) out[k] = v;
-  }
-  // Accumulate external_ids from both sides if present.
-  const existingIds = (existing.external_ids ?? {}) as Record<string, string>;
-  const incomingIds = (incoming.external_ids ?? {}) as Record<string, string>;
-  const merged = { ...existingIds, ...incomingIds };
-  if (Object.keys(merged).length > 0) {
-    out.external_ids = merged;
+    if (!existingIsAuthoritative) out[k] = v;
   }
   return out;
 }
