@@ -43,15 +43,31 @@ const OFFSCREEN_URL = 'src/offscreen.html';
 // --------- Shared tab helpers ---------
 
 /**
- * Per-target-origin warm-tab map. Each origin gets exactly one tab; we
- * recreate it lazily on removal. The tab loads the origin's "/" so DataDome
- * can run its challenge and stamp cookies before any bridge request hits.
+ * Per-target-origin warm-tab config. Each origin gets exactly one tab; we
+ * recreate it lazily on removal. The tab loads `homepage` so DataDome can
+ * run its challenge and stamp cookies before any bridge request hits.
+ *
+ * `prewarm` lists URLs to GET (via in-page fetch) once per tab lifetime,
+ * before the first user-driven request fires. Use this when the target API
+ * lives on a subdomain whose DataDome challenge differs from the homepage
+ * subdomain (e.g. `api.immoscout24.ch` vs `www.immoscout24.ch`) — the first
+ * cross-origin call from the page would otherwise NetworkError before the
+ * challenge can resolve.
  */
-const TAB_HOMEPAGE: Record<string, string> = {
-  'https://www.homegate.ch': 'https://www.homegate.ch/rent',
-  'https://api.homegate.ch': 'https://www.homegate.ch/rent',
-  'https://www.immoscout24.ch': 'https://www.immoscout24.ch/en/real-estate/rent/city-zurich',
-  'https://api.immoscout24.ch': 'https://www.immoscout24.ch/en/real-estate/rent/city-zurich',
+interface TabHomepageConfig {
+  homepage: string;
+  prewarm?: string[];
+}
+const TAB_HOMEPAGE: Record<string, TabHomepageConfig> = {
+  'https://www.homegate.ch': { homepage: 'https://www.homegate.ch/rent' },
+  'https://api.homegate.ch': { homepage: 'https://www.homegate.ch/rent' },
+  'https://www.immoscout24.ch': {
+    homepage: 'https://www.immoscout24.ch/en/real-estate/rent/city-zurich',
+  },
+  'https://api.immoscout24.ch': {
+    homepage: 'https://www.immoscout24.ch/en/real-estate/rent/city-zurich',
+    prewarm: ['https://api.immoscout24.ch/geo'],
+  },
 };
 
 /** In-flight tab-ready promises, dedup parallel requests for the same origin. */
@@ -67,7 +83,7 @@ async function findExistingTabForOrigin(origin: string): Promise<number | null> 
   // group (e.g. requests to api.homegate.ch route through a tab loaded at
   // www.homegate.ch/rent). Search the homepage's host pattern so we share one
   // tab across the whole site family.
-  const homepageUrl = TAB_HOMEPAGE[origin] ?? `${origin}/`;
+  const homepageUrl = TAB_HOMEPAGE[origin]?.homepage ?? `${origin}/`;
   const homepageHost = new URL(homepageUrl).host;
   const pattern = `*://${homepageHost}/*`;
   const tabs = await chrome.tabs.query({ url: pattern });
@@ -145,7 +161,7 @@ async function ensureTabForOrigin(origin: string): Promise<number> {
   }
   const pending = tabReady.get(origin);
   if (pending) return pending;
-  const homepage = TAB_HOMEPAGE[origin] ?? `${origin}/`;
+  const homepage = TAB_HOMEPAGE[origin]?.homepage ?? `${origin}/`;
   const p = (async (): Promise<number> => {
     // `pinned: true` collapses the tab to its favicon at the left of the tab
     // strip. Chrome MV3 has no real `tabs.hide()` API (Firefox-only), so this
@@ -227,6 +243,45 @@ async function inPageFetch(args: InPageFetchArgs): Promise<InPageFetchResult> {
   }
 }
 
+/**
+ * Per-tab record of which prewarm URLs we've already executed. Cleared on
+ * tab close. The contract is "once per tab lifetime" — if DataDome later
+ * expires the challenge state, the tab will close and a fresh one with a
+ * fresh prewarm run takes its place.
+ */
+const prewarmedTabs = new Map<number, Set<string>>();
+
+async function ensureRequestPrewarm(tabId: number, origin: string): Promise<void> {
+  const cfg = TAB_HOMEPAGE[origin];
+  if (!cfg?.prewarm?.length) return;
+  let done = prewarmedTabs.get(tabId);
+  if (!done) {
+    done = new Set();
+    prewarmedTabs.set(tabId, done);
+  }
+  for (const url of cfg.prewarm) {
+    if (done.has(url)) continue;
+    try {
+      const [exec] = await chrome.scripting.executeScript({
+        target: { tabId },
+        world: 'MAIN',
+        func: inPageFetch,
+        args: [{ method: 'GET', url, headers: { accept: 'application/json' }, timeoutMs: 15_000 }],
+      });
+      done.add(url);
+      const status = (exec?.result as InPageFetchResult | undefined)?.status;
+      console.log(`[wabe-bridge] prewarm ${url} → ${status ?? '(no result)'}`);
+    } catch (err) {
+      // Don't poison the cache — leave room for the next request to retry.
+      console.warn(`[wabe-bridge] prewarm ${url} failed: ${(err as Error).message}`);
+    }
+  }
+}
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  prewarmedTabs.delete(tabId);
+});
+
 interface BridgeRequestMessage {
   id: string;
   method: string;
@@ -241,6 +296,7 @@ interface BridgeRequestMessage {
 async function executeProxyRequest(msg: BridgeRequestMessage): Promise<InPageFetchResult> {
   const targetOrigin = new URL(msg.url).origin;
   const tabId = await ensureTabForOrigin(targetOrigin);
+  await ensureRequestPrewarm(tabId, targetOrigin);
   const [exec] = await chrome.scripting.executeScript({
     target: { tabId },
     world: 'MAIN',
@@ -597,7 +653,7 @@ function installFirefoxPath(): void {
       // self-reload if it diverges from ours. Lets the dev loop be
       // "rebuild ext → daemon notices change" without manually clicking
       // Reload in about:debugging.
-        if (typeof msg.bundle_hash === 'string') {
+      if (typeof msg.bundle_hash === 'string') {
         console.log('[wabe-bridge] welcome bundle_hash =', msg.bundle_hash.slice(0, 12));
         await maybeSelfReload(msg.bundle_hash);
       }
@@ -636,9 +692,7 @@ function installFirefoxPath(): void {
       const res = await fetch(url);
       const buf = await res.arrayBuffer();
       const digest = await crypto.subtle.digest('SHA-256', buf);
-      selfBundleHash = [...new Uint8Array(digest)]
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
+      selfBundleHash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
       return selfBundleHash;
     } catch (err) {
       console.warn('[wabe-bridge] failed to hash own bundle:', (err as Error).message);
