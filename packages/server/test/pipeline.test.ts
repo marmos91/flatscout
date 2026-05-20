@@ -32,13 +32,16 @@ function makeStubSource(name: string, items: RawListing[], opts: { throws?: bool
   };
 }
 
-function makeStubNotifier(): { notifier: Notifier; sent: Array<{ id: string; score: number }> } {
-  const sent: Array<{ id: string; score: number }> = [];
+function makeStubNotifier(): {
+  notifier: Notifier;
+  sent: Array<{ id: string; url: string; score: number }>;
+} {
+  const sent: Array<{ id: string; url: string; score: number }> = [];
   const notifier: Notifier = {
     name: 'stub',
     configSchema: z.object({}).default({}),
     async notify(event) {
-      sent.push({ id: event.listing.id, score: event.score.final });
+      sent.push({ id: event.listing.id, url: event.listing.url, score: event.score.final });
       return { ok: true };
     },
   };
@@ -111,7 +114,9 @@ describe('runOnce pipeline', () => {
     // price 2200 → linear(2200, best=2000, worst=4000, invert) = (4000-2200)/(4000-2000)=0.9 → 90
     // price 3000 → 0.5 → 50 (below threshold 60)
     // price 2100 → 0.95 → 95
-    expect(sent.map((s) => s.id).sort()).toEqual(['stub:a', 'stub:c']);
+    // NOTE: listing.id is now canonical_key after the row-collapse spec, so assert
+    // against the source-provided url which uniquely identifies the raw input.
+    expect(sent.map((s) => s.url).sort()).toEqual(['https://x.example/a', 'https://x.example/c']);
   });
 
   it('isolates source failure; other sources still run', async () => {
@@ -158,7 +163,8 @@ describe('runOnce pipeline', () => {
       breakers,
       quota: new Quota(db, 10),
     });
-    expect(sent.map((s) => s.id)).toEqual(['stub:z']);
+    // NOTE: listing.id is now canonical_key after the row-collapse spec.
+    expect(sent.map((s) => s.url)).toEqual(['https://x.example/z']);
     const failures = db._raw.prepare('SELECT plugin FROM failures').all() as Array<{ plugin: string }>;
     expect(failures.map((f) => f.plugin)).toContain('bad');
   });

@@ -121,7 +121,7 @@ describe('pipeline enricher stage', () => {
       quota: new Quota(testDb, 100),
     });
 
-    const row = testDb._raw.prepare('SELECT payload FROM listings WHERE id = ?').get('stub:1') as
+    const row = testDb._raw.prepare('SELECT payload FROM listings WHERE source = ?').get('stub') as
       | { payload: string }
       | undefined;
     expect(row).toBeDefined();
@@ -161,7 +161,7 @@ describe('pipeline enricher stage', () => {
       quota: new Quota(testDb, 100),
     });
 
-    const row = testDb._raw.prepare('SELECT payload FROM listings WHERE id = ?').get('stub:1') as
+    const row = testDb._raw.prepare('SELECT payload FROM listings WHERE source = ?').get('stub') as
       | { payload: string }
       | undefined;
     expect(row).toBeDefined();
@@ -190,7 +190,7 @@ describe('pipeline enricher stage', () => {
       quota: new Quota(testDb, 100),
     });
 
-    const row = testDb._raw.prepare('SELECT payload FROM listings WHERE id = ?').get('stub:1') as
+    const row = testDb._raw.prepare('SELECT payload FROM listings WHERE source = ?').get('stub') as
       | { payload: string }
       | undefined;
     expect(row).toBeDefined();

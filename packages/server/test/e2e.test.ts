@@ -124,10 +124,15 @@ describe('E2E pipeline with real plugins', () => {
       quota,
     });
 
-    const listings = db._raw.prepare('SELECT id FROM listings ORDER BY id').all() as Array<{
-      id: string;
+    // NOTE: after row-collapse, listing.id is the canonical_key (a hash), not
+    // the source-provided raw id. The per-source raw id is preserved in
+    // payload.enriched.external_ids[source].
+    const listings = db._raw.prepare('SELECT payload FROM listings ORDER BY id').all() as Array<{
+      payload: string;
     }>;
-    expect(listings.map((l) => l.id).sort()).toEqual(['flatfox:100', 'flatfox:101']);
+    expect(listings).toHaveLength(2);
+    const externalIds = listings.map((l) => JSON.parse(l.payload).enriched?.external_ids?.flatfox).sort();
+    expect(externalIds).toEqual(['flatfox:100', 'flatfox:101']);
     const scores = db._raw.prepare('SELECT listing_id, final FROM scores').all() as Array<{
       listing_id: string;
       final: number;
