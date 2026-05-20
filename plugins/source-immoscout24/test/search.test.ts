@@ -28,9 +28,14 @@ describe('buildSrpUrl', () => {
     expect(url).toBe('https://www.immoscout24.ch/en/real-estate/rent?an=G&pn=1&wzip=5000');
   });
 
-  it('emits multi-zip via comma-joined wzip when more than one is configured', () => {
+  it('collapses to single slug when all multi-zip values map to the same city', () => {
     const url = buildSrpUrl(SearchConfig.parse({ zipcodes: [8001, 8002] }), 1);
-    expect(url).toBe('https://www.immoscout24.ch/en/real-estate/rent?an=G&pn=1&wzip=8001%2C8002');
+    expect(url).toBe('https://www.immoscout24.ch/en/real-estate/rent/city-zurich?an=G&pn=1');
+  });
+
+  it('emits multi-zip via comma-joined wzip when zips span different/unknown cities', () => {
+    const url = buildSrpUrl(SearchConfig.parse({ zipcodes: [5000, 5001] }), 1);
+    expect(url).toBe('https://www.immoscout24.ch/en/real-estate/rent?an=G&pn=1&wzip=5000%2C5001');
   });
 
   it('translates filter fields into query params', () => {

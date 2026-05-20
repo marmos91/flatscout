@@ -65,6 +65,14 @@ function resolveLocationSegment(zipcodes: readonly number[]): { pathSegment: str
     if (slug) return { pathSegment: `/${slug}`, wzip: null };
     return { pathSegment: '', wzip: String(zipcodes[0]) };
   }
+  // Multi-zip: collapse to single city slug when every zip resolves to it.
+  // IS24's `/city-<slug>` route serves the SRP, while the wzip-only root path
+  // returns a generic landing page without `__INITIAL_STATE__`.
+  const slugs = zipcodes.map((z) => KNOWN_CITY_SLUGS[z]);
+  const firstSlug = slugs[0];
+  if (firstSlug && slugs.every((s) => s === firstSlug)) {
+    return { pathSegment: `/${firstSlug}`, wzip: null };
+  }
   return { pathSegment: '', wzip: zipcodes.join(',') };
 }
 
