@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { extractDetail } from '../src/detail.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 describe('extractDetail (JSON-LD path)', () => {
   it('parses a RealEstateListing JSON-LD block', () => {
@@ -80,6 +85,52 @@ describe('extractDetail (__NEXT_DATA__ fallback)', () => {
 
   it('returns null when neither JSON-LD nor __NEXT_DATA__ is present', () => {
     const html = '<html><body>no scripts here</body></html>';
+    expect(extractDetail(html).listing).toBeNull();
+  });
+});
+
+describe('extractDetail (Pinia state path)', () => {
+  it('extracts lister.phone + inquiry_contact from a real IS24 PDP fixture', () => {
+    const html = readFileSync(join(__dirname, 'fixtures', 'pdp-zurich-sample.html'), 'utf8');
+    const { listing } = extractDetail(html);
+    expect(listing).not.toBeNull();
+    expect(listing?.contact?.phone).toBe('+41774485191');
+    expect(listing?.telephone).toBe('+41774485191');
+    expect(listing?.inquiry_contact).toBe('Andreea');
+  });
+
+  it('shapes a synthetic Pinia state with legalName + website into provider + lister extra', () => {
+    const pinia = {
+      listing: {
+        listing: {
+          meta: { createdAt: '2026-05-19T11:05:23.700Z' },
+          lister: {
+            id: 'agency-xyz',
+            legalName: 'ACME Immobilien AG',
+            website: { value: 'https://acme.ch' },
+            phone: '+41 44 555 11 22',
+            contacts: {
+              inquiry: { givenName: 'Maria', familyName: 'Müller', email: 'maria@acme.ch' },
+              viewing: { givenName: 'Markus', familyName: 'Bauer' },
+            },
+          },
+        },
+      },
+    };
+    const html = `<html><script>window.__PINIA_INITIAL_STATE__ = ${JSON.stringify(pinia)};</script></html>`;
+    const { listing } = extractDetail(html);
+    expect(listing).not.toBeNull();
+    expect(listing?.contact?.phone).toBe('+41 44 555 11 22');
+    expect(listing?.contact?.email).toBe('maria@acme.ch');
+    expect(listing?.provider?.name).toBe('ACME Immobilien AG');
+    expect(listing?.provider?.url).toBe('https://acme.ch');
+    expect(listing?.inquiry_contact).toBe('Maria Müller');
+    expect(listing?.viewing_contact).toBe('Markus Bauer');
+    expect(listing?.datePosted).toBe('2026-05-19T11:05:23.700Z');
+  });
+
+  it('returns null listing when Pinia state has no lister', () => {
+    const html = `<html><script>window.__PINIA_INITIAL_STATE__ = ${JSON.stringify({ listing: { listing: { id: 'x' } } })};</script></html>`;
     expect(extractDetail(html).listing).toBeNull();
   });
 });
