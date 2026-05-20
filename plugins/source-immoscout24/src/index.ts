@@ -66,7 +66,16 @@ const plugin: Source = {
         });
         const state = extractInitialState(res.body);
         if (!state) {
-          ctx.logger.warn({ url }, 'immoscout24: SRP missing __INITIAL_STATE__ — skipping page');
+          ctx.logger.warn(
+            {
+              url,
+              body_len: res.body.length,
+              has_datadome: res.body.includes('datadome'),
+              has_state_tag: res.body.includes('__INITIAL_STATE__'),
+              head_snippet: res.body.slice(0, 300),
+            },
+            'immoscout24: SRP missing __INITIAL_STATE__ — skipping page',
+          );
           break;
         }
         const result = state.resultList.search.fullSearch.result;

@@ -76,6 +76,26 @@ function resolveLocationSegment(zipcodes: readonly number[]): { pathSegment: str
   return { pathSegment: '', wzip: zipcodes.join(',') };
 }
 
+/**
+ * Build the api.immoscout24.ch JSON endpoint URL. IS24's web UI no longer
+ * SSRs the listings array — the Pinia store fetches `/search/listings` over
+ * XHR on hydration. We route the same call through the bridge so DataDome's
+ * JS-challenge cookie is bound to a real browser session.
+ */
+export function buildApiUrl(cfg: SearchConfig, page: number): string {
+  const { wzip } = resolveLocationSegment(cfg.zipcodes);
+  const url = new URL('https://api.immoscout24.ch/search/listings');
+  url.searchParams.set('an', 'G');
+  url.searchParams.set('pn', String(page));
+  if (wzip !== null) url.searchParams.set('wzip', wzip);
+  if (cfg.price_min != null) url.searchParams.set('pf', String(cfg.price_min));
+  if (cfg.price_max != null) url.searchParams.set('pt', String(cfg.price_max));
+  if (cfg.rooms_min != null) url.searchParams.set('nrf', String(cfg.rooms_min));
+  if (cfg.rooms_max != null) url.searchParams.set('nrt', String(cfg.rooms_max));
+  if (cfg.surface_min != null) url.searchParams.set('slf', String(cfg.surface_min));
+  return url.toString();
+}
+
 export function buildSrpUrl(cfg: SearchConfig, page: number): string {
   const { pathSegment, wzip } = resolveLocationSegment(cfg.zipcodes);
   const url = new URL(`${BASE}${PATH_PER_LANG[cfg.language]}${pathSegment}`);
