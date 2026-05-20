@@ -36,3 +36,9 @@ export {
 } from './transport.js';
 
 export { DaemonBridgeTransport } from './daemon-transport.js';
+
+export {
+  autodetectBundlePath,
+  startBundleHashTracker,
+  type BundleHashTracker,
+} from './bundle-hash.js';

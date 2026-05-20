@@ -200,8 +200,23 @@ async function inPageFetch(args: InPageFetchArgs): Promise<InPageFetchResult> {
       signal: ctrl.signal,
     };
     if (args.body !== undefined) init.body = args.body;
-    const res = await fetch(args.url, init);
-    const text = await res.text();
+    let res: Response;
+    try {
+      res = await fetch(args.url, init);
+    } catch (err) {
+      // CORS errors, network errors, DataDome challenge interception failures
+      // — surface them as a structured response instead of letting the throw
+      // propagate out of `executeScript` as a generic "no result" failure.
+      const msg = err instanceof Error ? err.message : String(err);
+      return { status: 0, headers: {}, body: `inPageFetch error: ${msg}` };
+    }
+    let text: string;
+    try {
+      text = await res.text();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { status: res.status, headers: {}, body: `inPageFetch body-read error: ${msg}` };
+    }
     const headers: Record<string, string> = {};
     res.headers.forEach((v, k) => {
       headers[k] = v;
@@ -565,11 +580,24 @@ function installFirefoxPath(): void {
     if (msg.type === 'welcome') {
       state.reconnectDelayMs = 1_000;
       await chrome.storage.local.set({ lastConnectedAt: Date.now() });
-      // Log only on first welcome of a session; the rest are alarm-driven
-      // reconnects after SW suspension and would otherwise spam the console.
       if (!state.everPaired) {
         state.everPaired = true;
         console.log('[wabe-bridge] paired with wabe agent');
+      }
+      // Daemon supplies its current view of the dist/background.js hash;
+      // self-reload if it diverges from ours. Lets the dev loop be
+      // "rebuild ext → daemon notices change" without manually clicking
+      // Reload in about:debugging.
+      if (typeof msg.bundle_hash === 'string') {
+        await maybeSelfReload(msg.bundle_hash);
+      }
+      return;
+    }
+    if (msg.type === 'heartbeat') {
+      // Out-of-band ping every ~30s; only carries bundle_hash today but
+      // gives us a place to add more state later.
+      if (typeof msg.bundle_hash === 'string') {
+        await maybeSelfReload(msg.bundle_hash);
       }
       return;
     }
@@ -587,6 +615,38 @@ function installFirefoxPath(): void {
     if (msg.type === 'request') {
       await proxyRequest(ws, msg as unknown as BridgeRequestMessage);
     }
+  }
+
+  /** Hex SHA-256 of this extension's own background.js, computed lazily and cached. */
+  let selfBundleHash: string | null = null;
+  async function getSelfBundleHash(): Promise<string | null> {
+    if (selfBundleHash) return selfBundleHash;
+    try {
+      const url = chrome.runtime.getURL('src/background.js');
+      const res = await fetch(url);
+      const buf = await res.arrayBuffer();
+      const digest = await crypto.subtle.digest('SHA-256', buf);
+      selfBundleHash = [...new Uint8Array(digest)]
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      return selfBundleHash;
+    } catch (err) {
+      console.warn('[wabe-bridge] failed to hash own bundle:', (err as Error).message);
+      return null;
+    }
+  }
+
+  let reloadScheduled = false;
+  async function maybeSelfReload(daemonHash: string): Promise<void> {
+    if (reloadScheduled) return;
+    const own = await getSelfBundleHash();
+    if (!own || own === daemonHash) return;
+    reloadScheduled = true;
+    console.log(
+      `[wabe-bridge] bundle hash drifted (own=${own.slice(0, 8)} daemon=${daemonHash.slice(0, 8)}); reloading`,
+    );
+    // Small delay so the heartbeat reply doesn't get cut mid-send.
+    setTimeout(() => chrome.runtime.reload(), 250);
   }
 
   async function connect(): Promise<void> {

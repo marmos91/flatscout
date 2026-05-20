@@ -8,12 +8,21 @@ import {
   ClientMessage,
   PROTOCOL_VERSION,
 } from './protocol.js';
+import { autodetectBundlePath, type BundleHashTracker, startBundleHashTracker } from './bundle-hash.js';
 import { loadOrGenerateSecret, validateToken } from './secret.js';
 
 export interface StartOpts {
   dataDir: string;
   /** Pass 0 to let the OS pick a free port (used in tests). */
   port: number;
+  /**
+   * Optional path to the extension's `dist/<browser>/src/background.js`. When
+   * set, the daemon hashes the file and includes `bundle_hash` in every
+   * `welcome` + periodic heartbeat. Extensions compare against their own
+   * hash and self-reload on mismatch. Falsy `extension_bundle_path` means
+   * auto-detect from cwd; pass `false` to disable entirely.
+   */
+  extensionBundlePath?: string | null | false;
 }
 
 export interface BridgeStatus {
@@ -53,6 +62,12 @@ export function newRequestId(): string {
 
 export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> {
   const secret = loadOrGenerateSecret(opts.dataDir);
+  const bundleTracker: BundleHashTracker | null = (() => {
+    if (opts.extensionBundlePath === false) return null;
+    const path = opts.extensionBundlePath ?? autodetectBundlePath();
+    if (!path) return null;
+    return startBundleHashTracker(path);
+  })();
   const http = createServer();
   const wss = new WebSocketServer({ noServer: true });
   http.on('upgrade', (req, socket, head) => {
@@ -245,12 +260,40 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
         }
         helloReceived = true;
         lastSeenAt = Date.now();
-        ws.send(JSON.stringify({ type: 'welcome', protocol_version: PROTOCOL_VERSION }));
+        const bundleHash = bundleTracker?.current() ?? undefined;
+        ws.send(
+          JSON.stringify({
+            type: 'welcome',
+            protocol_version: PROTOCOL_VERSION,
+            ...(bundleHash ? { bundle_hash: bundleHash } : {}),
+          }),
+        );
         if (activeSocket && activeSocket !== ws && activeSocket.readyState === activeSocket.OPEN) {
           // Newer extension preempts older one — single-bridge-client invariant.
           activeSocket.close();
         }
         activeSocket = ws;
+        // Periodic heartbeat carries the freshest bundle_hash. Extensions
+        // self-reload when the daemon's hash diverges from theirs — covers
+        // the case where the dev rebuilds the extension while the daemon
+        // is up and an extension instance is already connected.
+        if (bundleTracker) {
+          const tick = setInterval(() => {
+            if (ws.readyState !== ws.OPEN) {
+              clearInterval(tick);
+              return;
+            }
+            try {
+              ws.send(
+                JSON.stringify({ type: 'heartbeat', bundle_hash: bundleTracker.current() ?? undefined }),
+              );
+            } catch {
+              // Socket may have closed between the readyState check and the send.
+              clearInterval(tick);
+            }
+          }, 30_000);
+          ws.on('close', () => clearInterval(tick));
+        }
         return;
       }
       // Any post-handshake message counts as liveness — bump before schema
@@ -336,6 +379,7 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
   async function stop(): Promise<void> {
     clearInterval(extKeepaliveTimer);
     clearInterval(reqPingTimer);
+    bundleTracker?.close();
     for (const ifl of inflight.values()) {
       clearTimeout(ifl.timer);
       ifl.reject(new Error('bridge server stopping'));

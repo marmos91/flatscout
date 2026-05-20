@@ -15,6 +15,14 @@ export type ClientHello = z.infer<typeof ClientHello>;
 export const ServerWelcome = z.object({
   type: z.literal('welcome'),
   protocol_version: z.literal(PROTOCOL_VERSION),
+  /**
+   * Hex-encoded SHA-256 of the extension's `dist/<browser>/src/background.js`
+   * as the daemon sees it on disk. Extensions compare this against their
+   * own bundle hash and call `chrome.runtime.reload()` on mismatch — closes
+   * the dev-loop "rebuild ext → forget to reload" gap. Optional so older
+   * daemons stay compatible.
+   */
+  bundle_hash: z.string().optional(),
 });
 export type ServerWelcome = z.infer<typeof ServerWelcome>;
 
@@ -51,7 +59,23 @@ export const BridgeError = z.object({
 });
 export type BridgeError = z.infer<typeof BridgeError>;
 
-export const ServerMessage = z.discriminatedUnion('type', [ServerWelcome, ServerReject, BridgeRequest]);
+/**
+ * Out-of-band heartbeat the daemon emits every ~30s. Carries the current
+ * `bundle_hash` (same value sent in `ServerWelcome`) so extensions detect
+ * dist updates without reconnecting.
+ */
+export const ServerHeartbeat = z.object({
+  type: z.literal('heartbeat'),
+  bundle_hash: z.string().optional(),
+});
+export type ServerHeartbeat = z.infer<typeof ServerHeartbeat>;
+
+export const ServerMessage = z.discriminatedUnion('type', [
+  ServerWelcome,
+  ServerReject,
+  ServerHeartbeat,
+  BridgeRequest,
+]);
 export type ServerMessage = z.infer<typeof ServerMessage>;
 
 export const ClientMessage = z.discriminatedUnion('type', [ClientHello, BridgeResponse, BridgeError]);
