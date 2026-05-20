@@ -16,7 +16,7 @@ export interface RenderedCard {
  * transport selector and is unaffected.
  */
 const PREVIEW_SUPPRESS_SOURCES = new Set([
-  'source-immoscout24-sitemap',
+  'source-immoscout24',
   'source-homegate',
   'source-comparis',
 ]);

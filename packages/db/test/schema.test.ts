@@ -18,7 +18,12 @@ describe('migrations + schema', () => {
   it('applies the init migration cleanly and is idempotent', () => {
     const db = openDb(dbPath);
     const first = migrate(db);
-    expect(first.applied).toEqual(['0001_init.sql', '0002_dedup_fields.sql', '0003_commute_cache.sql']);
+    expect(first.applied).toEqual([
+      '0001_init.sql',
+      '0002_dedup_fields.sql',
+      '0003_commute_cache.sql',
+      '0004_drop_is24_sitemap_state.sql',
+    ]);
     const second = migrate(db);
     expect(second.applied).toEqual([]);
   });

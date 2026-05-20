@@ -89,7 +89,7 @@ describe('SOURCE_PRIORITY_DEFAULTS', () => {
     expect(SOURCE_PRIORITY_DEFAULTS.agency).toBe(100);
     expect(SOURCE_PRIORITY_DEFAULTS['source-flatfox']).toBe(80);
     expect(SOURCE_PRIORITY_DEFAULTS['source-homegate']).toBe(70);
-    expect(SOURCE_PRIORITY_DEFAULTS['source-immoscout24-sitemap']).toBe(70);
+    expect(SOURCE_PRIORITY_DEFAULTS['source-immoscout24']).toBe(70);
     expect(SOURCE_PRIORITY_DEFAULTS['source-immobilier-ch']).toBe(70);
     expect(SOURCE_PRIORITY_DEFAULTS['source-realadvisor']).toBe(50);
   });

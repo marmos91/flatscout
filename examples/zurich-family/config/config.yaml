@@ -7,7 +7,7 @@ enabled:
     # work as-is via the Playwright transport.
     - {name: homegate-zurich,     plugin: source-homegate,             config: plugins/source-homegate.yaml}
     - {name: realadvisor-zurich,  plugin: source-realadvisor,          config: plugins/source-realadvisor.yaml}
-    - {name: immoscout24-sitemap, plugin: source-immoscout24-sitemap,  config: plugins/source-immoscout24-sitemap.yaml}
+    - {name: immoscout24-zurich, plugin: source-immoscout24,  config: plugins/source-immoscout24.yaml}
     - {name: immobilier-zurich,   plugin: source-immobilier-ch,        config: plugins/source-immobilier-ch.yaml}
     - {name: agencies-zurich,     plugin: agencies,                    config: plugins/agencies.yaml}
   notifiers:
@@ -18,7 +18,7 @@ log:
   level: info
 # Browser-bridge daemon. When enabled, `wabe start` exposes a local WebSocket
 # that a paired Wabe Bridge extension can connect to; source-homegate +
-# source-immoscout24-sitemap then route their HTTPS calls through the genuine
+# source-immoscout24 then route their HTTPS calls through the genuine
 # browser session (bypassing DataDome / Cloudflare). Required for those
 # sources — there is no headless fallback.
 bridge:

@@ -1,3 +1,14 @@
 schedule: '*/15 * * * *'
-languages: ['de']
-emit_on_first_scan: false
+search:
+  language: en
+  zipcodes: [8001, 8002, 8003, 8004, 8005, 8006, 8008, 8032]
+  price_max: 4500
+  rooms_min: 3
+  surface_min: 80
+  has_elevator: true
+fetch:
+  max_pages: 5
+  pace_ms: 2500
+enrich:
+  enrich_via_bridge: false
+  max_detail_per_scan: 40
