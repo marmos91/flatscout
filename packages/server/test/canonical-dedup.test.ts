@@ -1,36 +1,16 @@
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
-import { migrate, openDb, type WabeDb } from '@wabe/db';
-import { canonicalKey, Listing } from '@wabe/core';
-import { upsertListing } from '../src/dedupe.js';
+import { describe, expect, it } from 'vitest';
+import { Listing } from '@wabe/core';
 import { shouldNotify } from '../src/canonical-dedup.js';
+import type { UpsertResult } from '../src/dedupe.js';
 
-// NOTE: deviated from plan — plan imported `better-sqlite3` directly; using openDb from @wabe/db
-// matches the rest of the server test suite and keeps server's dep graph clean.
-let dir: string;
-function freshDb(): WabeDb {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-canon-dedup-'));
-  const db = openDb(join(dir, 'test.db'));
-  migrate(db);
-  return db;
-}
-
-afterEach(() => {
-  if (dir) rmSync(dir, { recursive: true, force: true });
-});
-
-// NOTE: deviated from plan — fixture stamps canonical_key so the test mirrors the pipeline
-// (Task 6), which computes canonical_key on the listing object before invoking shouldNotify.
-function fixture(id: string, source: string, sourcePriority: number, url: string): Listing {
-  const ck = canonicalKey({ postal_code: '8008', rooms: 4.5, area_m2: 112, price_total: 3200, url });
+function listing(seen: string[], source: string): Listing {
   return Listing.parse({
-    id,
+    id: 'ck-abc',
     source,
-    source_priority: sourcePriority,
-    canonical_key: ck,
-    url,
+    source_priority: 80,
+    url: 'https://example.ch/1',
+    canonical_key: 'ck-abc',
+    seen_on_sources: seen,
     first_seen_at: new Date('2026-05-18T10:00:00Z'),
     last_seen_at: new Date('2026-05-18T10:00:00Z'),
     price: { rent_net: null, extras: null, total: 3200, currency: 'CHF', deposit_months: null },
@@ -62,32 +42,23 @@ function fixture(id: string, source: string, sourcePriority: number, url: string
   });
 }
 
+const isNew: UpsertResult = { changed: true, isNew: true, fingerprint: 'ck-abc' };
+const existing: UpsertResult = { changed: true, isNew: false, fingerprint: 'ck-abc' };
+
 describe('shouldNotify', () => {
-  it('notifies first arrival in a group with no other sources listed', () => {
-    const db = freshDb();
-    const l = fixture('a:1', 'source-flatfox', 80, 'https://flatfox.ch/1');
-    upsertListing(db, l);
-    const v = shouldNotify(db, l);
-    expect(v.suppress).toBe(false);
-    expect(v.also_seen_on).toEqual([]);
+  it('fires once on isNew=true (suppress=false, also_seen_on=[])', () => {
+    const v = shouldNotify(isNew, listing(['source-flatfox'], 'source-flatfox'));
+    expect(v).toEqual({ suppress: false, also_seen_on: [] });
   });
-  it('suppresses lower-priority arrival when a higher-priority listing already exists in the group', () => {
-    const db = freshDb();
-    const flatfox = fixture('a:1', 'source-flatfox', 80, 'https://flatfox.ch/1');
-    upsertListing(db, flatfox);
-    const realadvisor = fixture('b:1', 'source-realadvisor', 50, 'https://realadvisor.ch/1');
-    upsertListing(db, realadvisor);
-    const v = shouldNotify(db, realadvisor);
+
+  it('suppresses on isNew=false and reports other sources', () => {
+    const v = shouldNotify(existing, listing(['source-flatfox', 'source-realadvisor'], 'source-flatfox'));
     expect(v.suppress).toBe(true);
+    expect(v.also_seen_on).toEqual(['source-realadvisor']);
   });
-  it('notifies higher-priority arrival even when a lower-priority listing exists in the group', () => {
-    const db = freshDb();
-    const realadvisor = fixture('b:1', 'source-realadvisor', 50, 'https://realadvisor.ch/1');
-    upsertListing(db, realadvisor);
-    const flatfox = fixture('a:1', 'source-flatfox', 80, 'https://flatfox.ch/1');
-    upsertListing(db, flatfox);
-    const v = shouldNotify(db, flatfox);
-    expect(v.suppress).toBe(false);
-    expect(v.also_seen_on).toContain('source-realadvisor');
+
+  it('strips authoritative source from also_seen_on', () => {
+    const v = shouldNotify(existing, listing(['source-flatfox', 'source-homegate'], 'source-flatfox'));
+    expect(v.also_seen_on).toEqual(['source-homegate']);
   });
 });

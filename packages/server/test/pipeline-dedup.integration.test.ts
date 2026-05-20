@@ -12,14 +12,19 @@ import { runOnce } from '../src/pipeline.js';
 import { createLogger } from '../src/logger.js';
 
 /**
- * Cross-source dedup integration test.
+ * Cross-source dedup integration test (canonical-row model).
  *
  * Three stub sources whose names match `SOURCE_PRIORITY_DEFAULTS` keys
  * (source-flatfox=80, source-immobilier-ch=70, source-realadvisor=50) emit
- * RawListings that all bucket to the same canonical_key. After `runOnce`
- * the highest-priority source (flatfox) must produce exactly one notification
- * whose `also_seen_on` lists the other two sources; the lower-priority
- * arrivals must be suppressed by `shouldNotify`.
+ * RawListings that all bucket to the same canonical_key. After `runOnce`:
+ *  - Exactly ONE notification fires, on the FIRST source's INSERT (flatfox,
+ *    running first by ordering). `also_seen_on` is `[]` at notification time
+ *    because no other source has arrived yet — this matches the new
+ *    notify-on-first-INSERT contract; the spec defers "edit message footer
+ *    on second arrival" to a future spec.
+ *  - The merged DB row ends up authoritative=source-flatfox (priority-wins),
+ *    seen_on_sources lists all three contributors, and there is exactly one
+ *    row at the canonical_key.
  */
 
 let dir: string;
@@ -140,6 +145,19 @@ describe('cross-source dedup — end-to-end pipeline', () => {
 
     expect(events).toHaveLength(1);
     expect(events[0]?.listing.source).toBe('source-flatfox');
-    expect(events[0]?.also_seen_on?.sort()).toEqual(['source-immobilier-ch', 'source-realadvisor']);
+    expect(events[0]?.also_seen_on).toEqual([]);
+
+    const rows = db._raw.prepare('SELECT id, source, seen_on_sources FROM listings').all() as Array<{
+      id: string;
+      source: string;
+      seen_on_sources: string;
+    }>;
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.source).toBe('source-flatfox');
+    expect(JSON.parse(rows[0]?.seen_on_sources ?? '[]').sort()).toEqual([
+      'source-flatfox',
+      'source-immobilier-ch',
+      'source-realadvisor',
+    ]);
   });
 });

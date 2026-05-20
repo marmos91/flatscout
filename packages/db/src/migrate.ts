@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { WabeDb } from './client.js';
+import { collapseListings } from './collapse-listings.js';
 
 const MIGRATIONS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'migrations');
 
@@ -33,6 +34,9 @@ export function migrate(db: WabeDb, dir = MIGRATIONS_DIR): { applied: string[] }
     const sql = readFileSync(join(dir, f), 'utf8');
     raw.transaction(() => {
       raw.exec(sql);
+      if (f === '0005_collapse_canonical.sql') {
+        collapseListings(db);
+      }
       raw.prepare('INSERT INTO _migrations (filename, applied_at) VALUES (?, ?)').run(f, Date.now());
     })();
     newlyApplied.push(f);
