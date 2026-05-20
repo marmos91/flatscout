@@ -1,13 +1,6 @@
 import type { RawListing } from '@wabe/core';
 import type { DetailPayload } from './detail.js';
 
-interface PdpListingExtra {
-  contact?: { phone?: string; email?: string; form_url?: string };
-  provider?: { name?: string; url?: string };
-  telephone?: string;
-  email?: string;
-}
-
 /**
  * Merges a PDP payload into a SRP-derived RawListing, filling contact-shaped
  * gaps without ever overwriting SRP-authoritative fields. SRP is the source of
@@ -16,7 +9,7 @@ interface PdpListingExtra {
  */
 export function mergePdpIntoListing(listing: RawListing, pdp: DetailPayload): RawListing {
   if (!pdp.listing) return listing;
-  const pl = pdp.listing as DetailPayload['listing'] & PdpListingExtra;
+  const pl = pdp.listing;
 
   const next: RawListing = {
     ...listing,
@@ -39,6 +32,8 @@ export function mergePdpIntoListing(listing: RawListing, pdp: DetailPayload): Ra
     if (!listerExtra.legal_name) listerExtra.legal_name = providerName;
   }
   if (pl.provider?.url && !listerExtra.website) listerExtra.website = pl.provider.url;
+  if (pl.inquiry_contact && !listerExtra.inquiry_contact) listerExtra.inquiry_contact = pl.inquiry_contact;
+  if (pl.viewing_contact && !listerExtra.viewing_contact) listerExtra.viewing_contact = pl.viewing_contact;
 
   if (Object.keys(listerExtra).length > 0) next.enriched.lister = listerExtra;
 

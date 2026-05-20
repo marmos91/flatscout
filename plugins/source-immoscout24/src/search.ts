@@ -82,19 +82,19 @@ export function buildSrpUrl(cfg: SearchConfig, page: number): string {
   url.searchParams.set('an', 'G');
   url.searchParams.set('pn', String(page));
   if (wzip !== null) url.searchParams.set('wzip', wzip);
-  if (cfg.price_min != null) url.searchParams.set('ps', String(cfg.price_min));
-  if (cfg.price_max != null) url.searchParams.set('pe', String(cfg.price_max));
+  // Verified live (2026-05-20): `pf/pt` = price min/max, `nrf/nrt` = rooms
+  // min/max, `slf` = surface min. The previous `ps/pe` guess was a no-op.
+  if (cfg.price_min != null) url.searchParams.set('pf', String(cfg.price_min));
+  if (cfg.price_max != null) url.searchParams.set('pt', String(cfg.price_max));
   if (cfg.rooms_min != null) url.searchParams.set('nrf', String(cfg.rooms_min));
   if (cfg.rooms_max != null) url.searchParams.set('nrt', String(cfg.rooms_max));
   if (cfg.surface_min != null) url.searchParams.set('slf', String(cfg.surface_min));
-  if (cfg.has_balcony === true) url.searchParams.set('bal', '1');
-  if (cfg.has_elevator === true) url.searchParams.set('lif', '1');
-  if (cfg.property_type !== 'APARTMENT_OR_HOUSE') {
-    url.searchParams.set('cat', cfg.property_type === 'HOUSE' ? 'house' : 'apartment');
-  }
-  if (cfg.sort_by !== 'dateCreated' || cfg.sort_direction !== 'desc') {
-    url.searchParams.set('srt', cfg.sort_by);
-    url.searchParams.set('sdt', cfg.sort_direction);
-  }
+  // NOTE: `has_balcony`, `has_elevator`, `property_type`, and `sort_by` /
+  // `sort_direction` are accepted by the config schema but NOT yet wired to
+  // the URL. Live probes against IS24's SRP showed none of the obvious param
+  // names (`bal`, `lif`, `elv`, `cat`, `co`, `ot`, `srt`, `sdt`, `se`, `so`,
+  // `sort`) altered the response — these filters are likely set via
+  // client-side JS state or a POST to api.immoscout24.ch. Until the wire
+  // format is captured, emit nothing rather than ineffective params.
   return url.toString();
 }
