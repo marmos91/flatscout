@@ -115,7 +115,26 @@ export const IS24SrpListingSchema = z
   .passthrough();
 export type IS24SrpListing = z.infer<typeof IS24SrpListingSchema>;
 
-export const IS24SearchResultSchema = z
+export interface IS24SearchResult {
+  resultList: {
+    search: {
+      fullSearch: {
+        result: {
+          listings: IS24SrpListing[];
+          page: number;
+          pageCount: number;
+          resultCount: number;
+          itemsPerPage: number;
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          start: number;
+        };
+      };
+    };
+  };
+}
+
+export const IS24SearchResultSchema: z.ZodType<IS24SearchResult> = z
   .object({
     resultList: z.object({
       search: z.object({
@@ -136,8 +155,7 @@ export const IS24SearchResultSchema = z
       }).passthrough(),
     }).passthrough(),
   })
-  .passthrough();
-export type IS24SearchResult = z.infer<typeof IS24SearchResultSchema>;
+  .passthrough() as unknown as z.ZodType<IS24SearchResult>;
 
 const INITIAL_STATE_RE = /window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\})\s*;?\s*<\/script>/;
 
