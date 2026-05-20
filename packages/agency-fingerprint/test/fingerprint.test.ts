@@ -103,10 +103,55 @@ describe('fingerprint', () => {
     expect(r.matched_url).toBe('https://agency.example/objekt/789-wohnung');
   });
 
+  it('fans out across sibling child sitemaps when the top-ranked branch lacks listings', async () => {
+    // Single-development site: sitemap-index lists `pages.xml` (high-ranking
+    // generic pages first by score) AND `wohnpark.xml` (the listings). With
+    // single-pick logic the picker would walk into pages.xml and never see
+    // the real units. Fan-out must also fetch wohnpark.xml.
+    const indexXml = `<?xml version="1.0"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap><loc>https://agency.example/sitemap-pages.xml</loc></sitemap>
+  <sitemap><loc>https://agency.example/sitemap-wohnpark.xml</loc></sitemap>
+</sitemapindex>`;
+    const pagesXml = `<?xml version="1.0"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://agency.example/impressum</loc></url>
+  <url><loc>https://agency.example/datenschutz</loc></url>
+</urlset>`;
+    const wohnparkXml = `<?xml version="1.0"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://agency.example/wohnpark/a23-3-zimmer-wohnung</loc></url>
+</urlset>`;
+    agent.get('https://agency.example').intercept({ method: 'GET', path: '/' }).reply(200, ORG);
+    agent.get('https://agency.example').intercept({ method: 'GET', path: '/robots.txt' }).reply(404, '');
+    agent
+      .get('https://agency.example')
+      .intercept({ method: 'GET', path: '/sitemap.xml' })
+      .reply(200, indexXml);
+    agent
+      .get('https://agency.example')
+      .intercept({ method: 'GET', path: '/sitemap-pages.xml' })
+      .reply(200, pagesXml);
+    agent
+      .get('https://agency.example')
+      .intercept({ method: 'GET', path: '/sitemap-wohnpark.xml' })
+      .reply(200, wohnparkXml);
+    agent
+      .get('https://agency.example')
+      .intercept({ method: 'GET', path: '/wohnpark/a23-3-zimmer-wohnung' })
+      .reply(200, REL);
+    const r = await fingerprint('https://agency.example/', new AbortController().signal);
+    expect(r.platform).toBe('schemaorg');
+    expect(r.matched_url).toBe('https://agency.example/wohnpark/a23-3-zimmer-wohnung');
+  });
+
   it('returns custom with sitemap_url when detail page also fails to match', async () => {
     agent.get('https://agency.example').intercept({ method: 'GET', path: '/' }).reply(200, ORG);
     agent.get('https://agency.example').intercept({ method: 'GET', path: '/robots.txt' }).reply(404, '');
-    agent.get('https://agency.example').intercept({ method: 'GET', path: '/sitemap.xml' }).reply(200, SITEMAP_URLSET);
+    agent
+      .get('https://agency.example')
+      .intercept({ method: 'GET', path: '/sitemap.xml' })
+      .reply(200, SITEMAP_URLSET);
     agent
       .get('https://agency.example')
       .intercept({ method: 'GET', path: '/objekt/12345-zurich-3-zimmer' })

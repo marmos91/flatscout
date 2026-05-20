@@ -82,6 +82,13 @@ const LOC_RE = /<loc>([^<]+)<\/loc>/gi;
 // quality is more important than depth here — we stop at the first heuristic
 // hit, so a small N (3) keeps probe latency bounded.
 const MAX_DETAIL_SAMPLES = 3;
+// How many sibling child-sitemaps to fan out into at each index level.
+// Single-development sites (e.g. wohnpark) often expose multiple thematic
+// children — `pages.xml`, `wohnpark-units.xml`, `assets.xml`. Picking only
+// the top-1 misses the listings when the picker's ranking happens to put a
+// non-listings child first. Fanning to top-3 keeps probe latency bounded
+// (3 parallel GETs) while covering the realistic split-by-section case.
+const MAX_INDEX_SIBLINGS = 3;
 
 interface DiscoveredSitemap {
   url: string;
@@ -159,47 +166,76 @@ export function scoreDetailUrl(u: string): number {
 }
 
 /**
- * Collect candidate detail URLs from a sitemap, walking through one level of
- * sitemap-index nesting when needed. Returns up to `MAX_DETAIL_SAMPLES`
- * ranked candidates so the caller can re-classify each in order until one
- * matches a heuristic — single-sample picking gets fooled by category /
- * vacation / foreign-locale pages.
+ * Collect candidate detail URLs from a sitemap, walking through two levels
+ * of sitemap-index nesting with a top-`MAX_INDEX_SIBLINGS` fan-out at each
+ * level. Returns up to `MAX_DETAIL_SAMPLES` ranked candidates so the caller
+ * can re-classify each in order until one matches a heuristic.
+ *
+ * Single-sample picking gets fooled by category / vacation / foreign-locale
+ * pages on multi-locale sites and misses listings entirely on
+ * single-development sites that split their tree (e.g. `pages.xml` ranks
+ * first by score, but the real listings live next door in
+ * `wohnpark-units.xml`).
  */
 async function sampleDetailUrls(start: DiscoveredSitemap, signal: AbortSignal): Promise<string[]> {
-  // Walk into the highest-scoring child sitemap when we're holding an index.
-  // We try two levels deep at most; deeper nestings are rare in practice and
-  // each extra fetch slows fingerprinting.
-  let current = start;
-  for (let depth = 0; depth < 2; depth++) {
+  // Each iteration of expandIndex pulls the next layer of locs out of a
+  // sitemap-index by fanning across the top-K children. Terminates once we
+  // reach a layer that contains a urlset (or after 2 levels of nesting).
+  let currents: DiscoveredSitemap[] = [start];
+  for (let depth = 0; depth < 2; depth += 1) {
     if (signal.aborted) return [];
-    const locs = extractLocs(current.xml);
-    if (locs.length === 0) return [];
-    if (!/<sitemapindex/i.test(current.xml)) break; // urlset reached
-    const ranked = locs
-      .map((u) => ({ u, s: scoreDetailUrl(u) }))
-      .sort((a, b) => b.s - a.s);
-    const child = ranked[0]?.u ?? locs[0];
-    if (!child) return [];
-    try {
-      const res = await fetchHtml(child, signal);
-      if (res.status !== 200) return [];
-      current = { url: child, xml: res.html };
-    } catch {
-      return [];
+    const indexes = currents.filter((c) => /<sitemapindex/i.test(c.xml));
+    if (indexes.length === 0) break; // every current is already a urlset
+    const next: DiscoveredSitemap[] = currents.filter((c) => !/<sitemapindex/i.test(c.xml));
+    // Per-index: rank locs, take top-K, fetch in parallel. Merging across
+    // multiple indexes is rare in practice (sitemapindex of sitemapindexes)
+    // but the loop handles it correctly.
+    const fetches: Promise<DiscoveredSitemap | null>[] = [];
+    for (const idx of indexes) {
+      const locs = extractLocs(idx.xml);
+      const topChildren = locs
+        .map((u) => ({ u, s: scoreDetailUrl(u) }))
+        .sort((a, b) => b.s - a.s)
+        .slice(0, MAX_INDEX_SIBLINGS)
+        .map((x) => x.u);
+      for (const child of topChildren) {
+        fetches.push(
+          fetchHtml(child, signal)
+            .then((res) =>
+              res.status === 200 && /<urlset|<sitemapindex/i.test(res.html)
+                ? { url: child, xml: res.html }
+                : null,
+            )
+            .catch(() => null),
+        );
+      }
+    }
+    const fetched = (await Promise.all(fetches)).filter((x): x is DiscoveredSitemap => x !== null);
+    if (fetched.length === 0) break;
+    currents = [...next, ...fetched];
+  }
+
+  // Every survivor should be a urlset now (or there were no indexes at all).
+  // Merge locs across siblings, dedupe, rank, return top-N.
+  const seen = new Set<string>();
+  const merged: string[] = [];
+  for (const c of currents) {
+    for (const u of extractLocs(c.xml)) {
+      if (!seen.has(u)) {
+        seen.add(u);
+        merged.push(u);
+      }
     }
   }
-  // urlset reached (or we bailed out of nesting). Rank and return top-N.
-  const locs = extractLocs(current.xml);
-  if (locs.length === 0) return [];
-  const ranked = locs
+  if (merged.length === 0) return [];
+  const ranked = merged
     .map((u) => ({ u, s: scoreDetailUrl(u) }))
     .filter((x) => x.s > 0)
     .sort((a, b) => b.s - a.s)
     .slice(0, MAX_DETAIL_SAMPLES)
     .map((x) => x.u);
   if (ranked.length > 0) return ranked;
-  // Last resort: take the first URL as a fallback so callers still see *something*.
-  return locs[0] ? [locs[0]] : [];
+  return merged[0] ? [merged[0]] : [];
 }
 
 /**
