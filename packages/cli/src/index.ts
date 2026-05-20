@@ -13,6 +13,7 @@ import { registerLogout } from './commands/logout.js';
 import { registerAgencies } from './commands/agencies/index.js';
 import { registerBridge } from './commands/bridge/index.js';
 import { registerCache } from './commands/cache.js';
+import { registerDb } from './commands/db.js';
 import { splash } from './splash.js';
 
 const program = new Command();
@@ -36,6 +37,7 @@ registerScan(program);
 registerStart(program);
 registerList(program);
 registerMigrate(program);
+registerDb(program);
 registerDoctor(program);
 registerPurge(program);
 registerLogin(program);
