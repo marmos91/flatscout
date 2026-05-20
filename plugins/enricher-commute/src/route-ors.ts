@@ -48,6 +48,16 @@ export async function routeOrs(
       deps.logger.warn({ status: res.statusCode, mode }, 'ors 5xx');
       return null;
     }
+    if (res.statusCode === 404) {
+      // 404 = no routable path between the two points (island, gated estate,
+      // off-network address). Expected for a meaningful fraction of legit
+      // listings; surfacing once per probe at debug avoids drowning the daemon
+      // log in warnings that aren't actionable. Discard the body so undici
+      // releases the connection.
+      await res.body.dump();
+      deps.logger.debug({ status: 404, mode }, 'ors: no route between points');
+      return null;
+    }
     if (res.statusCode >= 400) {
       deps.logger.warn({ status: res.statusCode, mode }, 'ors 4xx');
       return null;
