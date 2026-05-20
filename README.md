@@ -143,7 +143,7 @@ or expired offers without forcing a config decision on first run. The
 
 ```
 config.yaml + commute.yaml + agencies.yaml  →  loader  →  pipeline
-                                                              ├─ Sources (flatfox, homegate, immoscout24-sitemap,
+                                                              ├─ Sources (flatfox, homegate, immoscout24,
                                                               │          realadvisor, immobilier-ch, schemaorg ×N)
                                                               ├─ Canonical-key dedup (cross-source)
                                                               ├─ Enrichers (commute, …)
@@ -170,7 +170,7 @@ Architecture:
 
 - `@wabe/browser-bridge` — a `127.0.0.1`-only WebSocket server inside `wabe start`. Pairs with one extension via a 64-hex shared secret. A heartbeat file at `${dataDir}/bridge.status.json` lets sibling commands (`wabe bridge status`, `wabe doctor`) read connection state without opening a second WS client. The same server also exposes `/dispatch` so sibling processes (`wabe scan --source X`) can fan their requests through the daemon → extension instead of needing their own paired extension.
 - `apps/extension-wabe` — manifest v3 WebExtension (Chrome + Firefox via separate `dist/chrome/` and `dist/firefox/` builds, since Firefox MV3 still ships with `background.service_worker` disabled and needs `background.scripts` instead). On a bridge request the extension opens (or reuses) a hidden tab loaded at the target's homepage and runs `chrome.scripting.executeScript({ world: 'MAIN' })` to perform `fetch()` inside the page's own context. This is critical: DataDome injects a JS hook on `window.fetch` that adds a fingerprint-derived header to every outgoing request — the page-context fetch picks that hook up automatically, so the request hitting api.homegate.ch looks identical to one initiated by the legitimate web app. A `declarative_net_request` rule additionally rewrites `Origin` / `Referer` at the network layer. An offscreen document (Chrome) keeps the WS warm across MV3 service-worker idle.
-- `source-homegate` and `source-immoscout24-sitemap` require the bridge — either the in-process singleton (when running inside `wabe start`) or the daemon's `/dispatch` (when run as `wabe scan --source X` in a sibling process). If neither is reachable the plugin fails fast at init. IS24 additionally promotes URL-only sitemap entries to full-detail listings (rooms / price / photos / description) when the bridge is connected.
+- `source-homegate` and `source-immoscout24` require the bridge — either the in-process singleton (when running inside `wabe start`) or the daemon's `/dispatch` (when run as `wabe scan --source X` in a sibling process). If neither is reachable the plugin fails fast at init. `source-immoscout24` paginates SRP HTML through the bridge for full-detail listings (rooms / price / surface / photos / description). PDP enrichment for contact channels (phone / email) is opt-in via `enrich.enrich_via_bridge: true`.
 
 Setup:
 

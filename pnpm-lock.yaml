@@ -269,9 +269,9 @@ importers:
       '@wabe/source-immobilier-ch':
         specifier: workspace:*
         version: link:../../plugins/source-immobilier-ch
-      '@wabe/source-immoscout24-sitemap':
+      '@wabe/source-immoscout24':
         specifier: workspace:*
-        version: link:../../plugins/source-immoscout24-sitemap
+        version: link:../../plugins/source-immoscout24
       '@wabe/source-realadvisor':
         specifier: workspace:*
         version: link:../../plugins/source-realadvisor
@@ -462,7 +462,7 @@ importers:
         specifier: ^2.1.1
         version: 2.1.9(@types/node@22.19.19)
 
-  plugins/source-immoscout24-sitemap:
+  plugins/source-immoscout24:
     dependencies:
       '@wabe/browser-bridge':
         specifier: workspace:*
@@ -476,9 +476,6 @@ importers:
       '@wabe/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
-      fast-xml-parser:
-        specifier: ^4.5.0
-        version: 4.5.6
       pino:
         specifier: ^9.4.0
         version: 9.14.0

@@ -31,7 +31,7 @@ pnpm wabe <command>        # run the CLI from built output
 - `apps/extension-wabe` — manifest v3 WebExtension (Chrome + Firefox via separate `dist/<browser>/` builds). Service worker / event-page proxies bridge requests by running `chrome.scripting.executeScript({ world: 'MAIN' })` inside a hidden tab on the target origin, so DataDome's JS-challenge hook on `window.fetch` signs the request.
 - `plugins/source-flatfox` — pure-TS client for Flatfox's public `/api/v1/public-listing/` (no auth).
 - `plugins/source-homegate` — paginated iOS-style search API; runtime transport selector (bridge → playwright → undici), full-projection response (no `fieldset='srp-list'`).
-- `plugins/source-immoscout24-sitemap` — Phase A sitemap discovery; Phase B PDP enrichment through the bridge.
+- `plugins/source-immoscout24` — paginates SRP HTML through the bridge, parses `window.__INITIAL_STATE__` for full-detail listings; optional opt-in PDP enrichment for contact channels.
 - `plugins/notifier-telegram` — grammY send-only (URL buttons; no callback handling).
 
 ## Where to add things

@@ -8,7 +8,7 @@ import { openDb } from '@wabe/db';
 import { resolvePaths } from '../paths.js';
 
 /** Sources that route through DataDome-protected APIs and therefore require the bridge. */
-const DATADOME_SOURCES = ['source-homegate', 'source-immoscout24-sitemap'] as const;
+const DATADOME_SOURCES = ['source-homegate', 'source-immoscout24'] as const;
 
 /** Registers the `wabe doctor` subcommand: probes config, DB, plugin loading, and external APIs. */
 export function registerDoctor(prog: Command): void {

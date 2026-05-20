@@ -21,7 +21,7 @@ The point of the bridge: source plugins that target DataDome/Cloudflare-protecte
 - `@wabe/server` — starts the bridge when `top.bridge.enabled` is true.
 - `@wabe/cli` — `wabe bridge pair` prints the pairing URL + token; `wabe bridge status` reads the heartbeat file; `wabe doctor` probes the same file.
 - `@wabe/source-homegate` — selects `BrowserBridgeTransport` first when the bridge is connected.
-- `@wabe/source-immoscout24-sitemap` — promotes to full-detail mode (JSON-LD PDP extraction) when the bridge transport is available.
+- `@wabe/source-immoscout24` — paginates IS24 SRP HTML through the bridge and parses `window.__INITIAL_STATE__` for full-detail listings; optional PDP enrichment for contact channels.
 
 ## License
 

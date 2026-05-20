@@ -53,7 +53,7 @@ export const SOURCE_PRIORITY_DEFAULTS: Record<string, number> = {
   agency: 100,
   'source-flatfox': 80,
   'source-homegate': 70,
-  'source-immoscout24-sitemap': 70,
+  'source-immoscout24': 70,
   'source-immobilier-ch': 70,
   'source-schemaorg': 70,
   'source-realadvisor': 50,
