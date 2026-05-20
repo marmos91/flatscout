@@ -15,6 +15,14 @@ export const SearchConfig = z
     price_max: z.number().int().positive().nullable().default(null),
     surface_min: z.number().int().positive().nullable().default(null),
     surface_max: z.number().int().positive().nullable().default(null),
+    /**
+     * Client-side PLZ allowlist. Empty array disables the filter. RealAdvisor
+     * exposes no zipcode parameter — `place_slugs` is the coarsest server-side
+     * knob — so this filter runs in the source plugin after the response
+     * lands. Listings whose `postcode` is null are dropped when the
+     * allowlist is non-empty (rare in practice; realadvisor populates it).
+     */
+    zipcodes: z.array(z.string().regex(/^\d{4}$/, 'PLZ must be a 4-digit Swiss postal code')).default([]),
   })
   .strict();
 export type SearchConfig = z.infer<typeof SearchConfig>;

@@ -58,6 +58,23 @@ describe('applyClientFilters', () => {
       applyClientFilters(items, SearchConfig.parse({ cities: ['Zürich'], price_max: 3000 })).map((i) => i.pk),
     ).toEqual([1]);
   });
+
+  it('filters by zipcodes (Swiss PLZ allowlist)', () => {
+    const withZips = [
+      { pk: 10, city: 'Zürich', zipcode: 8032, offer_type: 'RENT', object_category: 'APARTMENT' },
+      { pk: 11, city: 'Zürich', zipcode: 8001, offer_type: 'RENT', object_category: 'APARTMENT' },
+      { pk: 12, city: 'Zollikon', zipcode: 8702, offer_type: 'RENT', object_category: 'APARTMENT' },
+      { pk: 13, city: 'Zürich', zipcode: null, offer_type: 'RENT', object_category: 'APARTMENT' },
+    ];
+    expect(
+      applyClientFilters(withZips, SearchConfig.parse({ zipcodes: ['8032', '8702'] })).map((i) => i.pk),
+    ).toEqual([10, 12]);
+  });
+
+  it('zipcodes empty disables the filter', () => {
+    const withZips = [{ pk: 99, city: 'Foo', zipcode: 1234, offer_type: 'RENT', object_category: 'APARTMENT' }];
+    expect(applyClientFilters(withZips, SearchConfig.parse({})).map((i) => i.pk)).toEqual([99]);
+  });
 });
 
 describe('haversineMeters', () => {

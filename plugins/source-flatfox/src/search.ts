@@ -13,6 +13,15 @@ export type NearFilter = z.infer<typeof NearFilter>;
 export const SearchConfig = z.object({
   status: z.string().default('act'),
   cities: z.array(z.string()).default([]),
+  /**
+   * Client-side PLZ allowlist. Empty array disables the filter. Flatfox's
+   * public listing endpoint exposes no zipcode parameter, so the filter runs
+   * after the JSON response lands. Mapped to `Listing.location.postal_code`
+   * via `r.zipcode`; null-zip listings are dropped when the allowlist is set.
+   */
+  zipcodes: z
+    .array(z.string().regex(/^\d{4}$/, 'PLZ must be a 4-digit Swiss postal code'))
+    .default([]),
   price_max: z.number().int().positive().optional(),
   price_min: z.number().int().positive().optional(),
   rooms_min: z.number().optional(),
@@ -62,6 +71,11 @@ export function buildQuery(cfg: SearchConfig, limit: number, offset: number): st
 export function applyClientFilters(items: FlatfoxApiResult[], cfg: SearchConfig): FlatfoxApiResult[] {
   return items.filter((r) => {
     if (cfg.cities.length > 0 && r.city && !cfg.cities.includes(r.city)) return false;
+    if (cfg.zipcodes.length > 0) {
+      // r.zipcode is a number on the API; coerce to string for comparison.
+      const plz = r.zipcode != null ? String(r.zipcode) : null;
+      if (!plz || !cfg.zipcodes.includes(plz)) return false;
+    }
     const price = r.price_display ?? Number.POSITIVE_INFINITY;
     if (cfg.price_max != null && price > cfg.price_max) return false;
     if (cfg.price_min != null && price < cfg.price_min) return false;

@@ -29,6 +29,8 @@ const plugin: Source = {
   configSchema: ConfigSchema,
   async *fetch(ctx: Context) {
     const cfg = ctx.config as Config;
+    const zipAllow = new Set(cfg.search.zipcodes);
+    let dropped = 0;
     for (let page = 1; page <= cfg.fetch.max_pages; page += 1) {
       if (ctx.signal.aborted) return;
       const res = await fetchPage(cfg.search, page, {
@@ -38,10 +40,21 @@ const plugin: Source = {
       });
       for (const hit of res.listings) {
         const mapped = mapHit(hit);
-        if (mapped) yield mapped;
+        if (!mapped) continue;
+        if (zipAllow.size > 0) {
+          const plz = mapped.location.postal_code;
+          if (!plz || !zipAllow.has(plz)) {
+            dropped += 1;
+            continue;
+          }
+        }
+        yield mapped;
       }
       if (res.listings.length < 36) break;
       if (page < cfg.fetch.max_pages) await sleep(cfg.fetch.pace_ms, ctx.signal);
+    }
+    if (zipAllow.size > 0 && dropped > 0) {
+      ctx.logger.info({ dropped, zipcodes: cfg.search.zipcodes }, 'realadvisor: zipcode filter dropped listings');
     }
   },
 };
