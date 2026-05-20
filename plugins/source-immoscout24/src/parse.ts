@@ -136,24 +136,30 @@ export interface IS24SearchResult {
 
 export const IS24SearchResultSchema: z.ZodType<IS24SearchResult> = z
   .object({
-    resultList: z.object({
-      search: z.object({
-        fullSearch: z.object({
-          result: z
-            .object({
-              listings: z.array(IS24SrpListingSchema),
-              page: z.number(),
-              pageCount: z.number(),
-              resultCount: z.number(),
-              itemsPerPage: z.number(),
-              hasNextPage: z.boolean(),
-              hasPreviousPage: z.boolean(),
-              start: z.number(),
-            })
-            .passthrough(),
-        }).passthrough(),
-      }).passthrough(),
-    }).passthrough(),
+    resultList: z
+      .object({
+        search: z
+          .object({
+            fullSearch: z
+              .object({
+                result: z
+                  .object({
+                    listings: z.array(IS24SrpListingSchema),
+                    page: z.number(),
+                    pageCount: z.number(),
+                    resultCount: z.number(),
+                    itemsPerPage: z.number(),
+                    hasNextPage: z.boolean(),
+                    hasPreviousPage: z.boolean(),
+                    start: z.number(),
+                  })
+                  .passthrough(),
+              })
+              .passthrough(),
+          })
+          .passthrough(),
+      })
+      .passthrough(),
   })
   .passthrough() as unknown as z.ZodType<IS24SearchResult>;
 

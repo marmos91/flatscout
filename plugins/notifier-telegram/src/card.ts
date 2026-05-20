@@ -15,11 +15,7 @@ export interface RenderedCard {
  * Wabe's own fetch goes through the browser bridge / Playwright / undici
  * transport selector and is unaffected.
  */
-const PREVIEW_SUPPRESS_SOURCES = new Set([
-  'source-immoscout24',
-  'source-homegate',
-  'source-comparis',
-]);
+const PREVIEW_SUPPRESS_SOURCES = new Set(['source-immoscout24', 'source-homegate', 'source-comparis']);
 
 /** Formats a date as DD.MM.YYYY in UTC (matches the lexicon's parse format). */
 function formatDmy(d: Date): string {

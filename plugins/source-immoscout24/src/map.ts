@@ -64,9 +64,7 @@ export function mapSrpListing(card: IS24SrpListing, primaryLang: Lang): RawListi
   if (card.listerBranding?.logoUrl) lister.logo_url = card.listerBranding.logoUrl;
   if (Object.keys(lister).length > 0) enriched.lister = lister;
   if (Array.isArray(card.listing.platforms)) {
-    enriched.cross_listed_on = Array.from(
-      new Set(card.listing.platforms.map((p) => p.toLowerCase())),
-    ).sort();
+    enriched.cross_listed_on = Array.from(new Set(card.listing.platforms.map((p) => p.toLowerCase()))).sort();
   }
   if (card.listingType?.type) {
     enriched.is24 = {

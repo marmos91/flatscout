@@ -45,7 +45,9 @@ describe('fetchSrp', () => {
 
   it('throws IS24AntiBotError on 403', async () => {
     const t = makeTransport({ responses: [{ status: 403, body: 'blocked' }] });
-    await expect(fetchSrp('https://x', { ...ctxBase, transport: t })).rejects.toBeInstanceOf(IS24AntiBotError);
+    await expect(fetchSrp('https://x', { ...ctxBase, transport: t })).rejects.toBeInstanceOf(
+      IS24AntiBotError,
+    );
   });
 
   it('retries on 429 then succeeds', async () => {
