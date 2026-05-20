@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync, watch as fsWatch } from 'node:fs';
-import { resolve as resolvePath, join } from 'node:path';
+import { basename, dirname, resolve as resolvePath, join } from 'node:path';
 
 /**
  * Tracks the SHA-256 of the extension's `dist/<browser>/src/background.js`
@@ -35,14 +35,23 @@ function hashIfExists(p: string): string | null {
  */
 export function startBundleHashTracker(bundlePath: string): BundleHashTracker {
   let hash: string | null = hashIfExists(bundlePath);
+  // Watch the parent directory instead of the file itself. Bundlers (vite,
+  // esbuild, webpack) commonly rewrite outputs by unlinking + renaming a
+  // temp file into place; a file-level fs.watch keeps a dead inode handle
+  // and never fires again after the first rewrite. Directory-level watch
+  // catches every change and we re-hash on each event for the target file.
+  const watchDir = dirname(bundlePath);
+  const watchBase = basename(bundlePath);
   let watcher: ReturnType<typeof fsWatch> | null = null;
   try {
-    watcher = fsWatch(bundlePath, { persistent: false }, () => {
+    watcher = fsWatch(watchDir, { persistent: false }, (_event, filename) => {
+      if (filename && filename !== watchBase) return;
       hash = hashIfExists(bundlePath);
     });
   } catch {
-    // Path may not exist yet — leave hash null; caller's heartbeat will
-    // simply omit the bundle_hash field.
+    // Dir may not exist yet (first-build race) — leave hash null and let
+    // future heartbeats omit `bundle_hash`. A daemon restart after the
+    // first build picks it up.
   }
   return {
     current: () => hash,

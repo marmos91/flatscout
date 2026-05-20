@@ -588,7 +588,8 @@ function installFirefoxPath(): void {
       // self-reload if it diverges from ours. Lets the dev loop be
       // "rebuild ext → daemon notices change" without manually clicking
       // Reload in about:debugging.
-      if (typeof msg.bundle_hash === 'string') {
+        if (typeof msg.bundle_hash === 'string') {
+        console.log('[wabe-bridge] welcome bundle_hash =', msg.bundle_hash.slice(0, 12));
         await maybeSelfReload(msg.bundle_hash);
       }
       return;
