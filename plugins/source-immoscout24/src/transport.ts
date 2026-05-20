@@ -14,6 +14,8 @@ export interface TransportRequestOpts {
   signal: AbortSignal;
   logger: Logger;
   timeoutMs?: number;
+  /** Accept header. Defaults to HTML; pass 'application/json' for API calls. */
+  accept?: string;
 }
 
 export interface TransportResponse {
@@ -38,7 +40,7 @@ export class IS24BridgeTransport implements Transport {
     const resp = await this.inner.request({
       method: opts.method,
       url: opts.url,
-      headers: { accept: 'text/html,application/xhtml+xml' },
+      headers: { accept: opts.accept ?? 'text/html,application/xhtml+xml' },
       timeout_ms: opts.timeoutMs,
       signal: opts.signal,
     });

@@ -3,11 +3,11 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import type { Context, PluginExport, Source } from '@wabe/plugin-sdk';
 import { fetchSrp, sleep } from './client.js';
-import { extractInitialState } from './parse.js';
+import { parseApiResult } from './parse.js';
 import { mapSrpListing } from './map.js';
 import { mergePdpIntoListing } from './enrich.js';
 import { extractDetail } from './detail.js';
-import { SearchConfig, buildSrpUrl } from './search.js';
+import { SearchConfig, buildApiUrl } from './search.js';
 import { selectTransport, type Transport } from './transport.js';
 
 const FetchConfig = z.object({
@@ -56,29 +56,28 @@ const plugin: Source = {
     try {
       for (let page = 1; page <= cfg.fetch.max_pages; page += 1) {
         if (ctx.signal.aborted) return;
-        const url = buildSrpUrl(cfg.search, page);
+        const url = buildApiUrl(cfg.search, page);
         const res = await fetchSrp(url, {
           paceMs: cfg.fetch.pace_ms,
           backoff: cfg.fetch.backoff,
           signal: ctx.signal,
           logger: ctx.logger,
           transport,
+          accept: 'application/json',
         });
-        const state = extractInitialState(res.body);
-        if (!state) {
+        const result = parseApiResult(res.body);
+        if (!result) {
           ctx.logger.warn(
             {
               url,
               body_len: res.body.length,
               has_datadome: res.body.includes('datadome'),
-              has_state_tag: res.body.includes('__INITIAL_STATE__'),
               head_snippet: res.body.slice(0, 300),
             },
-            'immoscout24: SRP missing __INITIAL_STATE__ — skipping page',
+            'immoscout24: API response missing listings — skipping page',
           );
           break;
         }
-        const result = state.resultList.search.fullSearch.result;
 
         for (const card of result.listings) {
           if (ctx.signal.aborted) return;

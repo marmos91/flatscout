@@ -8,6 +8,8 @@ export interface FetchContext {
   signal: AbortSignal;
   logger: Logger;
   transport: Transport;
+  /** Optional Accept header override; defaults to HTML inside the transport. */
+  accept?: string;
 }
 
 export interface FetchSrpResponse {
@@ -30,6 +32,7 @@ export async function fetchSrp(url: string, ctx: FetchContext): Promise<FetchSrp
       url,
       signal: ctx.signal,
       logger: ctx.logger,
+      accept: ctx.accept,
     });
     if (res.status >= 200 && res.status < 300) {
       return { status: res.status, body: res.body };

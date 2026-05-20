@@ -178,3 +178,56 @@ export function extractInitialState(html: string): IS24SearchResult | null {
   if (!parsed.success) return null;
   return parsed.data;
 }
+
+/**
+ * Pagination + listings as returned by `api.immoscout24.ch/search/listings`.
+ * IS24's web client migrated this off SSR — the Pinia store now hydrates from
+ * this XHR endpoint, so we call it directly through the bridge.
+ *
+ * Wire shape was unverified at the time of writing; the parser accepts both
+ * a flat `{ listings, page, ... }` object and a `{ result: {...} }` wrapper
+ * because we don't yet know which one IS24 emits. If a future probe confirms
+ * a single shape, narrow this.
+ */
+export interface IS24SearchPage {
+  listings: IS24SrpListing[];
+  page: number;
+  pageCount: number;
+  resultCount: number;
+  itemsPerPage: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+const IS24SearchPageSchema = z
+  .object({
+    listings: z.array(IS24SrpListingSchema),
+    page: z.number(),
+    pageCount: z.number(),
+    resultCount: z.number(),
+    itemsPerPage: z.number(),
+    hasNextPage: z.boolean(),
+    hasPreviousPage: z.boolean(),
+  })
+  .passthrough();
+
+export function parseApiResult(body: string): IS24SearchPage | null {
+  let blob: unknown;
+  try {
+    blob = JSON.parse(body);
+  } catch {
+    return null;
+  }
+  const candidates: unknown[] = [blob];
+  if (blob && typeof blob === 'object') {
+    const obj = blob as Record<string, unknown>;
+    if (obj.result) candidates.push(obj.result);
+    if (obj.data) candidates.push(obj.data);
+    if (obj.resultList) candidates.push(obj.resultList);
+  }
+  for (const c of candidates) {
+    const parsed = IS24SearchPageSchema.safeParse(c);
+    if (parsed.success) return parsed.data;
+  }
+  return null;
+}
