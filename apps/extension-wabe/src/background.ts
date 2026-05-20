@@ -27,10 +27,16 @@ export {};
 const DEFAULT_BRIDGE_URL = 'ws://127.0.0.1:8431/bridge';
 const PROTOCOL_VERSION = 1;
 const KEEPALIVE_ALARM = 'wabe-bridge-keepalive';
-// 30s ticks — Firefox alarm minimum for unpacked/dev extensions. Belt-and-suspenders
-// to `persistent: true` in the Firefox manifest: even if the event page sleeps,
-// the alarm wakes it inside the bridge daemon's 15s heartbeat stale-window.
-const KEEPALIVE_MIN = 0.5;
+// Ask for 15s ticks. Firefox MV3 clamps to a minimum of 0.5 (30s) for
+// unpacked extensions and 1.0 (60s) for packed, so the effective period is
+// at least 30s. Combined with the 5s in-page setInterval below, this gives
+// both a wake-up path (alarm, while suspended) AND a fast in-page heartbeat
+// (setInterval, while alive) so the WS sees activity every few seconds.
+const KEEPALIVE_MIN = 0.25;
+// In-page heartbeat interval — sends `{type:'ping'}` to the server every
+// few seconds while the event page is alive. Resets Firefox's idle
+// suspension timer (it counts setInterval callbacks + WS writes as activity).
+const IN_PAGE_PING_MS = 5_000;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 const OFFSCREEN_URL = 'src/offscreen.html';
 
@@ -622,7 +628,13 @@ function installFirefoxPath(): void {
       void handleBridgeMessage(ws, typeof ev.data === 'string' ? ev.data : '');
     });
     ws.addEventListener('close', () => {
-      state.ws = null;
+      // Only clear state.ws when this exact socket is still the current one.
+      // A second connect() may have already replaced state.ws while we were
+      // closing; nulling unconditionally would yank the new connection out
+      // from under tickKeepalive.
+      if (state.ws === ws) {
+        state.ws = null;
+      }
       // Clear liveness signals so popup flips to "disconnected" within a
       // render tick instead of waiting for STALE_AFTER_MS to elapse.
       void chrome.storage.local.set({ lastAliveAt: 0, lastConnectedAt: 0, lastRequestAt: 0 });
@@ -675,15 +687,44 @@ function installFirefoxPath(): void {
   });
   void prewarmTabs();
 
+  /**
+   * Pokes the WS with `{type:'ping'}` if open; reconnects if closed.
+   * Used by both the alarm tick (suspension wake-up path) and the in-page
+   * setInterval (fast heartbeat while alive). A JSON write counts as activity
+   * for Firefox's idle suspension timer, so frequent writes keep the page warm.
+   */
+  function tickKeepalive(): void {
+    if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+      let sent = false;
+      try {
+        state.ws.send(JSON.stringify({ type: 'ping' }));
+        sent = true;
+      } catch {
+        /* close will surface separately */
+      }
+      // Only mark the bridge alive when the ping actually went out — a failed
+      // send means the socket is closing and the next tick will reconnect.
+      if (sent) {
+        void chrome.storage.local.set({ lastAliveAt: Date.now() });
+      }
+    } else if (!state.connecting && (state.ws === null || state.ws.readyState === WebSocket.CLOSED)) {
+      // Avoid racing a CONNECTING/CLOSING handshake: only reconnect once the
+      // previous socket is fully gone. The close handler will null state.ws
+      // for CLOSED sockets; CONNECTING sockets are owned by connect()'s
+      // state.connecting guard.
+      void connect();
+    }
+  }
+
   chrome.alarms.create(KEEPALIVE_ALARM, { periodInMinutes: KEEPALIVE_MIN });
   chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name !== KEEPALIVE_ALARM) return;
-    if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-      void chrome.storage.local.set({ lastAliveAt: Date.now() });
-    } else {
-      void connect();
-    }
+    tickKeepalive();
   });
+  // Re-armed each event-page boot. While the page is alive, this fires far
+  // more often than the alarm (which Firefox clamps to >=30s); combined with
+  // server-side 5s keepalives it keeps the WS fully active.
+  setInterval(tickKeepalive, IN_PAGE_PING_MS);
 
   void connect();
 }
