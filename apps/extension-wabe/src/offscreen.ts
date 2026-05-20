@@ -82,6 +82,13 @@ async function readConfig(): Promise<ConfigReply> {
   return { bridgeUrl: DEFAULT_BRIDGE_URL, token: null };
 }
 
+/** Fire-and-forget. SW persists overrides + reprewarms newly-registered tabs. */
+function forwardTabOverrides(overrides: unknown[]): void {
+  void chrome.runtime.sendMessage({ type: 'wabe-bridge:set-tab-overrides', payload: overrides }).catch(() => {
+    /* SW may be busy; the next heartbeat re-pushes the same list */
+  });
+}
+
 /** Fire-and-forget. SW writes to chrome.storage.local on our behalf. */
 function recordState(patch: {
   lastConnectedAt?: number;
@@ -236,11 +243,17 @@ async function handleBridgeMessage(ws: WebSocket, raw: string): Promise<void> {
     if (typeof msg.bundle_hash === 'string') {
       void maybeSelfReload(msg.bundle_hash);
     }
+    if (Array.isArray(msg.tab_overrides)) {
+      forwardTabOverrides(msg.tab_overrides);
+    }
     return;
   }
   if (msg.type === 'heartbeat') {
     if (typeof msg.bundle_hash === 'string') {
       void maybeSelfReload(msg.bundle_hash);
+    }
+    if (Array.isArray(msg.tab_overrides)) {
+      forwardTabOverrides(msg.tab_overrides);
     }
     return;
   }
@@ -272,9 +285,7 @@ async function getSelfBundleHash(): Promise<string | null> {
     const res = await fetch(url);
     const buf = await res.arrayBuffer();
     const digest = await crypto.subtle.digest('SHA-256', buf);
-    selfBundleHash = [...new Uint8Array(digest)]
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
+    selfBundleHash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
     return selfBundleHash;
   } catch (err) {
     console.warn('[wabe-bridge:offscreen] failed to hash own bundle:', (err as Error).message);
@@ -294,11 +305,9 @@ async function maybeSelfReload(daemonHash: string): Promise<void> {
   // Offscreen documents don't have `chrome.runtime.reload` — delegate to the
   // service worker, which holds the full chrome.runtime surface.
   setTimeout(() => {
-    void chrome.runtime
-      .sendMessage({ type: 'wabe-bridge:reload-extension' })
-      .catch((err: Error) => {
-        console.warn('[wabe-bridge:offscreen] reload request failed:', err.message);
-      });
+    void chrome.runtime.sendMessage({ type: 'wabe-bridge:reload-extension' }).catch((err: Error) => {
+      console.warn('[wabe-bridge:offscreen] reload request failed:', err.message);
+    });
   }, 250);
 }
 

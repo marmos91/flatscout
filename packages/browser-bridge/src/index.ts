@@ -8,6 +8,7 @@ export {
   ServerMessage,
   ServerReject,
   ServerWelcome,
+  TabOverride,
 } from './protocol.js';
 
 export { generateSecret, loadOrGenerateSecret, validateToken } from './secret.js';

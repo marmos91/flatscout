@@ -64,6 +64,33 @@ describe('ServerWelcome', () => {
     const w = ServerWelcome.parse({ type: 'welcome', protocol_version: 1 });
     expect(w.protocol_version).toBe(1);
   });
+
+  it('parses welcome with tab_overrides', () => {
+    const w = ServerWelcome.parse({
+      type: 'welcome',
+      protocol_version: 1,
+      tab_overrides: [
+        { origin: 'https://api.agency-foo.ch', homepage: 'https://agency-foo.ch/' },
+        {
+          origin: 'https://api.agency-bar.ch',
+          homepage: 'https://agency-bar.ch/listings',
+          prewarm: ['https://api.agency-bar.ch/geo'],
+        },
+      ],
+    });
+    expect(w.tab_overrides).toHaveLength(2);
+    expect(w.tab_overrides?.[1]?.prewarm).toEqual(['https://api.agency-bar.ch/geo']);
+  });
+
+  it('rejects tab_overrides with invalid origin shape', () => {
+    expect(() =>
+      ServerWelcome.parse({
+        type: 'welcome',
+        protocol_version: 1,
+        tab_overrides: [{ origin: 'agency-foo.ch', homepage: 'https://agency-foo.ch/' }],
+      }),
+    ).toThrow();
+  });
 });
 
 describe('ServerReject', () => {

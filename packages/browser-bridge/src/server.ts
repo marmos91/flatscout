@@ -7,6 +7,7 @@ import {
   ClientHello,
   ClientMessage,
   PROTOCOL_VERSION,
+  type TabOverride,
 } from './protocol.js';
 import { autodetectBundlePath, type BundleHashTracker, startBundleHashTracker } from './bundle-hash.js';
 import { loadOrGenerateSecret, validateToken } from './secret.js';
@@ -37,6 +38,13 @@ export interface BridgeServer {
   port: number;
   status(): BridgeStatus;
   dispatch(req: BridgeRequest, opts?: { signal?: AbortSignal }): Promise<BridgeResponse>;
+  /**
+   * Register a per-origin tab override that the daemon will push to the
+   * extension on every welcome + heartbeat. Source plugins behind DataDome
+   * call this at init to declare which warm tab + prewarm URLs the bridge
+   * should use for their target API origin. Last write wins per origin.
+   */
+  registerTabOverride(override: TabOverride): void;
   stop(): Promise<void>;
 }
 
@@ -93,6 +101,22 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
   let lastSeenAt = 0;
   const inflight = new Map<string, Inflight>();
   const requesters = new Set<WebSocket>();
+  const tabOverrides = new Map<string, TabOverride>();
+
+  function pushTabOverridesToExtension(): void {
+    if (!activeSocket || activeSocket.readyState !== activeSocket.OPEN) return;
+    try {
+      activeSocket.send(
+        JSON.stringify({
+          type: 'heartbeat',
+          ...(bundleTracker ? { bundle_hash: bundleTracker.current() ?? undefined } : {}),
+          tab_overrides: [...tabOverrides.values()],
+        }),
+      );
+    } catch {
+      // ignore — close will surface separately
+    }
+  }
 
   // Heartbeat: 5s app-level keepalive to the extension. WS `ping()` control
   // frames are handled at protocol level by the browser and DO NOT fire a
@@ -266,6 +290,7 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
             type: 'welcome',
             protocol_version: PROTOCOL_VERSION,
             ...(bundleHash ? { bundle_hash: bundleHash } : {}),
+            tab_overrides: [...tabOverrides.values()],
           }),
         );
         if (activeSocket && activeSocket !== ws && activeSocket.readyState === activeSocket.OPEN) {
@@ -285,7 +310,11 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
             }
             try {
               ws.send(
-                JSON.stringify({ type: 'heartbeat', bundle_hash: bundleTracker.current() ?? undefined }),
+                JSON.stringify({
+                  type: 'heartbeat',
+                  bundle_hash: bundleTracker.current() ?? undefined,
+                  tab_overrides: [...tabOverrides.values()],
+                }),
               );
             } catch {
               // Socket may have closed between the readyState check and the send.
@@ -410,7 +439,12 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
     if (currentBridge === handle) currentBridge = null;
   }
 
-  const handle: BridgeServer = { port, status, dispatch, stop };
+  function registerTabOverride(override: TabOverride): void {
+    tabOverrides.set(override.origin, override);
+    pushTabOverridesToExtension();
+  }
+
+  const handle: BridgeServer = { port, status, dispatch, registerTabOverride, stop };
   currentBridge = handle;
   return handle;
 }

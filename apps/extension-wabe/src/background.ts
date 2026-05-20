@@ -58,7 +58,7 @@ interface TabHomepageConfig {
   homepage: string;
   prewarm?: string[];
 }
-const TAB_HOMEPAGE: Record<string, TabHomepageConfig> = {
+const DEFAULT_TAB_HOMEPAGE: Record<string, TabHomepageConfig> = {
   'https://www.homegate.ch': { homepage: 'https://www.homegate.ch/rent' },
   'https://api.homegate.ch': { homepage: 'https://www.homegate.ch/rent' },
   'https://www.immoscout24.ch': {
@@ -69,6 +69,53 @@ const TAB_HOMEPAGE: Record<string, TabHomepageConfig> = {
     prewarm: ['https://api.immoscout24.ch/geo'],
   },
 };
+
+/**
+ * Runtime overrides pushed by the daemon over the bridge's `welcome` /
+ * `heartbeat` messages. Each push is authoritative — we replace the whole
+ * map. Persisted to chrome.storage.local so the SW survives suspension
+ * without dropping registrations.
+ */
+let dynamicTabOverrides: Record<string, TabHomepageConfig> = {};
+
+function lookupTabHomepage(origin: string): TabHomepageConfig | undefined {
+  return dynamicTabOverrides[origin] ?? DEFAULT_TAB_HOMEPAGE[origin];
+}
+
+interface IncomingTabOverride {
+  origin: string;
+  homepage: string;
+  prewarm?: string[];
+}
+
+function applyTabOverrides(overrides: readonly IncomingTabOverride[]): void {
+  const next: Record<string, TabHomepageConfig> = {};
+  for (const o of overrides) {
+    if (typeof o?.origin === 'string' && typeof o?.homepage === 'string') {
+      next[o.origin] = { homepage: o.homepage, ...(o.prewarm ? { prewarm: o.prewarm } : {}) };
+    }
+  }
+  dynamicTabOverrides = next;
+  // Invalidate prewarm cache for any tabs whose origin's prewarm list changed —
+  // simplest correct approach is to clear all; re-prewarms are cheap and
+  // overrides land at most once per daemon connect.
+  prewarmedTabs.clear();
+  void chrome.storage.local.set({ tabOverrides: next }).catch(() => {
+    /* storage write failures are non-fatal; next push will retry */
+  });
+}
+
+async function loadPersistedTabOverrides(): Promise<void> {
+  try {
+    const stored = await chrome.storage.local.get('tabOverrides');
+    const obj = stored.tabOverrides as Record<string, TabHomepageConfig> | undefined;
+    if (obj && typeof obj === 'object') {
+      dynamicTabOverrides = obj;
+    }
+  } catch {
+    /* ignore — first boot has no entry */
+  }
+}
 
 /** In-flight tab-ready promises, dedup parallel requests for the same origin. */
 const tabReady = new Map<string, Promise<number>>();
@@ -83,7 +130,7 @@ async function findExistingTabForOrigin(origin: string): Promise<number | null> 
   // group (e.g. requests to api.homegate.ch route through a tab loaded at
   // www.homegate.ch/rent). Search the homepage's host pattern so we share one
   // tab across the whole site family.
-  const homepageUrl = TAB_HOMEPAGE[origin]?.homepage ?? `${origin}/`;
+  const homepageUrl = lookupTabHomepage(origin)?.homepage ?? `${origin}/`;
   const homepageHost = new URL(homepageUrl).host;
   const pattern = `*://${homepageHost}/*`;
   const tabs = await chrome.tabs.query({ url: pattern });
@@ -161,7 +208,7 @@ async function ensureTabForOrigin(origin: string): Promise<number> {
   }
   const pending = tabReady.get(origin);
   if (pending) return pending;
-  const homepage = TAB_HOMEPAGE[origin]?.homepage ?? `${origin}/`;
+  const homepage = lookupTabHomepage(origin)?.homepage ?? `${origin}/`;
   const p = (async (): Promise<number> => {
     // `pinned: true` collapses the tab to its favicon at the left of the tab
     // strip. Chrome MV3 has no real `tabs.hide()` API (Firefox-only), so this
@@ -252,7 +299,7 @@ async function inPageFetch(args: InPageFetchArgs): Promise<InPageFetchResult> {
 const prewarmedTabs = new Map<number, Set<string>>();
 
 async function ensureRequestPrewarm(tabId: number, origin: string): Promise<void> {
-  const cfg = TAB_HOMEPAGE[origin];
+  const cfg = lookupTabHomepage(origin);
   if (!cfg?.prewarm?.length) return;
   let done = prewarmedTabs.get(tabId);
   if (!done) {
@@ -470,7 +517,13 @@ async function ensureOffscreen(): Promise<void> {
  * the same tab the first opened.
  */
 async function prewarmTabs(): Promise<void> {
-  for (const origin of Object.keys(TAB_HOMEPAGE)) {
+  // Walk the union of bundled defaults + daemon-pushed overrides; an override
+  // for a known default replaces it, so the Set dedups on origin key.
+  const origins = new Set<string>([
+    ...Object.keys(DEFAULT_TAB_HOMEPAGE),
+    ...Object.keys(dynamicTabOverrides),
+  ]);
+  for (const origin of origins) {
     try {
       await ensureTabForOrigin(origin);
     } catch (err) {
@@ -480,6 +533,10 @@ async function prewarmTabs(): Promise<void> {
 }
 
 function installChromePath(): void {
+  // Restore persisted overrides before the first prewarm so SW reboots don't
+  // lose state between daemon connects.
+  void loadPersistedTabOverrides().then(() => prewarmTabs());
+
   chrome.runtime.onInstalled.addListener(() => {
     void ensureOffscreen();
     void prewarmTabs();
@@ -489,7 +546,6 @@ function installChromePath(): void {
     void prewarmTabs();
   });
   void ensureOffscreen();
-  void prewarmTabs();
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === 'wabe-bridge:proxy') {
@@ -540,6 +596,15 @@ function installChromePath(): void {
       void recordRequestStats(payload)
         .then(() => sendResponse({ ok: true }))
         .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
+      return true;
+    }
+    if (message?.type === 'wabe-bridge:set-tab-overrides') {
+      const payload = (message.payload ?? []) as IncomingTabOverride[];
+      applyTabOverrides(Array.isArray(payload) ? payload : []);
+      // Open warm tabs for any newly-registered origins eagerly so the first
+      // request doesn't pay the tab-open + DataDome-challenge latency.
+      void prewarmTabs();
+      sendResponse({ ok: true });
       return true;
     }
     if (message?.type === 'wabe-bridge:reload-extension') {
@@ -657,13 +722,19 @@ function installFirefoxPath(): void {
         console.log('[wabe-bridge] welcome bundle_hash =', msg.bundle_hash.slice(0, 12));
         await maybeSelfReload(msg.bundle_hash);
       }
+      if (Array.isArray(msg.tab_overrides)) {
+        applyTabOverrides(msg.tab_overrides as IncomingTabOverride[]);
+        void prewarmTabs();
+      }
       return;
     }
     if (msg.type === 'heartbeat') {
-      // Out-of-band ping every ~30s; only carries bundle_hash today but
-      // gives us a place to add more state later.
+      // Out-of-band ping every ~30s; carries bundle_hash + tab_overrides.
       if (typeof msg.bundle_hash === 'string') {
         await maybeSelfReload(msg.bundle_hash);
+      }
+      if (Array.isArray(msg.tab_overrides)) {
+        applyTabOverrides(msg.tab_overrides as IncomingTabOverride[]);
       }
       return;
     }
@@ -809,7 +880,7 @@ function installFirefoxPath(): void {
     void connect();
     void prewarmTabs();
   });
-  void prewarmTabs();
+  void loadPersistedTabOverrides().then(() => prewarmTabs());
 
   /**
    * Pokes the WS with `{type:'ping'}` if open; reconnects if closed.

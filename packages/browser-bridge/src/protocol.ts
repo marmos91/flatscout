@@ -12,6 +12,29 @@ export const ClientHello = z.object({
 });
 export type ClientHello = z.infer<typeof ClientHello>;
 
+/**
+ * Per-origin tab configuration pushed from the daemon to the extension at
+ * connect time. Lets source plugins (e.g. agency-specific scrapers behind
+ * DataDome on their own domain) register the tab homepage + prewarm URLs
+ * the extension should use, without baking them into the extension build.
+ *
+ * Entries arrive on every `welcome` and `heartbeat` (authoritative-set
+ * semantics). The extension merges them over the bundled hardcoded defaults.
+ */
+export const TabOverride = z.object({
+  /** Origin to bind, e.g. `https://api.agency-foo.ch`. */
+  origin: z.string().regex(/^https?:\/\/[^/]+$/),
+  /** Homepage URL the extension should load in the warm tab. */
+  homepage: z.string().url(),
+  /**
+   * Optional in-page GETs run once per tab lifetime, before the first user
+   * request fires. Used to resolve DataDome challenges scoped to a different
+   * subdomain than the homepage.
+   */
+  prewarm: z.array(z.string().url()).optional(),
+});
+export type TabOverride = z.infer<typeof TabOverride>;
+
 export const ServerWelcome = z.object({
   type: z.literal('welcome'),
   protocol_version: z.literal(PROTOCOL_VERSION),
@@ -23,6 +46,8 @@ export const ServerWelcome = z.object({
    * daemons stay compatible.
    */
   bundle_hash: z.string().optional(),
+  /** Authoritative list of dynamic tab overrides; merged over the extension's hardcoded defaults. */
+  tab_overrides: z.array(TabOverride).optional(),
 });
 export type ServerWelcome = z.infer<typeof ServerWelcome>;
 
@@ -67,6 +92,7 @@ export type BridgeError = z.infer<typeof BridgeError>;
 export const ServerHeartbeat = z.object({
   type: z.literal('heartbeat'),
   bundle_hash: z.string().optional(),
+  tab_overrides: z.array(TabOverride).optional(),
 });
 export type ServerHeartbeat = z.infer<typeof ServerHeartbeat>;
 

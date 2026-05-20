@@ -209,6 +209,54 @@ describe('startBridgeServer status', () => {
   });
 });
 
+describe('startBridgeServer tab overrides', () => {
+  it('includes registered tab overrides in welcome', async () => {
+    bridge.registerTabOverride({
+      origin: 'https://api.agency-foo.ch',
+      homepage: 'https://agency-foo.ch/listings',
+      prewarm: ['https://api.agency-foo.ch/geo'],
+    });
+    const ws = client();
+    await open(ws);
+    const reply = (await hello(ws)) as {
+      type: string;
+      tab_overrides?: Array<{ origin: string; homepage: string; prewarm?: string[] }>;
+    };
+    expect(reply.type).toBe('welcome');
+    expect(reply.tab_overrides).toHaveLength(1);
+    expect(reply.tab_overrides?.[0]?.origin).toBe('https://api.agency-foo.ch');
+    expect(reply.tab_overrides?.[0]?.prewarm).toEqual(['https://api.agency-foo.ch/geo']);
+    ws.close();
+  });
+
+  it('pushes a heartbeat with the updated tab override list on new registration', async () => {
+    const ws = client();
+    await open(ws);
+    await hello(ws); // consume welcome
+    // Wait for a heartbeat triggered by the registration.
+    const heartbeatP = new Promise<{
+      type: string;
+      tab_overrides?: Array<{ origin: string }>;
+    }>((resolve) => {
+      const onMsg = (data: WebSocket.RawData): void => {
+        const m = JSON.parse(String(data)) as { type: string };
+        if (m.type === 'heartbeat') {
+          ws.off('message', onMsg);
+          resolve(m as { type: string; tab_overrides?: Array<{ origin: string }> });
+        }
+      };
+      ws.on('message', onMsg);
+    });
+    bridge.registerTabOverride({
+      origin: 'https://api.agency-bar.ch',
+      homepage: 'https://agency-bar.ch/',
+    });
+    const heartbeat = await heartbeatP;
+    expect(heartbeat.tab_overrides?.some((o) => o.origin === 'https://api.agency-bar.ch')).toBe(true);
+    ws.close();
+  });
+});
+
 describe('startBridgeServer loopback enforcement', () => {
   it('always binds 127.0.0.1 even when StartOpts has no host field', async () => {
     const tmp = mkdtempSync(join(tmpdir(), 'wabe-bridge-loopback-'));
