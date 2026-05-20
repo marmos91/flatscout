@@ -147,11 +147,11 @@ describe('cross-source dedup — end-to-end pipeline', () => {
     expect(events[0]?.listing.source).toBe('source-flatfox');
     expect(events[0]?.also_seen_on).toEqual([]);
 
-    const rows = db._raw
-      .prepare(
-        'SELECT id, source, seen_on_sources FROM listings',
-      )
-      .all() as Array<{ id: string; source: string; seen_on_sources: string }>;
+    const rows = db._raw.prepare('SELECT id, source, seen_on_sources FROM listings').all() as Array<{
+      id: string;
+      source: string;
+      seen_on_sources: string;
+    }>;
     expect(rows).toHaveLength(1);
     expect(rows[0]?.source).toBe('source-flatfox');
     expect(JSON.parse(rows[0]?.seen_on_sources ?? '[]').sort()).toEqual([
