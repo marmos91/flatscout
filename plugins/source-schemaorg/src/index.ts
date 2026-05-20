@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { PluginExport, Source, Context } from '@wabe/plugin-sdk';
 import { fetchSitemap } from './sitemap.js';
 import { fetchDetail } from './detail.js';
+import { extractListing } from './extract.js';
 import { mapDetail } from './map.js';
 
 const ConfigSchema = z.object({
@@ -22,6 +23,14 @@ const ConfigSchema = z.object({
   emit_on_first_scan: z.boolean().default(false),
   /** Optional URL template — reserved for future detail-URL synthesis paths; carried so registry rows can set it. */
   detail_url_template: z.string().optional(),
+  /**
+   * Optional regex applied to sitemap URLs; only matching URLs get a detail
+   * fetch. Useful when a single sitemap mixes detail pages with category and
+   * marketing pages (e.g. Ginesta's `/{lang}/(objects|immobilien)/<slug-id>/`).
+   * String form (not Zod regex) so it round-trips through the inline-config
+   * base64 carrier.
+   */
+  detail_url_pattern: z.string().optional(),
 });
 type Config = z.infer<typeof ConfigSchema>;
 
@@ -49,15 +58,19 @@ const plugin: Source = {
     const sitemapUrl = cfg.feed_url ?? new URL(cfg.sitemap_path, cfg.website).toString();
     const entries = await fetchSitemap(sitemapUrl, ctx.signal);
     entries.sort((a, b) => (b.lastmod ?? '').localeCompare(a.lastmod ?? ''));
+    const detailPattern = cfg.detail_url_pattern ? new RegExp(cfg.detail_url_pattern) : null;
     let scanned = 0;
     for (const e of entries) {
       if (ctx.signal.aborted) return;
       if (scanned >= cfg.max_details_per_scan) break;
+      if (detailPattern && !detailPattern.test(e.loc)) continue;
       scanned += 1;
       try {
-        const payload = await fetchDetail(e.loc, ctx.signal);
-        const mapped = mapDetail(agencyId, e.loc, payload);
+        const detail = await fetchDetail(e.loc, ctx.signal);
+        const extracted = extractListing(detail.html, e.loc);
+        const mapped = mapDetail(agencyId, e.loc, extracted);
         if (mapped) yield mapped;
+        else ctx.logger.debug({ url: e.loc }, 'schemaorg: no listing extracted');
       } catch (err) {
         ctx.logger.warn({ url: e.loc, err: (err as Error).message }, 'schemaorg detail failed');
       }

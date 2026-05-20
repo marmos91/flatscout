@@ -10,6 +10,10 @@ export function registerProbe(parent: Command): void {
       const result = await fingerprint(url, ac.signal);
       const slug = new URL(url).hostname.replace(/^www\./, '').split('.')[0] ?? 'unknown';
       console.log(`# detected platform: ${result.platform} (status ${result.status})`);
+      console.log(`# reason: ${result.reason}`);
+      if (result.sitemap_url) console.log(`# sitemap: ${result.sitemap_url}`);
+      if (result.matched_url && result.matched_url !== url)
+        console.log(`# probed detail: ${result.matched_url}`);
       console.log(`- id: ${slug}`);
       console.log(`  name: ${slug}`);
       console.log(`  website: ${url}`);

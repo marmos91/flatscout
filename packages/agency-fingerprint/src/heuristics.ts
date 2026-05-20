@@ -29,7 +29,10 @@ export const HEURISTICS: Heuristic[] = [
   {
     platform: 'schemaorg',
     test: ({ html }) =>
-      /<script[^>]+type=["']application\/ld\+json["'][^>]*>[\s\S]*?@type["']?\s*:\s*["']RealEstateListing["']/i.test(
+      // Match the schema.org real-estate type family. Many agency sites emit
+      // SingleFamilyResidence / Apartment / House on detail pages but not the
+      // narrower RealEstateListing — both should classify as schemaorg.
+      /<script[^>]+type=["']application\/ld\+json["'][^>]*>[\s\S]*?@type["']?\s*:\s*["'](?:RealEstateListing|Apartment|House|Residence|SingleFamilyResidence|Accommodation)["']/i.test(
         html,
       ),
   },

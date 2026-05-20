@@ -1,17 +1,14 @@
 import type { RawListing } from '@wabe/core';
-import type { DetailPayload } from './detail.js';
+import type { ExtractedListing } from './extract.js';
 
-function toNum(v: unknown): number | null {
-  if (v === null || v === undefined) return null;
-  const n = typeof v === 'number' ? v : Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
-export function mapDetail(agencyId: string, url: string, payload: DetailPayload): RawListing | null {
-  const l = payload.listing;
-  if (!l) return null;
+export function mapDetail(agencyId: string, url: string, extracted: ExtractedListing | null): RawListing | null {
+  if (!extracted) return null;
   const idMatch = url.match(/-(\d+)(?:\?|$)/) ?? url.match(/\/(\d+)(?:\?|\/?$)/);
   const idPart = idMatch ? idMatch[1] : url;
+  const coords =
+    extracted.geo.lat !== null && extracted.geo.lon !== null
+      ? ([extracted.geo.lon, extracted.geo.lat] as [number, number])
+      : null;
   return {
     id: `agency:${agencyId}:${idPart}`,
     source: `agency:schemaorg:${agencyId}`,
@@ -19,34 +16,34 @@ export function mapDetail(agencyId: string, url: string, payload: DetailPayload)
     price: {
       rent_net: null,
       extras: null,
-      total: toNum(l.offers?.price),
-      currency: l.offers?.priceCurrency ?? 'CHF',
+      total: extracted.price_chf,
+      currency: extracted.currency,
       deposit_months: null,
     },
-    rooms: toNum(l.numberOfRooms),
-    area_m2: toNum(l.floorSize?.value),
+    rooms: extracted.rooms,
+    area_m2: extracted.area_m2,
     floor: null,
     total_floors: null,
     built_year: null,
     renovated_year: null,
     location: {
-      coords: null,
-      address: l.address?.streetAddress ?? null,
-      postal_code: l.address?.postalCode ?? null,
-      city: l.address?.addressLocality ?? null,
-      region: l.address?.addressRegion ?? null,
+      coords,
+      address: extracted.address.street,
+      postal_code: extracted.address.postal_code,
+      city: extracted.address.city,
+      region: extracted.address.region,
       country: 'CH',
       neighborhood: null,
     },
     features: {},
-    description: l.description ?? null,
-    photos: Array.isArray(l.image) ? l.image : l.image ? [l.image] : [],
+    description: extracted.description,
+    photos: extracted.photos,
     available_from: null,
     lease_until: null,
     rental_term: 'unknown',
     agency: agencyId,
     contact: {},
-    enriched: {},
+    enriched: { extraction_tier: extracted.tier },
     extra: {},
   };
 }
