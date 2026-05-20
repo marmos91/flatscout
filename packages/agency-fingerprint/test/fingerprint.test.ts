@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MockAgent, setGlobalDispatcher, getGlobalDispatcher } from 'undici';
-import { fingerprint } from '../src/index.js';
+import { fingerprint, scoreDetailUrl } from '../src/index.js';
 
 let agent: MockAgent;
 let prev: ReturnType<typeof getGlobalDispatcher>;
@@ -117,6 +117,33 @@ describe('fingerprint', () => {
     expect(r.matched_url).toBe('https://agency.example/objekt/12345-zurich-3-zimmer');
   });
 
+  it('tries multiple ranked detail candidates and short-circuits on first heuristic hit', async () => {
+    // Sitemap urlset with a category page, an off-CH locale page, and a real
+    // detail page. The picker must rank the detail page above the others so
+    // we never even fetch them.
+    agent.get('https://agency.example').intercept({ method: 'GET', path: '/' }).reply(200, ORG);
+    agent.get('https://agency.example').intercept({ method: 'GET', path: '/robots.txt' }).reply(404, '');
+    agent
+      .get('https://agency.example')
+      .intercept({ method: 'GET', path: '/sitemap.xml' })
+      .reply(
+        200,
+        `<?xml version="1.0"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://agency.example/de-de/mehrfamilienhaus-bewerten/potenzialanalyse</loc></url>
+  <url><loc>https://agency.example/de/mieten-kaufen/alle-mietobjekte.html</loc></url>
+  <url><loc>https://agency.example/objekt/12345-zurich-3-zimmer-wohnung</loc></url>
+</urlset>`,
+      );
+    agent
+      .get('https://agency.example')
+      .intercept({ method: 'GET', path: '/objekt/12345-zurich-3-zimmer-wohnung' })
+      .reply(200, REL);
+    const r = await fingerprint('https://agency.example/', new AbortController().signal);
+    expect(r.platform).toBe('schemaorg');
+    expect(r.matched_url).toBe('https://agency.example/objekt/12345-zurich-3-zimmer-wohnung');
+  });
+
   it('returns custom with no sitemap when none can be discovered', async () => {
     agent.get('https://agency.example').intercept({ method: 'GET', path: '/' }).reply(200, ORG);
     agent.get('https://agency.example').intercept({ method: 'GET', path: '/robots.txt' }).reply(404, '');
@@ -128,5 +155,29 @@ describe('fingerprint', () => {
     const r = await fingerprint('https://agency.example/', new AbortController().signal);
     expect(r.platform).toBe('custom');
     expect(r.sitemap_url).toBeUndefined();
+  });
+});
+
+describe('scoreDetailUrl', () => {
+  it('prefers strong-hint detail URLs over category indexes', () => {
+    const detail = scoreDetailUrl('https://x.ch/objekt/12345-zurich-3-zimmer-wohnung');
+    const category = scoreDetailUrl('https://x.ch/de/mieten-kaufen/alle-mietobjekte.html');
+    expect(detail).toBeGreaterThan(category);
+  });
+  it('penalizes foreign-locale paths', () => {
+    const ch = scoreDetailUrl('https://x.ch/de-ch/objekt/123');
+    const de = scoreDetailUrl('https://x.ch/de-de/objekt/123');
+    expect(ch).toBeGreaterThan(de);
+  });
+  it('penalizes vacation/blog/services segments', () => {
+    expect(scoreDetailUrl('https://x.ch/ferienimmobilien/listings/foo')).toBeLessThan(
+      scoreDetailUrl('https://x.ch/listing/foo-12345'),
+    );
+    expect(scoreDetailUrl('https://x.ch/de/leistungen/immobilienbewirtschaftung.html')).toBeLessThan(
+      scoreDetailUrl('https://x.ch/immobilien/villa-zollikon-90123'),
+    );
+  });
+  it('keeps a single-segment listing-typed page positive (model-unit case)', () => {
+    expect(scoreDetailUrl('https://halohomes.ch/musterwohnung/')).toBeGreaterThan(0);
   });
 });

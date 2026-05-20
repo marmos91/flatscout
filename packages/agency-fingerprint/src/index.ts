@@ -56,15 +56,32 @@ const SITEMAP_PATHS = ['/sitemap.xml', '/sitemap_index.xml'];
 // Strong hints — paths that almost always correspond to per-object detail
 // pages or sitemaps of them. Tried first.
 const STRONG_DETAIL_RE =
-  /(objekt|object|listing|inserat|immobilie|immobilien|wohnung|apartment|haus|exposé|expose|property)/i;
+  /(objekt|object|objects|listing|inserat|immobilie|immobilien|wohnung|apartment|haus|exposé|expose|property|properties|casawp|portfolio|wohnungen)/i;
 // Weak hints — match category/landing pages too, so used only as a fallback
 // when nothing stronger is available.
 const WEAK_DETAIL_RE = /(mieten|kaufen|verkauf|rent|sale|house|wohnen)/i;
+// Negative hints — URL segments we should actively avoid because they
+// virtually never correspond to a per-object detail page even if they share
+// a real-estate-y word with the strong hints (e.g. `/alle-mietobjekte.html`
+// is a category index, not a unit). Plain blog/news/info pages also land
+// here.
+const NEGATIVE_DETAIL_RE =
+  /(\/(alle|all|alle-mietobjekte|alle-kaufobjekte)-|kategorie|category-sitemap|blog|news|aktuell|news-|nachrichten|whats-new|impressum|datenschutz|kontakt|contact|about|ueber-|über-|leistung|leistungen|services|service-|dienstleistung|dienste|team|career|jobs|stelle|stellen|presse|press|insights|markt|preise|prices|immobilienpreise|immobilien-preise|sitemap-pages|page-sitemap|partner-sitemap|testimonials-sitemap|category-sitemap|tag-sitemap|author-sitemap|post-sitemap|posts-sitemap|feedback-sitemap|portfolio-categories-sitemap|comments?-?feed|ferien|ferienimmobilien|vacation|holiday|hotel|bewerten|bewertung|valuation|verkauf-tipps|kauf-tipps|tipp|guide|magazin)/i;
+// Foreign-country prefixes that show up in multi-country sitemaps (E&V
+// Austria etc.). Any path segment of the form `<lang>-<country>/` where the
+// country is NOT `ch` gets penalized. Pure-language segments like `/de/`,
+// `/fr/`, `/it/`, `/en/` are NOT matched (they're commonly used on
+// CH-only sites as language switches).
+const FOREIGN_LOCALE_RE = /(?:^|\/)([a-z]{2})-(?!ch\/)([a-z]{2})\//i;
 // A path that looks like a listing detail rather than a category index — it
 // either ends with a numeric id segment or carries a multi-word slug after
 // the listing-typed segment.
 const HAS_ID_SEGMENT_RE = /\/[a-z0-9-]*\d{2,}(?:[a-z0-9-]*)?\/?$/i;
 const LOC_RE = /<loc>([^<]+)<\/loc>/gi;
+// Maximum detail candidates to attempt during fingerprint sampling. Picker
+// quality is more important than depth here — we stop at the first heuristic
+// hit, so a small N (3) keeps probe latency bounded.
+const MAX_DETAIL_SAMPLES = 3;
 
 interface DiscoveredSitemap {
   url: string;
@@ -109,17 +126,32 @@ function extractLocs(xml: string): string[] {
   return out;
 }
 
-function scoreDetailUrl(u: string): number {
+export function scoreDetailUrl(u: string): number {
   // Higher score = more likely to be a per-object detail page.
   let score = 0;
   if (STRONG_DETAIL_RE.test(u)) score += 4;
   else if (WEAK_DETAIL_RE.test(u)) score += 1;
   if (HAS_ID_SEGMENT_RE.test(u)) score += 3;
   try {
-    const segs = new URL(u).pathname.split('/').filter(Boolean);
+    const path = new URL(u).pathname;
+    const segs = path.split('/').filter(Boolean);
     if (segs.length >= 3) score += 1; // deep paths bias toward detail
     const last = segs.at(-1) ?? '';
     if (last.length >= 10 && /-/.test(last)) score += 1; // long kebab slug
+    // Net effect tuning: with STRONG +4, a single negative -3 still keeps
+    // genuine detail URLs in the running (e.g. "musterwohnung" is a model
+    // unit at halohomes.ch — has both the strong `wohnung` hint and the
+    // negative `musterwohnung` tag, ends positive). Foreign-locale penalty
+    // is heavier because multi-country agency sites are usually dominant
+    // outside the CH probe context (E&V Austria etc.).
+    if (NEGATIVE_DETAIL_RE.test(u)) score -= 3;
+    if (FOREIGN_LOCALE_RE.test(u)) score -= 8;
+    // Treat the bare site root as a non-candidate; one-segment paths are
+    // mildly penalized so they only survive when a strong listing-typed
+    // word is present (e.g. halohomes.ch/musterwohnung/ which is a real
+    // model-unit page on a one-development site).
+    if (segs.length === 0) score -= 4;
+    else if (segs.length === 1) score -= 2;
   } catch {
     // ignore unparseable URLs
   }
@@ -127,36 +159,47 @@ function scoreDetailUrl(u: string): number {
 }
 
 /**
- * Pick a sample detail URL from a sitemap (or sitemap-index → child sitemap).
- * Walks at most a few levels of sitemap-index nesting and scores candidates
- * to prefer per-object detail pages over category/landing pages. The first
- * URL still wins as a last-resort fallback so we never return null when at
- * least one URL exists.
+ * Collect candidate detail URLs from a sitemap, walking through one level of
+ * sitemap-index nesting when needed. Returns up to `MAX_DETAIL_SAMPLES`
+ * ranked candidates so the caller can re-classify each in order until one
+ * matches a heuristic — single-sample picking gets fooled by category /
+ * vacation / foreign-locale pages.
  */
-async function sampleDetailUrl(start: DiscoveredSitemap, signal: AbortSignal): Promise<string | null> {
+async function sampleDetailUrls(start: DiscoveredSitemap, signal: AbortSignal): Promise<string[]> {
+  // Walk into the highest-scoring child sitemap when we're holding an index.
+  // We try two levels deep at most; deeper nestings are rare in practice and
+  // each extra fetch slows fingerprinting.
   let current = start;
-  for (let depth = 0; depth < 3; depth++) {
+  for (let depth = 0; depth < 2; depth++) {
+    if (signal.aborted) return [];
     const locs = extractLocs(current.xml);
-    if (locs.length === 0) return null;
-    if (!/<sitemapindex/i.test(current.xml)) {
-      const ranked = locs
-        .map((u) => ({ u, s: scoreDetailUrl(u) }))
-        .filter((x) => x.s > 0)
-        .sort((a, b) => b.s - a.s);
-      return ranked[0]?.u ?? locs[0] ?? null;
-    }
-    const ranked = locs.map((u) => ({ u, s: scoreDetailUrl(u) })).sort((a, b) => b.s - a.s);
+    if (locs.length === 0) return [];
+    if (!/<sitemapindex/i.test(current.xml)) break; // urlset reached
+    const ranked = locs
+      .map((u) => ({ u, s: scoreDetailUrl(u) }))
+      .sort((a, b) => b.s - a.s);
     const child = ranked[0]?.u ?? locs[0];
-    if (!child) return null;
+    if (!child) return [];
     try {
       const res = await fetchHtml(child, signal);
-      if (res.status !== 200) return null;
+      if (res.status !== 200) return [];
       current = { url: child, xml: res.html };
     } catch {
-      return null;
+      return [];
     }
   }
-  return null;
+  // urlset reached (or we bailed out of nesting). Rank and return top-N.
+  const locs = extractLocs(current.xml);
+  if (locs.length === 0) return [];
+  const ranked = locs
+    .map((u) => ({ u, s: scoreDetailUrl(u) }))
+    .filter((x) => x.s > 0)
+    .sort((a, b) => b.s - a.s)
+    .slice(0, MAX_DETAIL_SAMPLES)
+    .map((x) => x.u);
+  if (ranked.length > 0) return ranked;
+  // Last resort: take the first URL as a fallback so callers still see *something*.
+  return locs[0] ? [locs[0]] : [];
 }
 
 /**
@@ -198,13 +241,13 @@ export async function fingerprint(url: string, signal: AbortSignal): Promise<Fin
       reason: 'no heuristic matched on homepage and no sitemap discovered',
     };
   }
-  let detailUrl: string | null = null;
+  let detailUrls: string[] = [];
   try {
-    detailUrl = await sampleDetailUrl(sitemap, signal);
+    detailUrls = await sampleDetailUrls(sitemap, signal);
   } catch {
     // ignore — handled below
   }
-  if (!detailUrl) {
+  if (detailUrls.length === 0) {
     return {
       platform: 'custom',
       url,
@@ -213,37 +256,52 @@ export async function fingerprint(url: string, signal: AbortSignal): Promise<Fin
       sitemap_url: sitemap.url,
     };
   }
-  let detail: FetchOutcome;
-  try {
-    detail = await fetchHtml(detailUrl, signal);
-  } catch (err) {
+  // Try each ranked candidate. First one that lights a heuristic wins; if
+  // none do, surface the last attempted URL so debugging shows what we saw.
+  let lastDetailStatus = home.status;
+  let lastDetailUrl: string | null = null;
+  let lastErr: string | null = null;
+  for (const detailUrl of detailUrls) {
+    if (signal.aborted) break;
+    let detail: FetchOutcome;
+    try {
+      detail = await fetchHtml(detailUrl, signal);
+    } catch (err) {
+      lastErr = (err as Error).message;
+      lastDetailUrl = detailUrl;
+      continue;
+    }
+    lastDetailStatus = detail.status;
+    lastDetailUrl = detailUrl;
+    const detailPlatform = classify(detail.html, detailUrl, detail.headers);
+    if (detailPlatform) {
+      return {
+        platform: detailPlatform,
+        url,
+        status: detail.status,
+        reason: `matched heuristic on sampled detail page: ${detailPlatform}`,
+        matched_url: detailUrl,
+        sitemap_url: sitemap.url,
+      };
+    }
+  }
+  if (lastErr) {
     return {
       platform: 'custom',
       url,
       status: home.status,
-      reason: `detail fetch failed: ${(err as Error).message}`,
+      reason: `detail fetch failed: ${lastErr}`,
       sitemap_url: sitemap.url,
-      matched_url: detailUrl,
-    };
-  }
-  const detailPlatform = classify(detail.html, detailUrl, detail.headers);
-  if (detailPlatform) {
-    return {
-      platform: detailPlatform,
-      url,
-      status: detail.status,
-      reason: `matched heuristic on sampled detail page: ${detailPlatform}`,
-      matched_url: detailUrl,
-      sitemap_url: sitemap.url,
+      matched_url: lastDetailUrl ?? undefined,
     };
   }
   return {
     platform: 'custom',
     url,
-    status: detail.status,
+    status: lastDetailStatus,
     reason: 'no heuristic matched on homepage or sampled detail page',
     sitemap_url: sitemap.url,
-    matched_url: detailUrl,
+    matched_url: lastDetailUrl ?? undefined,
   };
 }
 
