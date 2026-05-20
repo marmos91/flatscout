@@ -11,9 +11,11 @@ export {
   type Candidate,
   distinctLegalNames,
   domainOf,
+  extractDescriptionUrls,
   fromListerWebsiteRows,
   isPortalOrCdn,
   normaliseToCandidate,
+  pdpUrlCandidates,
   resolveLegalNameToWebsite,
 } from './discovery/candidates.js';
 export { discoverAgencies, type DiscoverOptions, type DiscoverSummary } from './discovery/discover.js';

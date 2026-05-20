@@ -31,6 +31,8 @@ export async function runDiscoveryCycle(opts: CycleHookOpts): Promise<void> {
       maxNewProbes: d.max_new_probes,
       pacingMs: d.pacing_ms,
       resolveLegalNames: d.resolve_legal_names,
+      mineDescriptionUrls: d.mine_description_urls,
+      newBuildOnly: d.new_build_only,
       enabledByDefault: d.auto_enable,
       signal: opts.signal,
       log: (m) => opts.logger.debug({ discovery: true }, m),

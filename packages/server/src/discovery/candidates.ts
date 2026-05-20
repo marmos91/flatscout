@@ -44,13 +44,21 @@ export function isPortalOrCdn(host: string): boolean {
   return PORTAL_OR_CDN_DOMAINS.some((suffix) => host === suffix || host.endsWith(`.${suffix}`));
 }
 
+export type CandidateSource = 'lister-website' | 'ddg-from-legal-name' | 'pdp-url-mined';
+
 export interface Candidate {
   /** Full URL we'll fingerprint. Always normalised to https + trailing slash. */
   website: string;
   /** Slugified host (no www., no tld split) — used as registry `id`. */
   id: string;
-  /** Whether the URL came from a populated `lister.website` field, or a DDG resolve from `legal_name`. */
-  source: 'lister-website' | 'ddg-from-legal-name';
+  /**
+   * Provenance: which mining path produced this candidate.
+   * `lister-website` and `pdp-url-mined` are pure DB scans;
+   * `ddg-from-legal-name` is the heuristic legal-name → `.ch` domain
+   * resolver (history note: an earlier impl scraped DDG; the slug is kept
+   * for backward-compatible writer notes).
+   */
+  source: CandidateSource;
   /** When `source === 'ddg-from-legal-name'`, the original legal_name queried. */
   legal_name?: string;
 }
@@ -107,6 +115,80 @@ export function fromListerWebsiteRows(db: DiscoveryDb): Candidate[] {
     if (!r.w) continue;
     const c = normaliseToCandidate(r.w, 'lister-website');
     if (c) out.push(c);
+  }
+  return out;
+}
+
+/** SQL LIKE alternatives for new-build phrases across DE / IT / FR / EN. */
+export const NEW_BUILD_LIKE_CLAUSES =
+  "(json_extract(payload, '$.description') LIKE '%Erstbezug%' OR json_extract(payload, '$.description') LIKE '%Neubau%' OR json_extract(payload, '$.description') LIKE '%prima occupazione%' OR json_extract(payload, '$.description') LIKE '%première occupation%' OR json_extract(payload, '$.description') LIKE '%first occupancy%' OR json_extract(payload, '$.description') LIKE '%first-time occupancy%')";
+
+const URL_RE = /https?:\/\/[^\s"'<>)]+/gi;
+const BARE_DOMAIN_RE = /(?:^|\s|[(\[])(www\.[a-z0-9][a-z0-9.\-]+\.(?:ch|com|li|de|fr|it))/gi;
+
+/**
+ * Extract every external URL from a listing's description + extra fields,
+ * normalise to a Candidate, drop portal/CDN hosts. Used by Path B
+ * (PDP-URL mining): developers often paste their project website link into
+ * the description text even when the portal doesn't expose a structured
+ * `lister.website` field.
+ *
+ * `bareDomains` toggles a secondary regex that catches `www.foo.ch` strings
+ * not preceded by an http(s) scheme — common in portal-rendered descriptions
+ * where hyperlinks are flattened to plain text.
+ */
+export function extractDescriptionUrls(
+  description: string,
+  opts: { bareDomains?: boolean } = {},
+): Candidate[] {
+  const seen = new Set<string>();
+  const out: Candidate[] = [];
+  for (const m of description.matchAll(URL_RE)) {
+    const url = m[0].replace(/[.,;:!?)\]]+$/, '');
+    const c = normaliseToCandidate(url, 'pdp-url-mined');
+    if (c && !seen.has(c.id)) {
+      seen.add(c.id);
+      out.push(c);
+    }
+  }
+  if (opts.bareDomains ?? true) {
+    for (const m of description.matchAll(BARE_DOMAIN_RE)) {
+      const url = `https://${m[1]?.replace(/^www\./, '')}/`;
+      const c = normaliseToCandidate(url, 'pdp-url-mined');
+      if (c && !seen.has(c.id)) {
+        seen.add(c.id);
+        out.push(c);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Scan the local store for listing rows whose description contains new-build
+ * phrases (Erstbezug / Neubau / prima occupazione / première occupation /
+ * first occupancy) and harvest every external URL from each description into
+ * a candidate. When `newBuildOnly` is false, the entire `description` column
+ * is scanned regardless of phrase — broader, noisier.
+ */
+export function pdpUrlCandidates(
+  db: DiscoveryDb,
+  opts: { newBuildOnly?: boolean; limit?: number } = {},
+): Candidate[] {
+  const where = opts.newBuildOnly ? `WHERE ${NEW_BUILD_LIKE_CLAUSES}` : '';
+  const limit = opts.limit ? `LIMIT ${Math.max(1, Math.floor(opts.limit))}` : '';
+  const sql = `SELECT json_extract(payload, '$.description') AS d FROM listings ${where} ${limit}`;
+  const rows = db.prepare<{ d: string | null }>(sql).all();
+  const seen = new Set<string>();
+  const out: Candidate[] = [];
+  for (const r of rows) {
+    if (!r.d) continue;
+    for (const c of extractDescriptionUrls(r.d)) {
+      if (!seen.has(c.id)) {
+        seen.add(c.id);
+        out.push(c);
+      }
+    }
   }
   return out;
 }

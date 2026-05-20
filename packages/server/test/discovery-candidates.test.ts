@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   candidateDomainsFromLegalName,
+  extractDescriptionUrls,
   isPortalOrCdn,
   normaliseToCandidate,
 } from '../src/discovery/candidates.js';
@@ -34,6 +35,43 @@ describe('isPortalOrCdn', () => {
   it('passes through real agency domains', () => {
     expect(isPortalOrCdn('walde.ch')).toBe(false);
     expect(isPortalOrCdn('ginesta.ch')).toBe(false);
+  });
+});
+
+describe('extractDescriptionUrls (Path B)', () => {
+  it('pulls full https URLs from description text', () => {
+    const cs = extractDescriptionUrls(
+      'Erstbezug — Mehr Infos auf https://wohnpark-buchholzstrasse.ch und unter https://walde.ch.',
+    );
+    expect(cs.map((c) => c.id)).toEqual(
+      expect.arrayContaining(['wohnpark-buchholzstrasse', 'walde']),
+    );
+    expect(cs.every((c) => c.source === 'pdp-url-mined')).toBe(true);
+  });
+
+  it('catches bare www.foo.ch hyperlinks not preceded by a scheme', () => {
+    const cs = extractDescriptionUrls('Neubau — siehe www.example-projekt.ch für Details.');
+    expect(cs.find((c) => c.id === 'example-projekt')).toBeDefined();
+  });
+
+  it('drops portal/CDN domains', () => {
+    const cs = extractDescriptionUrls(
+      'Mehr unter https://www.homegate.ch/listing/123 und https://example-projekt.ch/',
+    );
+    expect(cs.map((c) => c.id)).not.toContain('homegate');
+    expect(cs.map((c) => c.id)).toContain('example-projekt');
+  });
+
+  it('dedupes by id', () => {
+    const cs = extractDescriptionUrls(
+      'https://walde.ch/x https://walde.ch/y www.walde.ch https://walde.ch',
+    );
+    expect(cs.filter((c) => c.id === 'walde')).toHaveLength(1);
+  });
+
+  it('trims trailing punctuation from extracted URLs', () => {
+    const cs = extractDescriptionUrls('Siehe https://example.ch/.');
+    expect(cs[0]?.id).toBe('example');
   });
 });
 

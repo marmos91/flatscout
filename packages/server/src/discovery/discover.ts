@@ -6,6 +6,7 @@ import {
   fromListerWebsiteRows,
   isPortalOrCdn,
   normaliseToCandidate,
+  pdpUrlCandidates,
   resolveLegalNameToWebsite,
 } from './candidates.js';
 import { readDiscoveredRegistry, writeDiscoveredRegistry } from './registry-io.js';
@@ -19,8 +20,12 @@ export interface DiscoverOptions {
   maxNewProbes?: number;
   /** Sleep between candidate probes; lets us be polite to DDG + agency origins. */
   pacingMs?: number;
-  /** When true, also DuckDuckGo-resolve distinct `legal_name` values to websites. */
+  /** When true, also resolve distinct `legal_name` values to `.ch` websites via the heuristic ladder. */
   resolveLegalNames?: boolean;
+  /** When true, scan listing description text for external URLs (Path B). */
+  mineDescriptionUrls?: boolean;
+  /** Scope Path B to listings whose description carries a new-build phrase. */
+  newBuildOnly?: boolean;
   /** Default canton tag for newly discovered rows. */
   defaultCanton?: AgencyEntry['canton'];
   /** Default `enabled` flag — false by default so user reviews before scanning. */
@@ -66,6 +71,8 @@ export async function discoverAgencies(opts: DiscoverOptions): Promise<DiscoverS
     maxNewProbes = 25,
     pacingMs = 1500,
     resolveLegalNames = true,
+    mineDescriptionUrls = true,
+    newBuildOnly = false,
     defaultCanton = 'ZH',
     enabledByDefault = false,
     signal,
@@ -85,12 +92,15 @@ export async function discoverAgencies(opts: DiscoverOptions): Promise<DiscoverS
 
   // Path A.1 — direct lister.website rows in the DB.
   const direct = fromListerWebsiteRows(db);
-  // Path A.2 — distinct legal_names → DDG resolution. Run only when the caller asks.
+  // Path A.2 — distinct legal_names → heuristic-ladder resolution.
   const legalNames = resolveLegalNames ? distinctLegalNames(db) : [];
+  // Path B — scan listing descriptions for external URLs (new-build links etc.).
+  const pdp = mineDescriptionUrls ? pdpUrlCandidates(db, { newBuildOnly }) : [];
 
   // Dedupe candidates by `id` before any expensive work.
   const byId = new Map<string, Candidate>();
   for (const c of direct) if (!byId.has(c.id)) byId.set(c.id, c);
+  for (const c of pdp) if (!byId.has(c.id)) byId.set(c.id, c);
   summary.total_candidates = byId.size + legalNames.length;
 
   const newAgencies: AgencyEntry[] = [...existingAgencies];
