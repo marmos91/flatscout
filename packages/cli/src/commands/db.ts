@@ -57,12 +57,28 @@ export function registerDb(prog: Command): void {
         }
       }
 
-      conn._raw.transaction(() => {
-        conn._raw.exec('DROP TABLE listings');
-        conn._raw.exec('ALTER TABLE listings_legacy RENAME TO listings');
-        conn._raw.exec('DELETE FROM listings_fts');
-        conn._raw.prepare('DELETE FROM _migrations WHERE filename = ?').run('0005_collapse_canonical.sql');
-      })();
+      // openDb() enables `PRAGMA foreign_keys = ON`, and after 0005 the
+      // dependent tables (`scores`, `notifications`, `failures`) reference
+      // `listings(id)`. Dropping `listings` while FKs are on would fail when
+      // those tables have rows, and even if it succeeded the surviving rows
+      // would point at canonical_keys that don't exist in the rolled-back
+      // listings. Disable FK enforcement around the swap, clear dependent
+      // tables (their canonical-key listing_ids no longer resolve), and
+      // re-enable FKs afterwards.
+      conn._raw.pragma('foreign_keys = OFF');
+      try {
+        conn._raw.transaction(() => {
+          conn._raw.exec('DELETE FROM scores');
+          conn._raw.exec('DELETE FROM notifications');
+          conn._raw.exec('UPDATE failures SET listing_id = NULL WHERE listing_id IS NOT NULL');
+          conn._raw.exec('DROP TABLE listings');
+          conn._raw.exec('ALTER TABLE listings_legacy RENAME TO listings');
+          conn._raw.exec('DELETE FROM listings_fts');
+          conn._raw.prepare('DELETE FROM _migrations WHERE filename = ?').run('0005_collapse_canonical.sql');
+        })();
+      } finally {
+        conn._raw.pragma('foreign_keys = ON');
+      }
 
       console.log('Rollback complete. Re-run `wabe migrate` to re-apply the collapse.');
     });

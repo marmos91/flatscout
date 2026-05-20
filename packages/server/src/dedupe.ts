@@ -24,44 +24,60 @@ export function mergeUpsertCanonical(
   incomingPriority: number,
 ): UpsertResult {
   const now = Date.now();
-  const existing = db._raw
-    .prepare<[string], { payload: string }>('SELECT payload FROM listings WHERE id = ?')
-    .get(ck);
+  const nowDate = new Date(now);
+  // Defensively stamp raw.first_seen_at/last_seen_at so resolveFields' tie-break
+  // and min/max calls operate on real Dates even when the caller (pipeline) didn't.
+  const stampedRaw: RawListing = {
+    ...raw,
+    first_seen_at: raw.first_seen_at ?? nowDate,
+    last_seen_at: raw.last_seen_at ?? nowDate,
+  };
 
-  if (!existing) {
-    const next = materialise(raw, ck, incomingPriority);
-    insertRow(db, next, now);
-    insertFts(db, next);
-    return { changed: true, isNew: true, fingerprint: ck };
-  }
+  // Wrap the entire upsert path in a transaction. better-sqlite3 transactions
+  // are synchronous and atomic, so concurrent writers can't observe a partial
+  // SELECT-then-INSERT and collide on the PRIMARY KEY.
+  return db._raw.transaction((): UpsertResult => {
+    const existing = db._raw
+      .prepare<[string], { payload: string }>('SELECT payload FROM listings WHERE id = ?')
+      .get(ck);
 
-  const existingListing = Listing.parse(JSON.parse(existing.payload));
-  // Stamp raw.id into raw.enriched.external_ids[raw.source] so resolveFields' deep-merge
-  // accumulates per-source ids consistently with the materialise() path.
-  const rawWithExternalIds: RawListing = raw.id
-    ? {
-        ...raw,
-        enriched: {
-          ...(raw.enriched ?? {}),
-          external_ids: {
-            ...(((raw.enriched as Record<string, unknown> | undefined)?.external_ids as
-              | Record<string, string>
-              | undefined) ?? {}),
-            [raw.source]: raw.id,
+    if (!existing) {
+      const next = materialise(stampedRaw, ck, incomingPriority, nowDate);
+      insertRow(db, next, now);
+      insertFts(db, next);
+      return { changed: true, isNew: true, fingerprint: ck };
+    }
+
+    const existingListing = Listing.parse(JSON.parse(existing.payload));
+    // Stamp raw.id into raw.enriched.external_ids[raw.source] so resolveFields' deep-merge
+    // accumulates per-source ids consistently with the materialise() path.
+    const rawWithExternalIds: RawListing = stampedRaw.id
+      ? {
+          ...stampedRaw,
+          enriched: {
+            ...(stampedRaw.enriched ?? {}),
+            external_ids: {
+              ...(((stampedRaw.enriched as Record<string, unknown> | undefined)?.external_ids as
+                | Record<string, string>
+                | undefined) ?? {}),
+              [stampedRaw.source]: stampedRaw.id,
+            },
           },
-        },
-      }
-    : raw;
-  const { next, changed } = resolveFields(existingListing, rawWithExternalIds, incomingPriority);
+        }
+      : stampedRaw;
+    const { next: merged, changed } = resolveFields(existingListing, rawWithExternalIds, incomingPriority);
+    // Keep the persisted JSON payload's last_seen_at consistent with the DB column.
+    const next: Listing = { ...merged, last_seen_at: nowDate };
 
-  if (!changed) {
-    db._raw.prepare('UPDATE listings SET last_seen_at = ? WHERE id = ?').run(now, ck);
-    return { changed: false, isNew: false, fingerprint: ck };
-  }
+    if (!changed) {
+      db._raw.prepare('UPDATE listings SET last_seen_at = ? WHERE id = ?').run(now, ck);
+      return { changed: false, isNew: false, fingerprint: ck };
+    }
 
-  updateRow(db, next, now);
-  updateFts(db, next);
-  return { changed: true, isNew: false, fingerprint: ck };
+    updateRow(db, next, now);
+    updateFts(db, next);
+    return { changed: true, isNew: false, fingerprint: ck };
+  })();
 }
 
 /** Overwrite a known canonical row's payload — used by the enricher stage. */
@@ -79,14 +95,14 @@ export function readListing(db: WabeDb, ck: string): Listing | null {
   return row ? Listing.parse(JSON.parse(row.payload)) : null;
 }
 
-function materialise(raw: RawListing, ck: string, priority: number): Listing {
+function materialise(raw: RawListing, ck: string, priority: number, now: Date): Listing {
   return Listing.parse({
     ...raw,
     id: ck,
     canonical_key: ck,
     source_priority: priority,
-    first_seen_at: raw.first_seen_at ?? new Date(),
-    last_seen_at: raw.last_seen_at ?? new Date(),
+    first_seen_at: raw.first_seen_at ?? now,
+    last_seen_at: now,
     seen_on_sources: [raw.source],
     enriched: {
       ...(raw.enriched ?? {}),
