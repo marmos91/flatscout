@@ -30,7 +30,7 @@ export function registerDoctor(prog: Command): void {
       let loadedCfg: Awaited<ReturnType<typeof loadConfig>> | null = null;
       let loadedSources: Array<{ name: string; plugin: { name: string } }> | null = null;
       try {
-        const cfg = await loadConfig(paths.configDir);
+        const cfg = await loadConfig(paths.configDir, { dataDir: paths.dataDir });
         loadedCfg = cfg;
         result('config files parse', true, `config dir: ${paths.configDir}`);
         const rentalDetail =

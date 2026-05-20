@@ -8,6 +8,18 @@ export * from './logger.js';
 export * from './dedupe.js';
 export * from './secrets.js';
 export {
+  type Candidate,
+  distinctLegalNames,
+  domainOf,
+  fromListerWebsiteRows,
+  isPortalOrCdn,
+  normaliseToCandidate,
+  resolveLegalNameToWebsite,
+} from './discovery/candidates.js';
+export { discoverAgencies, type DiscoverOptions, type DiscoverSummary } from './discovery/discover.js';
+export { readDiscoveredRegistry, writeDiscoveredRegistry } from './discovery/registry-io.js';
+export { runDiscoveryCycle } from './discovery/cycle.js';
+export {
   BrowserBridgeTransport,
   type BridgeServer,
   type BridgeStatus,

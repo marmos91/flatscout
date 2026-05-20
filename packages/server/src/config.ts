@@ -37,6 +37,23 @@ export const TopConfig = z.object({
       port: z.number().int().min(1024).max(65535).default(8431),
     })
     .default({ enabled: false, port: 8431 }),
+  /**
+   * Auto-discovery of agency candidates from listings already in the local
+   * store. After each scan cycle the daemon mines `lister.website` and
+   * `lister.legal_name` for previously-unknown agencies, fingerprints each,
+   * and appends to `${dataDir}/agencies.discovered.yaml`. Subsequent scans
+   * load those discovered rows alongside the user-curated registry.
+   */
+  discovery: z
+    .object({
+      enabled: z.boolean().default(true),
+      max_new_probes: z.number().int().nonnegative().default(10),
+      pacing_ms: z.number().int().nonnegative().default(1500),
+      resolve_legal_names: z.boolean().default(true),
+      /** When true, newly discovered rows ship with `enabled: true` so they get scanned next cycle without manual approval. */
+      auto_enable: z.boolean().default(false),
+    })
+    .default({ enabled: true, max_new_probes: 10, pacing_ms: 1500, resolve_legal_names: true, auto_enable: false }),
 });
 export type TopConfig = z.infer<typeof TopConfig>;
 
@@ -66,7 +83,10 @@ export function loadYaml<T>(path: string): T {
  *
  * @throws when any file is missing or fails schema validation.
  */
-export async function loadConfig(configDir: string): Promise<LoadedConfig> {
+export async function loadConfig(
+  configDir: string,
+  opts: { dataDir?: string } = {},
+): Promise<LoadedConfig> {
   const top = TopConfig.parse(loadYaml(join(configDir, 'config.yaml')));
   const filters = FiltersFile.parse(loadYaml(join(configDir, 'filters.yaml')));
   const scoring = ScoringFile.parse(loadYaml(join(configDir, 'scoring.yaml')));
@@ -74,7 +94,7 @@ export async function loadConfig(configDir: string): Promise<LoadedConfig> {
   const rentalTerm = existsSync(rentalTermPath)
     ? RentalTermFile.parse(loadYaml(rentalTermPath)).rental_term
     : DEFAULT_RENTAL_TERM;
-  const expanded = await expandAgenciesIfPresent(top, configDir);
+  const expanded = await expandAgenciesIfPresent(top, configDir, opts.dataDir);
   if (expanded) {
     top.enabled.sources = top.enabled.sources
       .filter((s) => s.plugin !== 'agencies')
@@ -123,37 +143,68 @@ export function configBaseDir(configFile: string): string {
 async function expandAgenciesIfPresent(
   top: TopConfig,
   configDir: string,
+  dataDir?: string,
 ): Promise<{
   expandedSources: EnabledEntry[];
   skipped: Array<{ id: string; platform: string; reason: string }>;
 } | null> {
   const meta = top.enabled.sources.find((s) => s.plugin === 'agencies');
-  if (!meta) return null;
-  const metaCfgPath = join(configDir, meta.config);
-  if (!existsSync(metaCfgPath)) throw new Error(`agencies meta config not found: ${metaCfgPath}`);
-  const raw = loadYaml<{
-    registry: string;
-    registry_auth?: string;
-    signature_pubkey?: string;
-  }>(metaCfgPath);
-  const ac = new AbortController();
-  const registry = await loadRegistry({
-    registry: raw.registry,
-    registry_auth: raw.registry_auth,
-    configDir,
-    signal: ac.signal,
-  });
-  if (raw.signature_pubkey) {
-    // Local registry signature file convention: `<path>.sig` next to the YAML.
-    // Only attempted for local-file registries; HTTPS/git signature transport is out of scope.
-    const sigPath = `${raw.registry}.sig`;
-    if (existsSync(sigPath) && existsSync(raw.registry)) {
-      const sig = readFileSync(sigPath, 'utf8').trim();
-      const payload = readFileSync(raw.registry, 'utf8');
-      const ok = await verifySignature(payload, sig, raw.signature_pubkey);
-      if (!ok) throw new Error('agency-registry signature verification failed');
+  // We also want to honor the discovered registry even when the user hasn't
+  // enabled the `agencies` meta-source — so the daemon's auto-discovery still
+  // produces a useful next-cycle. A missing meta block means we only consider
+  // the discovered registry.
+  const discoveredFile = dataDir ? join(dataDir, 'agencies.discovered.yaml') : null;
+  const hasDiscovered = discoveredFile ? existsSync(discoveredFile) : false;
+  if (!meta && !hasDiscovered) return null;
+
+  let registry: import('@wabe/core').AgencyRegistry | null = null;
+  if (meta) {
+    const metaCfgPath = join(configDir, meta.config);
+    if (!existsSync(metaCfgPath)) throw new Error(`agencies meta config not found: ${metaCfgPath}`);
+    const raw = loadYaml<{
+      registry: string;
+      registry_auth?: string;
+      signature_pubkey?: string;
+    }>(metaCfgPath);
+    const ac = new AbortController();
+    registry = await loadRegistry({
+      registry: raw.registry,
+      registry_auth: raw.registry_auth,
+      configDir,
+      signal: ac.signal,
+    });
+    if (raw.signature_pubkey) {
+      // Local registry signature file convention: `<path>.sig` next to the YAML.
+      // Only attempted for local-file registries; HTTPS/git signature transport is out of scope.
+      const sigPath = `${raw.registry}.sig`;
+      if (existsSync(sigPath) && existsSync(raw.registry)) {
+        const sig = readFileSync(sigPath, 'utf8').trim();
+        const payload = readFileSync(raw.registry, 'utf8');
+        const ok = await verifySignature(payload, sig, raw.signature_pubkey);
+        if (!ok) throw new Error('agency-registry signature verification failed');
+      }
     }
   }
+
+  // Discovered registry: merged in alongside the user-curated one. User-curated
+  // entries take precedence on `id` collision so a manual classification can
+  // override an auto-detected one.
+  if (discoveredFile && hasDiscovered) {
+    const raw = loadYaml<unknown>(discoveredFile);
+    const parsed = (await import('@wabe/core')).AgencyRegistry.safeParse(raw);
+    if (parsed.success) {
+      const baseAgencies = registry?.agencies ?? [];
+      const userIds = new Set(baseAgencies.map((a) => a.id));
+      const additions = parsed.data.agencies.filter((a) => !userIds.has(a.id));
+      registry = {
+        version: 1 as const,
+        source: registry?.source ?? 'discovered-only',
+        agencies: [...baseAgencies, ...additions],
+      };
+    }
+  }
+
+  if (!registry) return null;
   const { expanded, skipped } = expandRegistry(registry, BUNDLED_ADAPTERS as Set<string>);
   return {
     expandedSources: expanded.map((e) => ({ name: e.name, plugin: e.plugin, config: e.config })),

@@ -27,7 +27,7 @@ export function registerPair(parent: Command): void {
       // (and to the default again on any config error — pairing should work even with no config yet).
       let port = DEFAULT_PORT;
       try {
-        const cfg = await loadConfig(paths.configDir);
+        const cfg = await loadConfig(paths.configDir, { dataDir: paths.dataDir });
         port = cfg.top.bridge.port;
       } catch {
         // ignore — pre-init pairing is fine

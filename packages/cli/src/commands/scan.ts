@@ -1,5 +1,13 @@
 import type { Command } from 'commander';
-import { CircuitBreaker, Quota, createLogger, loadConfig, loadPlugins, runOnce } from '@wabe/server';
+import {
+  CircuitBreaker,
+  Quota,
+  createLogger,
+  loadConfig,
+  loadPlugins,
+  runDiscoveryCycle,
+  runOnce,
+} from '@wabe/server';
 import { migrate, openDb } from '@wabe/db';
 import { resolvePaths } from '../paths.js';
 
@@ -18,7 +26,7 @@ export function registerScan(prog: Command): void {
     .action(async (opts: { source?: string; dryRun?: boolean }) => {
       const globalOpts = prog.opts<{ config?: string; dataDir?: string }>();
       const paths = resolvePaths({ config: globalOpts.config, dataDir: globalOpts.dataDir });
-      const cfg = await loadConfig(paths.configDir);
+      const cfg = await loadConfig(paths.configDir, { dataDir: paths.dataDir });
       const logger = createLogger(cfg.top.log.level, process.stdout.isTTY);
       const db = openDb(paths.dbFile);
       migrate(db);
@@ -45,6 +53,13 @@ export function registerScan(prog: Command): void {
         notifiers,
         breakers,
         quota,
+      });
+      await runDiscoveryCycle({
+        cfg: cfg.top,
+        db,
+        dataDir: paths.dataDir,
+        logger,
+        signal: ctrl.signal,
       });
       logger.info('scan complete');
     });

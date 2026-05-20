@@ -7,6 +7,7 @@ import {
   disposeSources,
   loadConfig,
   loadPlugins,
+  runDiscoveryCycle,
   runOnce,
   scheduleSources,
   startBridgeServer,
@@ -30,7 +31,7 @@ export function registerStart(prog: Command): void {
     .action(async () => {
       const globalOpts = prog.opts<{ config?: string; dataDir?: string }>();
       const paths = resolvePaths({ config: globalOpts.config, dataDir: globalOpts.dataDir });
-      const cfg = await loadConfig(paths.configDir);
+      const cfg = await loadConfig(paths.configDir, { dataDir: paths.dataDir });
       const logger = createLogger(cfg.top.log.level, process.stdout.isTTY);
       const db = openDb(paths.dbFile);
       migrate(db);
@@ -54,6 +55,16 @@ export function registerStart(prog: Command): void {
           notifiers: loaded.notifiers,
           breakers,
           quota,
+        });
+        // Auto-discovery runs after each per-source tick. It dedupes against the
+        // already-discovered registry, so the bounded `max_new_probes` cap means
+        // repeated ticks degrade to a no-op once the local DB has been mined.
+        await runDiscoveryCycle({
+          cfg: cfg.top,
+          db,
+          dataDir: paths.dataDir,
+          logger,
+          signal: ctrl.signal,
         });
       });
 
