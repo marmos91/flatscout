@@ -23,6 +23,7 @@ describe('migrations + schema', () => {
       '0002_dedup_fields.sql',
       '0003_commute_cache.sql',
       '0004_drop_is24_sitemap_state.sql',
+      '0005_collapse_canonical.sql',
     ]);
     const second = migrate(db);
     expect(second.applied).toEqual([]);
