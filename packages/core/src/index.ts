@@ -13,3 +13,4 @@ export {
   type CanonicalKeyInput,
 } from './canonical-key.js';
 export { AgencyEntry, AgencyRegistry } from './schemas/agency-registry.js';
+export { resolveFields } from './merge.js';
