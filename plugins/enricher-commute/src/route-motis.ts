@@ -41,8 +41,13 @@ export async function routeMotis(
       deps.logger.warn({ status: res.statusCode }, 'motis 4xx');
       return null;
     }
-    const j = (await res.body.json()) as { content?: { connections?: { duration: number }[] } };
-    const conns = j.content?.connections ?? [];
+    // Motis 2.x: { itineraries: [ { duration, transfers, ... } ] }
+    // Motis 1.x: { content: { connections: [ { duration, ... } ] } }
+    const j = (await res.body.json()) as {
+      itineraries?: { duration: number }[];
+      content?: { connections?: { duration: number }[] };
+    };
+    const conns = j.itineraries ?? j.content?.connections ?? [];
     if (conns.length === 0) return null;
     let fastest = conns[0]!;
     for (let i = 1; i < conns.length; i++) {
