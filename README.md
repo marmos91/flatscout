@@ -94,7 +94,7 @@ The Telegram notifier needs a bot token and a chat id before `wabe scan` will do
    TELEGRAM_CHAT_ID=<your-chat-id>
    ```
 
-   The Telegram notifier resolves these via `${env.TELEGRAM_BOT_TOKEN}` and `${env.TELEGRAM_CHAT_ID}` in `notifier-telegram.yaml`.
+   The Telegram notifier resolves these via `${env.TELEGRAM_BOT_TOKEN}` and `${env.TELEGRAM_CHAT_ID}` in `plugins/notifier-telegram.yaml`.
 
 > **Security:** the bot token is a credential — anyone holding it can post as your bot. Never commit `.env` (it's already in `.gitignore`). If the token leaks, revoke it via `/revoke` in @BotFather and reissue.
 
