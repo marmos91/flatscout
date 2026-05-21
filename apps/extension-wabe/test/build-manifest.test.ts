@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildManifest } from '../build-manifest';
 
-const baseManifest = JSON.parse(readFileSync(resolve(__dirname, '..', 'manifest.json'), 'utf8')) as Record<
+const here = dirname(fileURLToPath(import.meta.url));
+const baseManifest = JSON.parse(readFileSync(resolve(here, '..', 'manifest.json'), 'utf8')) as Record<
   string,
   unknown
 >;
