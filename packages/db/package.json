@@ -1,6 +1,6 @@
 {
   "name": "@flatscout/db",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -38,5 +38,10 @@
   "bugs": {
     "url": "https://github.com/marmos91/flatscout/issues"
   },
-  "files": ["dist", "migrations", "README.md", "LICENSE"]
+  "files": [
+    "dist",
+    "migrations",
+    "README.md",
+    "LICENSE"
+  ]
 }
