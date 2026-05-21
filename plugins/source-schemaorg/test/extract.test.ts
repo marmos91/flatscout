@@ -102,7 +102,7 @@ describe('extractListing — tier 2 (open graph + regex)', () => {
   });
 
   it('returns null when both rooms and area missing', () => {
-    const html = `<html><body>Mieten ab CHF 1500.- / Monat - rufen Sie an</body></html>`;
+    const html = '<html><body>Mieten ab CHF 1500.- / Monat - rufen Sie an</body></html>';
     expect(extractOpenGraph(html, 'https://x.ch')).toBeNull();
   });
 

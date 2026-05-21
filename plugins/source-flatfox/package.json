@@ -23,5 +23,20 @@
     "@types/node": "^22.7.4",
     "typescript": "^5.6.2",
     "vitest": "^2.1.1"
-  }
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marmos91/flatscout.git",
+    "directory": "plugins/source-flatfox"
+  },
+  "homepage": "https://github.com/marmos91/flatscout#readme",
+  "bugs": {
+    "url": "https://github.com/marmos91/flatscout/issues"
+  },
+  "files": ["dist", "README.md", "LICENSE"]
 }

@@ -108,6 +108,12 @@ To wire the plugin so the orchestrator can load it out of the box, add it to `@f
 - New runtime deps must be permissively licensed. MIT / BSD / Apache-2 / ISC / MPL all fine; GPL / proprietary / "source available" not acceptable.
 - Add deps to the package that uses them, not the root. Run `pnpm install` from the repo root so the lockfile updates cleanly.
 
+## Releasing
+
+Run `pnpm changeset` to add a changeset for your change. The CI bot opens a
+"Version Packages" PR that bumps versions and writes CHANGELOG entries. Merging
+that PR publishes the affected `@flatscout/*` packages to npm with provenance.
+
 ## License
 
 By contributing you agree your contributions are MIT-licensed.

@@ -247,7 +247,7 @@ const RE_WORDS = new Set([
 function tokenize(name: string): string[] {
   return name
     .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '') // strip diacritics
+    .replace(/\p{Mn}/gu, '') // strip diacritics
     .toLowerCase()
     .replace(/&/g, ' and ')
     .replace(/['’`]/g, '')
@@ -286,7 +286,7 @@ export function candidateDomainsFromLegalName(name: string): string[] {
 
 async function liveCheck(host: string, signal: AbortSignal): Promise<string | null> {
   const url = `https://${host}/`;
-  let res;
+  let res: Response;
   try {
     res = await fetch(url, {
       signal,

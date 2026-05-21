@@ -483,7 +483,6 @@ async function executeReadState(
     const [exec] = await chrome.scripting.executeScript({
       target: { tabId },
       world: 'MAIN',
-      // biome-ignore lint/security/noGlobalEval: jsPath comes from a trusted plugin, not network input
       func: (path: string) => {
         try {
           // eslint-disable-next-line @typescript-eslint/no-implied-eval
