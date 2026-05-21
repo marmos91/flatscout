@@ -57,6 +57,20 @@ export const ServerReject = z.object({
 });
 export type ServerReject = z.infer<typeof ServerReject>;
 
+/**
+ * Read-state mode: instead of fetching `url`, the extension finds any tab open
+ * at `new URL(url).host` and executes `js_path` in MAIN world. The expression's
+ * value is JSON-stringified into the response body. Used by sources whose
+ * portal serves a SPA-emitted XHR that DataDome refuses to replicate via raw
+ * fetch (e.g. immoscout24's `/rent?wzip=...` URL). The plugin must accept that
+ * the user keeps a real browsing tab open at the portal.
+ */
+export const ReadStateRequest = z.object({
+  /** JS expression evaluated in MAIN world. Trusted — comes from a Wabe plugin, not network input. */
+  js_path: z.string().min(1).max(2_000),
+});
+export type ReadStateRequest = z.infer<typeof ReadStateRequest>;
+
 export const BridgeRequest = z.object({
   type: z.literal('request'),
   id: z.string().min(1),
@@ -65,6 +79,8 @@ export const BridgeRequest = z.object({
   headers: z.record(z.string(), z.string()).default({}),
   body: z.string().optional(),
   timeout_ms: z.number().int().positive().max(60_000).default(30_000),
+  /** When set, the extension reads JS state from a matching open tab instead of fetching. */
+  read_state: ReadStateRequest.optional(),
 });
 export type BridgeRequest = z.infer<typeof BridgeRequest>;
 

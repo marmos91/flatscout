@@ -1,4 +1,4 @@
-import type { BridgeRequest } from './protocol.js';
+import type { BridgeRequest, ReadStateRequest } from './protocol.js';
 import { type BridgeServer, getCurrentBridge, newRequestId } from './server.js';
 
 export interface TransportResponse {
@@ -14,6 +14,8 @@ export interface TransportRequestInit {
   body?: string;
   timeout_ms?: number;
   signal?: AbortSignal;
+  /** Read JS state from an open tab matching `url`'s host instead of fetching. */
+  read_state?: ReadStateRequest;
 }
 
 /**
@@ -50,6 +52,7 @@ export class BrowserBridgeTransport implements Transport {
       headers: opts.headers ?? {},
       body: opts.body,
       timeout_ms: opts.timeout_ms ?? 30_000,
+      ...(opts.read_state ? { read_state: opts.read_state } : {}),
     };
     const resp = await bridge.dispatch(req, { signal: opts.signal });
     return { status: resp.status, headers: resp.headers, body: resp.body };

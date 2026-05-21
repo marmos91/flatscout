@@ -335,11 +335,70 @@ interface BridgeRequestMessage {
   headers?: Record<string, string>;
   body?: string;
   timeout_ms?: number;
+  read_state?: { js_path: string };
+}
+
+/**
+ * Read-state mode: find any tab whose URL host matches `targetHost`, then
+ * evaluate `jsPath` in MAIN world. Returns the JSON-stringified value as the
+ * response body. Used by sources whose portal won't replicate via raw fetch
+ * (e.g. immoscout24 SRP, behind DataDome on SPA-emitted XHRs). The user must
+ * keep a real browsing tab open at the portal — there's no fallback.
+ */
+async function executeReadState(targetHost: string, jsPath: string): Promise<InPageFetchResult> {
+  // chrome.tabs.query requires a match pattern; the literal host filter works.
+  const tabs = await chrome.tabs.query({ url: `*://${targetHost}/*` });
+  const tabId =
+    tabs.find((t) => t.id !== undefined && t.status === 'complete')?.id ??
+    tabs.find((t) => t.id !== undefined)?.id;
+  if (tabId === undefined) {
+    return {
+      status: 404,
+      headers: {},
+      body: `no tab open at ${targetHost} — open a real browsing session there to enable scanning`,
+    };
+  }
+  try {
+    const [exec] = await chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      // biome-ignore lint/security/noGlobalEval: jsPath comes from a trusted plugin, not network input
+      func: (path: string) => {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-implied-eval
+          const fn = new Function(`return (${path});`);
+          const value = fn();
+          return { ok: true as const, value };
+        } catch (e) {
+          return { ok: false as const, error: (e as Error).message };
+        }
+      },
+      args: [jsPath],
+    });
+    const result = exec?.result as { ok: true; value: unknown } | { ok: false; error: string } | undefined;
+    if (!result) {
+      return { status: 500, headers: {}, body: 'executeScript returned no result' };
+    }
+    if (!result.ok) {
+      return { status: 500, headers: {}, body: `read-state error: ${result.error}` };
+    }
+    return {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(result.value),
+    };
+  } catch (err) {
+    return { status: 500, headers: {}, body: `read-state threw: ${(err as Error).message}` };
+  }
 }
 
 // --------- Per-request proxy (used by Chrome onMessage AND Firefox proxyRequest) ---------
 
 async function executeProxyRequest(msg: BridgeRequestMessage): Promise<InPageFetchResult> {
+  if (msg.read_state) {
+    const host = new URL(msg.url).host;
+    return executeReadState(host, msg.read_state.js_path);
+  }
   const targetOrigin = new URL(msg.url).origin;
   const tabId = await ensureTabForOrigin(targetOrigin);
   await ensureRequestPrewarm(tabId, targetOrigin);

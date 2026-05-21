@@ -16,6 +16,14 @@ export interface TransportRequestOpts {
   timeoutMs?: number;
   /** Accept header. Defaults to HTML; pass 'application/json' for API calls. */
   accept?: string;
+  /**
+   * Read JS state from a tab matching `url`'s host instead of fetching. Used
+   * because IS24's SRP URL pattern only resolves to listings when emitted as
+   * an internal SPA XHR; raw fetches get a DataDome challenge regardless of
+   * cookie state. The plugin reads `window.__INITIAL_STATE__` from a tab the
+   * user already has open at immoscout24.ch.
+   */
+  readState?: { jsPath: string };
 }
 
 export interface TransportResponse {
@@ -43,6 +51,7 @@ export class IS24BridgeTransport implements Transport {
       headers: { accept: opts.accept ?? 'text/html,application/xhtml+xml' },
       timeout_ms: opts.timeoutMs,
       signal: opts.signal,
+      ...(opts.readState ? { read_state: { js_path: opts.readState.jsPath } } : {}),
     });
     return { status: resp.status, body: resp.body };
   }

@@ -52,6 +52,7 @@ interface BridgeRequestMessage {
   headers?: Record<string, string>;
   body?: string;
   timeout_ms?: number;
+  read_state?: { js_path: string };
 }
 
 interface InPageFetchResult {

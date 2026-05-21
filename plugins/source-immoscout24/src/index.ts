@@ -2,16 +2,18 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
 import type { Context, PluginExport, Source } from '@wabe/plugin-sdk';
-import { fetchSrp, sleep } from './client.js';
-import { parseApiResult } from './parse.js';
+import { IS24SrpListingSchema } from './parse.js';
 import { mapSrpListing } from './map.js';
 import { mergePdpIntoListing } from './enrich.js';
 import { extractDetail } from './detail.js';
-import { SearchConfig, buildApiUrl } from './search.js';
+import { SearchConfig } from './search.js';
 import { selectTransport, type Transport } from './transport.js';
 
 const FetchConfig = z.object({
-  max_pages: z.number().int().positive().default(5),
+  // Pagination via read-state is a follow-up — requires SPA navigation in the
+  // tab between page reads. For now the plugin scrapes whatever page the user
+  // currently has loaded in their immoscout24 tab.
+  max_pages: z.number().int().positive().default(1),
   pace_ms: z.number().int().nonnegative().default(2500),
   backoff: z
     .object({
@@ -21,6 +23,18 @@ const FetchConfig = z.object({
     })
     .default({}),
 });
+
+const ReadStateResultSchema = z
+  .object({
+    listings: z.array(IS24SrpListingSchema),
+    page: z.number().optional(),
+    pageCount: z.number().optional(),
+    resultCount: z.number().optional(),
+    itemsPerPage: z.number().optional(),
+    hasNextPage: z.boolean().optional(),
+    hasPreviousPage: z.boolean().optional(),
+  })
+  .passthrough();
 
 const EnrichConfig = z.object({
   enrich_via_bridge: z.boolean().default(false),
@@ -54,69 +68,88 @@ const plugin: Source = {
     let pdpFetched = 0;
 
     try {
-      for (let page = 1; page <= cfg.fetch.max_pages; page += 1) {
-        if (ctx.signal.aborted) return;
-        const url = buildApiUrl(cfg.search, page);
-        const res = await fetchSrp(url, {
-          paceMs: cfg.fetch.pace_ms,
-          backoff: cfg.fetch.backoff,
-          signal: ctx.signal,
-          logger: ctx.logger,
-          transport,
-          accept: 'application/json',
-        });
-        const result = parseApiResult(res.body);
-        if (!result) {
-          ctx.logger.warn(
-            {
-              url,
-              body_len: res.body.length,
-              has_datadome: res.body.includes('datadome'),
-              head_snippet: res.body.slice(0, 300),
-            },
-            'immoscout24: API response missing listings — skipping page',
-          );
-          break;
-        }
+      // The plugin reads listings from whatever immoscout24 SRP the user
+      // currently has open in their paired browser. DataDome refuses to serve
+      // /rent?wzip=... as a raw fetch (only as SPA-emitted XHR from a fully-
+      // hydrated tab), so emulating the fetch path is not viable. The
+      // read-state contract: the user keeps a real browsing tab open at
+      // www.immoscout24.ch; this plugin reads `window.__INITIAL_STATE__`
+      // from it. See docs in transport.ts.
+      const res = await transport.request({
+        method: 'GET',
+        url: 'https://www.immoscout24.ch/',
+        signal: ctx.signal,
+        logger: ctx.logger,
+        readState: { jsPath: 'window.__INITIAL_STATE__.resultList.search.fullSearch.result' },
+      });
+      if (res.status === 404) {
+        ctx.logger.warn(
+          {},
+          'immoscout24: no tab open at www.immoscout24.ch — open an SRP page in your paired browser to enable scanning',
+        );
+        return;
+      }
+      if (res.status < 200 || res.status >= 300) {
+        ctx.logger.warn(
+          { status: res.status, body_snippet: res.body.slice(0, 200) },
+          'immoscout24: read-state failed',
+        );
+        return;
+      }
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(res.body);
+      } catch {
+        ctx.logger.warn({ body_snippet: res.body.slice(0, 200) }, 'immoscout24: read-state body is not JSON');
+        return;
+      }
+      const validated = ReadStateResultSchema.safeParse(parsed);
+      if (!validated.success) {
+        ctx.logger.warn(
+          { issues: validated.error.issues.slice(0, 5) },
+          'immoscout24: read-state result does not match expected shape — is the user on a search results page?',
+        );
+        return;
+      }
+      const result = validated.data;
+      ctx.logger.info(
+        { count: result.listings.length, total: result.resultCount },
+        'immoscout24: read state from open tab',
+      );
 
-        for (const card of result.listings) {
-          if (ctx.signal.aborted) return;
-          let listing = mapSrpListing(card, cfg.search.language);
-          if (!listing) {
-            ctx.logger.warn({ id: card.id }, 'immoscout24: card missing id — skipping');
-            continue;
-          }
-          if (cfg.enrich.enrich_via_bridge && pdpFetched < cfg.enrich.max_detail_per_scan) {
-            try {
-              const pdpRes = await transport.request({
-                method: 'GET',
-                url: listing.url,
-                signal: ctx.signal,
-                logger: ctx.logger,
-                timeoutMs: 30_000,
-              });
-              if (pdpRes.status >= 200 && pdpRes.status < 300) {
-                listing = mergePdpIntoListing(listing, extractDetail(pdpRes.body));
-              } else {
-                ctx.logger.warn(
-                  { url: listing.url, status: pdpRes.status },
-                  'immoscout24: PDP fetch non-2xx; emitting SRP-only',
-                );
-              }
-              pdpFetched += 1;
-            } catch (err) {
+      for (const card of result.listings) {
+        if (ctx.signal.aborted) return;
+        let listing = mapSrpListing(card, cfg.search.language);
+        if (!listing) {
+          ctx.logger.warn({ id: card.id }, 'immoscout24: card missing id — skipping');
+          continue;
+        }
+        if (cfg.enrich.enrich_via_bridge && pdpFetched < cfg.enrich.max_detail_per_scan) {
+          try {
+            const pdpRes = await transport.request({
+              method: 'GET',
+              url: listing.url,
+              signal: ctx.signal,
+              logger: ctx.logger,
+              timeoutMs: 30_000,
+            });
+            if (pdpRes.status >= 200 && pdpRes.status < 300) {
+              listing = mergePdpIntoListing(listing, extractDetail(pdpRes.body));
+            } else {
               ctx.logger.warn(
-                { url: listing.url, err: (err as Error).message },
-                'immoscout24: PDP fetch failed; emitting SRP-only',
+                { url: listing.url, status: pdpRes.status },
+                'immoscout24: PDP fetch non-2xx; emitting SRP-only',
               );
             }
+            pdpFetched += 1;
+          } catch (err) {
+            ctx.logger.warn(
+              { url: listing.url, err: (err as Error).message },
+              'immoscout24: PDP fetch failed; emitting SRP-only',
+            );
           }
-          yield listing;
         }
-
-        if (!result.hasNextPage) break;
-        if (result.listings.length < result.itemsPerPage) break;
-        if (page < cfg.fetch.max_pages) await sleep(cfg.fetch.pace_ms, ctx.signal);
+        yield listing;
       }
     } finally {
       if (activeTransport === transport) activeTransport = undefined;

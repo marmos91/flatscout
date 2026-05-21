@@ -144,6 +144,7 @@ export class DaemonBridgeTransport implements Transport {
       headers: opts.headers ?? {},
       body: opts.body,
       timeout_ms,
+      ...(opts.read_state ? { read_state: opts.read_state } : {}),
     };
     return new Promise<TransportResponse>((resolve, reject) => {
       const onAbort = (): void => {

@@ -100,6 +100,43 @@ describe('ServerReject', () => {
   });
 });
 
+describe('BridgeRequest read_state', () => {
+  it('accepts a read_state envelope on an otherwise-normal request', () => {
+    const r = BridgeRequest.parse({
+      type: 'request',
+      id: 'r-state-1',
+      method: 'GET',
+      url: 'https://www.immoscout24.ch/',
+      read_state: { js_path: 'window.__INITIAL_STATE__.resultList' },
+    });
+    expect(r.read_state?.js_path).toBe('window.__INITIAL_STATE__.resultList');
+  });
+
+  it('rejects an empty js_path', () => {
+    expect(() =>
+      BridgeRequest.parse({
+        type: 'request',
+        id: 'r-state-2',
+        method: 'GET',
+        url: 'https://www.immoscout24.ch/',
+        read_state: { js_path: '' },
+      }),
+    ).toThrow();
+  });
+
+  it('rejects a js_path longer than 2000 chars (DoS bound)', () => {
+    expect(() =>
+      BridgeRequest.parse({
+        type: 'request',
+        id: 'r-state-3',
+        method: 'GET',
+        url: 'https://www.immoscout24.ch/',
+        read_state: { js_path: 'x'.repeat(2001) },
+      }),
+    ).toThrow();
+  });
+});
+
 describe('BridgeRequest', () => {
   it('parses a GET with default headers + timeout', () => {
     const r = BridgeRequest.parse({
