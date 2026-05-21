@@ -6,7 +6,10 @@ export const PROTOCOL_VERSION = 1;
 export const ClientHello = z.object({
   type: z.literal('hello'),
   protocol_version: z.literal(PROTOCOL_VERSION),
-  extension_version: z.string(),
+  // Bounded to keep already-paired peers from bloating chrome.storage via the
+  // peer_attempt echo — the existing client surfaces this verbatim in its
+  // popup. 64 chars covers any plausible semver + suffix.
+  extension_version: z.string().min(1).max(64),
   /** Hex-encoded shared secret proving the extension was paired with this wabe instance. */
   auth_token_hex: z.string().regex(/^[0-9a-f]{64}$/),
 });
@@ -54,8 +57,29 @@ export type ServerWelcome = z.infer<typeof ServerWelcome>;
 export const ServerReject = z.object({
   type: z.literal('reject'),
   reason: z.string(),
+  /**
+   * Optional human-readable detail. Carried verbatim through to the extension
+   * popup. Stable enough for end-users to read; the machine-readable reason
+   * remains in `reason`.
+   */
+  detail: z.string().optional(),
 });
 export type ServerReject = z.infer<typeof ServerReject>;
+
+/**
+ * One-shot notification sent to the currently-connected extension when a
+ * second extension instance attempts (and is rejected from) connecting with
+ * a valid token. Lets the popup surface "another instance tried to connect"
+ * without dropping the live session.
+ */
+export const ServerPeerAttempt = z.object({
+  type: z.literal('peer_attempt'),
+  /** Version string the peer client sent in its hello. Useful for diagnostics. */
+  extension_version: z.string(),
+  /** ISO 8601 timestamp of the rejected attempt. */
+  at: z.string(),
+});
+export type ServerPeerAttempt = z.infer<typeof ServerPeerAttempt>;
 
 /**
  * Read-state mode: instead of fetching `url`, the extension finds any tab open
@@ -116,6 +140,7 @@ export const ServerMessage = z.discriminatedUnion('type', [
   ServerWelcome,
   ServerReject,
   ServerHeartbeat,
+  ServerPeerAttempt,
   BridgeRequest,
 ]);
 export type ServerMessage = z.infer<typeof ServerMessage>;

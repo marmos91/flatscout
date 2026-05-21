@@ -35,6 +35,8 @@ interface State {
   reconnectTimer: ReturnType<typeof setTimeout> | null;
   everPaired: boolean;
   connecting: boolean;
+  /** Set when daemon rejected us with `another_client_active`. Muted until popup-driven reconnect. */
+  blocked: boolean;
 }
 
 const state: State = {
@@ -43,6 +45,7 @@ const state: State = {
   reconnectTimer: null,
   everPaired: false,
   connecting: false,
+  blocked: false,
 };
 
 interface BridgeRequestMessage {
@@ -116,6 +119,7 @@ function recordRequest(payload: {
 
 function scheduleReconnect(): void {
   if (state.reconnectTimer !== null) return;
+  if (state.blocked) return; // wait for explicit popup-driven Reconnect
   state.reconnectTimer = setTimeout(() => {
     state.reconnectTimer = null;
     void connect();
@@ -259,8 +263,45 @@ async function handleBridgeMessage(ws: WebSocket, raw: string): Promise<void> {
     return;
   }
   if (msg.type === 'reject') {
-    console.warn('[wabe-bridge:offscreen] rejected by server:', msg.reason);
+    const reason = typeof msg.reason === 'string' ? msg.reason : 'unknown';
+    const detail = typeof msg.detail === 'string' ? msg.detail : undefined;
+    console.warn('[wabe-bridge:offscreen] rejected by server:', reason, detail ?? '');
+    if (reason === 'another_client_active') {
+      state.blocked = true;
+      // Tell the SW to persist the block + cancel any pending reconnect.
+      // If this send fails the SW won't know we're blocked, so the popup
+      // won't see a reason for the disconnect — log so a maintainer
+      // tailing the offscreen console at least has a breadcrumb. The
+      // popup-driven reconnect path is the user's recovery; there is no
+      // automatic retry because the very next reconnect would just be
+      // preempted again.
+      void chrome.runtime
+        .sendMessage({
+          type: 'wabe-bridge:set-blocked',
+          payload: { reason, detail: detail ?? null, at: Date.now() },
+        })
+        .catch((err: Error) => {
+          console.warn(`[wabe-bridge] offscreen failed to notify SW of block: ${err.message}`);
+        });
+      if (state.reconnectTimer !== null) {
+        clearTimeout(state.reconnectTimer);
+        state.reconnectTimer = null;
+      }
+    }
     ws.close();
+    return;
+  }
+  if (msg.type === 'peer_attempt') {
+    const at = typeof msg.at === 'string' ? msg.at : new Date().toISOString();
+    const peerVersion = typeof msg.extension_version === 'string' ? msg.extension_version : 'unknown';
+    void chrome.runtime
+      .sendMessage({
+        type: 'wabe-bridge:set-peer-attempt',
+        payload: { at, extension_version: peerVersion },
+      })
+      .catch(() => {
+        /* non-fatal */
+      });
     return;
   }
   if (msg.type === 'keepalive') {
@@ -314,6 +355,7 @@ async function maybeSelfReload(daemonHash: string): Promise<void> {
 
 async function connect(): Promise<void> {
   if (state.connecting) return;
+  if (state.blocked) return; // wait for explicit popup-driven Reconnect
   if (state.ws && (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)) {
     return;
   }
@@ -376,6 +418,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       state.reconnectTimer = null;
     }
     state.reconnectDelayMs = 1_000;
+    // Explicit popup-driven reconnect — clear the single-client block.
+    state.blocked = false;
     void connect();
     sendResponse({ ok: true });
     return true;

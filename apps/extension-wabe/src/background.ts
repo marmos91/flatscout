@@ -618,7 +618,12 @@ function installChromePath(): void {
       // Don't forward — the popup's sendMessage already broadcasts to the
       // offscreen document directly. We just ensure offscreen exists in case
       // Chrome evicted it. The offscreen's own onMessage listener handles
-      // the reconnect.
+      // the reconnect. Also clear the single-client block AND any stale
+      // peer-attempt banner so the offscreen doc's blocked check passes
+      // once it picks up the next welcome.
+      void chrome.storage.local.remove(['bridgeBlockedReason', 'bridgePeerAttempt']).catch(() => {
+        /* non-fatal */
+      });
       void ensureOffscreen()
         .then(() => sendResponse({ ok: true }))
         .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
@@ -665,6 +670,37 @@ function installChromePath(): void {
       sendResponse({ ok: true });
       return true;
     }
+    if (message?.type === 'wabe-bridge:set-blocked') {
+      const payload = (message.payload ?? {}) as {
+        reason?: string;
+        detail?: string | null;
+        at?: number;
+      };
+      void chrome.storage.local
+        .set({
+          bridgeBlockedReason: {
+            reason: payload.reason ?? 'another_client_active',
+            detail: payload.detail ?? null,
+            at: payload.at ?? Date.now(),
+          },
+        })
+        .then(() => sendResponse({ ok: true }))
+        .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
+      return true;
+    }
+    if (message?.type === 'wabe-bridge:set-peer-attempt') {
+      const payload = (message.payload ?? {}) as { at?: string; extension_version?: string };
+      void chrome.storage.local
+        .set({
+          bridgePeerAttempt: {
+            at: payload.at ?? new Date().toISOString(),
+            extension_version: payload.extension_version ?? 'unknown',
+          },
+        })
+        .then(() => sendResponse({ ok: true }))
+        .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
+      return true;
+    }
     if (message?.type === 'wabe-bridge:reload-extension') {
       // Offscreen-initiated reload (Chrome). The SW has chrome.runtime.reload
       // even though the offscreen doc doesn't. Mirrors the Firefox path where
@@ -688,6 +724,13 @@ function installFirefoxPath(): void {
     everPaired: boolean;
     /** True while a connect() call is constructing a WebSocket; prevents parallel sockets. */
     connecting: boolean;
+    /**
+     * Set when the daemon rejected us with `another_client_active`. Suppresses
+     * the auto-reconnect loop until the user explicitly clicks Reconnect in
+     * the popup — otherwise two paired browsers would trip a ~1Hz preempt
+     * storm.
+     */
+    blocked: boolean;
   }
 
   const state: State = {
@@ -696,7 +739,39 @@ function installFirefoxPath(): void {
     reconnectTimer: null,
     everPaired: false,
     connecting: false,
+    blocked: false,
   };
+
+  async function setBridgeBlocked(reason: string, detail?: string): Promise<void> {
+    try {
+      await chrome.storage.local.set({
+        bridgeBlockedReason: { reason, detail: detail ?? null, at: Date.now() },
+      });
+    } catch {
+      /* non-fatal */
+    }
+  }
+
+  async function clearBridgeBlocked(): Promise<void> {
+    state.blocked = false;
+    try {
+      // Clear the peer-attempt banner alongside the block reason: once the
+      // user has reconnected to take over the bridge, the "another instance
+      // tried to connect" banner is stale and would otherwise persist.
+      await chrome.storage.local.remove(['bridgeBlockedReason', 'bridgePeerAttempt']);
+    } catch {
+      /* non-fatal */
+    }
+  }
+
+  async function loadBridgeBlockedFromStorage(): Promise<void> {
+    try {
+      const v = await chrome.storage.local.get('bridgeBlockedReason');
+      if (v.bridgeBlockedReason) state.blocked = true;
+    } catch {
+      /* non-fatal */
+    }
+  }
 
   const EXT_VERSION = chrome.runtime.getManifest().version;
 
@@ -710,6 +785,7 @@ function installFirefoxPath(): void {
 
   function scheduleReconnect(): void {
     if (state.reconnectTimer !== null) return;
+    if (state.blocked) return; // user must explicitly Reconnect via popup
     state.reconnectTimer = setTimeout(() => {
       state.reconnectTimer = null;
       void connect();
@@ -797,8 +873,33 @@ function installFirefoxPath(): void {
       return;
     }
     if (msg.type === 'reject') {
-      console.warn('[wabe-bridge] rejected by server:', msg.reason);
+      const reason = typeof msg.reason === 'string' ? msg.reason : 'unknown';
+      const detail = typeof msg.detail === 'string' ? msg.detail : undefined;
+      console.warn('[wabe-bridge] rejected by server:', reason, detail ?? '');
+      if (reason === 'another_client_active') {
+        await setBridgeBlocked(reason, detail);
+        // Stop the reconnect loop until the user explicitly clicks Reconnect.
+        if (state.reconnectTimer !== null) {
+          clearTimeout(state.reconnectTimer);
+          state.reconnectTimer = null;
+        }
+        state.reconnectDelayMs = 1_000;
+        state.blocked = true;
+      }
       ws.close();
+      return;
+    }
+    if (msg.type === 'peer_attempt') {
+      // Existing-client notification: another extension tried to claim the
+      // bridge. Persist a transient flag so popup can show "another instance
+      // tried to connect at <ts>" without changing connection state.
+      const at = typeof msg.at === 'string' ? msg.at : new Date().toISOString();
+      const peerVersion = typeof msg.extension_version === 'string' ? msg.extension_version : 'unknown';
+      void chrome.storage.local
+        .set({ bridgePeerAttempt: { at, extension_version: peerVersion } })
+        .catch(() => {
+          /* non-fatal */
+        });
       return;
     }
     if (msg.type === 'keepalive') {
@@ -844,6 +945,7 @@ function installFirefoxPath(): void {
 
   async function connect(): Promise<void> {
     if (state.connecting) return;
+    if (state.blocked) return; // wait for explicit popup-driven Reconnect
     if (
       state.ws &&
       (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)
@@ -913,7 +1015,9 @@ function installFirefoxPath(): void {
         state.reconnectTimer = null;
       }
       state.reconnectDelayMs = 1_000;
-      void connect();
+      // Popup-initiated reconnect always clears the single-client block —
+      // user has explicitly opted in to retry.
+      void clearBridgeBlocked().then(() => connect());
       sendResponse({ ok: true });
       return true;
     }
@@ -999,7 +1103,9 @@ function installFirefoxPath(): void {
   //      / wake-up paths in case (a) and (b) ever get tightened.
   installFirefoxIdleHold();
 
-  void connect();
+  // Restore blocked state from a prior SW lifetime — survives Firefox MV3
+  // suspension and ensures the reconnect loop stays muted across wake-ups.
+  void loadBridgeBlockedFromStorage().then(() => connect());
 }
 
 /**

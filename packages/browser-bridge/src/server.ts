@@ -282,6 +282,40 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
           ws.close();
           return;
         }
+        // Single-bridge-client invariant: if another extension is already
+        // connected, refuse the new one with a structured reject AND notify
+        // the existing client that someone tried. The old behavior — silently
+        // preempting the previous socket — caused a reconnect storm when the
+        // user had both Chrome and Firefox extensions paired with the same
+        // secret. Now: existing connection wins, new connection is told why,
+        // and the existing extension can surface an "another instance tried"
+        // banner.
+        if (activeSocket && activeSocket !== ws && activeSocket.readyState === activeSocket.OPEN) {
+          try {
+            ws.send(
+              JSON.stringify({
+                type: 'reject',
+                reason: 'another_client_active',
+                detail: 'A bridge client is already connected. Disconnect the other browser extension first.',
+              }),
+            );
+          } catch {
+            // ignore — close below surfaces separately
+          }
+          try {
+            activeSocket.send(
+              JSON.stringify({
+                type: 'peer_attempt',
+                extension_version: hello.data.extension_version,
+                at: new Date().toISOString(),
+              }),
+            );
+          } catch {
+            // ignore — the existing socket's own close/error path will handle it
+          }
+          ws.close();
+          return;
+        }
         helloReceived = true;
         lastSeenAt = Date.now();
         const bundleHash = bundleTracker?.current() ?? undefined;
@@ -293,10 +327,6 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
             tab_overrides: [...tabOverrides.values()],
           }),
         );
-        if (activeSocket && activeSocket !== ws && activeSocket.readyState === activeSocket.OPEN) {
-          // Newer extension preempts older one — single-bridge-client invariant.
-          activeSocket.close();
-        }
         activeSocket = ws;
         // Periodic heartbeat carries the freshest bundle_hash. Extensions
         // self-reload when the daemon's hash diverges from theirs — covers

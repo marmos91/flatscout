@@ -100,6 +100,21 @@
       }
       .info-panel[hidden] { display: none; }
 
+      .blocked-panel {
+        margin-top: 8px;
+        padding: 6px 8px;
+        font-size: 11px;
+        background: var(--error-bg);
+        color: var(--error-fg);
+        border-radius: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .blocked-panel[hidden] { display: none; }
+      .blocked-panel span { flex: 1; }
+
       .stats-line {
         font-size: 12px;
         margin: 0;
@@ -239,6 +254,11 @@
       </div>
       <div id="errorPanel" class="error-panel" hidden></div>
       <div id="infoPanel" class="info-panel" hidden></div>
+      <div id="blockedPanel" class="blocked-panel" hidden>
+        <span id="blockedText"></span>
+        <button id="blockedReconnect" class="linklike" type="button">Reconnect</button>
+      </div>
+      <div id="peerAttemptPanel" class="info-panel" hidden></div>
     </section>
 
     <section class="section">

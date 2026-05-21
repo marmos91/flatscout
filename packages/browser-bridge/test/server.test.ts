@@ -257,6 +257,71 @@ describe('startBridgeServer tab overrides', () => {
   });
 });
 
+describe('startBridgeServer single-client invariant', () => {
+  it('rejects a second extension with another_client_active and leaves the first connected', async () => {
+    const first = client();
+    await open(first);
+    const firstWelcome = (await hello(first)) as { type: string };
+    expect(firstWelcome.type).toBe('welcome');
+
+    // Collect the peer_attempt that should arrive on the existing socket.
+    const peerAttemptP = new Promise<{
+      type: string;
+      extension_version?: string;
+      at?: string;
+    }>((resolve) => {
+      const onMsg = (data: WebSocket.RawData): void => {
+        const m = JSON.parse(String(data)) as { type: string };
+        if (m.type === 'peer_attempt') {
+          first.off('message', onMsg);
+          resolve(m as { type: string; extension_version?: string; at?: string });
+        }
+      };
+      first.on('message', onMsg);
+    });
+
+    const second = new WebSocket(`ws://127.0.0.1:${port}/bridge`);
+    await new Promise<void>((r, reject) => {
+      second.once('open', () => r());
+      second.once('error', reject);
+    });
+    second.send(
+      JSON.stringify({
+        type: 'hello',
+        protocol_version: 1,
+        extension_version: '9.9.9',
+        auth_token_hex: secret,
+      }),
+    );
+    const secondReply = (await next(second)) as { type: string; reason?: string; detail?: string };
+    expect(secondReply.type).toBe('reject');
+    expect(secondReply.reason).toBe('another_client_active');
+    expect(secondReply.detail).toMatch(/already connected/);
+
+    const peerAttempt = await peerAttemptP;
+    expect(peerAttempt.type).toBe('peer_attempt');
+    expect(peerAttempt.extension_version).toBe('9.9.9');
+    expect(peerAttempt.at).toBeDefined();
+    expect(() => new Date(peerAttempt.at as string).toISOString()).not.toThrow();
+
+    // First socket is still connected; bridge.status() reflects that.
+    expect(bridge.status().connected).toBe(true);
+
+    // Wait for the second socket to be closed by the server.
+    await new Promise<void>((resolve) => {
+      if (second.readyState === WebSocket.CLOSED) {
+        resolve();
+        return;
+      }
+      second.once('close', () => resolve());
+    });
+    // First is still OPEN.
+    expect(first.readyState).toBe(WebSocket.OPEN);
+    first.close();
+    await new Promise((r) => setTimeout(r, 20));
+  });
+});
+
 describe('startBridgeServer loopback enforcement', () => {
   it('always binds 127.0.0.1 even when StartOpts has no host field', async () => {
     const tmp = mkdtempSync(join(tmpdir(), 'wabe-bridge-loopback-'));
