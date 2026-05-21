@@ -66,7 +66,6 @@ const DEFAULT_TAB_HOMEPAGE: Record<string, TabHomepageConfig> = {
   },
   'https://api.immoscout24.ch': {
     homepage: 'https://www.immoscout24.ch/en/real-estate/rent/city-zurich',
-    prewarm: ['https://api.immoscout24.ch/geo'],
   },
 };
 
