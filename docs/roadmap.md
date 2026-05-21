@@ -50,7 +50,6 @@ A digest mode on the Telegram notifier complementing the existing per-listing fa
 
 Work required before the first public release on npm.
 
-- **Relicense AGPL-3.0 → MIT.** Replace `LICENSE`, drop the AGPL-compat dependency rule, update `license` field across every workspace `package.json`, scrub source headers.
 - **Rebrand `wabe` → `flatscout`.** Every `@wabe/*` package → `@flatscout/*`. Rename the CLI binary, the `WABE_DATA_DIR` env var, the GitHub repo, log tags, and documentation. The npm org `flatscout` is claimed.
 - **`CONTRIBUTING.md`.** Dev setup (pnpm, Node 22), commit + branch conventions, PR process, testing rules, how to add a new plugin via `@flatscout/plugin-sdk`.
 - **Code polish pass.** Consolidate duplicated patterns (data-dir resolution, undici pool wiring, logger child setup, env interpolation) into a shared `@flatscout/utils` package. Strip over-decomposed helpers and AI-flavored verbosity. Address residual lint and format issues across the workspace.

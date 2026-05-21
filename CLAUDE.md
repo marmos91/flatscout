@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Repository overview
 
-Wabe is a self-hosted, AGPL-3.0 apartment-hunting agent for the Swiss market. The monorepo ships the core engine, plugin SDK, five source plugins (Flatfox, Homegate, ImmoScout24 sitemap, RealAdvisor, Immobilier.ch + the generic schema.org adapter), a Telegram notifier, persistence (SQLite + Drizzle), a CLI, and the browser-bridge subsystem (`@wabe/browser-bridge` + `apps/extension-wabe`) used to bypass anti-bot stacks on DataDome/Cloudflare-protected portals.
+Wabe is a self-hosted, MIT-licensed apartment-hunting agent for the Swiss market. The monorepo ships the core engine, plugin SDK, five source plugins (Flatfox, Homegate, ImmoScout24 sitemap, RealAdvisor, Immobilier.ch + the generic schema.org adapter), a Telegram notifier, persistence (SQLite + Drizzle), a CLI, and the browser-bridge subsystem (`@wabe/browser-bridge` + `apps/extension-wabe`) used to bypass anti-bot stacks on DataDome/Cloudflare-protected portals.
 
 ## Key commands
 
@@ -58,7 +58,7 @@ pnpm wabe <command>        # run the CLI from built output
 
 ## License compliance
 
-AGPL-3.0. New dependencies must be AGPL-compatible (MIT/BSD/Apache-2/ISC/MPL all fine; GPL-3 fine; AGPL itself fine; proprietary or "source available" licenses are NOT acceptable).
+MIT. New dependencies must use an OSI-approved license (MIT/BSD/Apache-2/ISC/MPL all fine; proprietary or "source available" licenses are NOT acceptable).
 
 ## Testing rules
 

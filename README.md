@@ -238,4 +238,4 @@ PRs welcome on bugs and small enhancements. Open an issue first for anything lar
 
 ## License
 
-AGPL-3.0. See [`LICENSE`](./LICENSE).
+MIT. See [`LICENSE`](./LICENSE).
