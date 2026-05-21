@@ -49,6 +49,26 @@ title, and most characteristics. PDP fetches only add phone / email / agency
 legal name — useful for some users, costly in bridge round-trips for others.
 Default off; opt in with `enrich.enrich_via_bridge: true`.
 
+## Configuration drift
+
+This source ingests **whatever the open browser tab shows** — the plugin reads
+`window.__INITIAL_STATE__.resultList.search.fullSearch.result` from your
+paired browser's currently-open ImmoScout24 search-results page. DataDome
+refuses to serve `/rent?wzip=...` as a raw fetch (the JSON only exists as a
+SPA-emitted XHR from a fully-hydrated tab), so the only viable transport is
+"read whatever's on screen".
+
+That means `search:` in your yaml is **informational only**. The plugin
+compares it against the tab's live filter state (`searchModel`) and emits a
+one-shot per-scan `warn` log when they diverge, but it cannot change what
+the tab shows. To change filters:
+
+1. Navigate inside the tab — adjust the SRP filters in the IS24 UI.
+2. Let the SPA re-render with the new results.
+3. The next Wabe scan will pick up the new listings.
+
+If you depend on a specific filter set, keep the tab pinned to that URL.
+
 ## Tests
 
 `pnpm --filter @wabe/source-immoscout24 test`

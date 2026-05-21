@@ -24,7 +24,7 @@ const FetchConfig = z.object({
     .default({}),
 });
 
-const ReadStateResultSchema = z
+const ReadStateResultInnerSchema = z
   .object({
     listings: z.array(IS24SrpListingSchema),
     page: z.number().optional(),
@@ -33,6 +33,33 @@ const ReadStateResultSchema = z
     itemsPerPage: z.number().optional(),
     hasNextPage: z.boolean().optional(),
     hasPreviousPage: z.boolean().optional(),
+  })
+  .passthrough();
+
+/**
+ * Shape of the slice we read from `window.__INITIAL_STATE__.resultList.search.fullSearch`:
+ * `result` carries the listing array; `searchModel` carries the live filter
+ * state the user has applied in the tab. We compare yaml `cfg.search` against
+ * `searchModel` to warn the user when their yaml filters are being ignored.
+ */
+const ReadStateResultSchema = z
+  .object({
+    result: ReadStateResultInnerSchema,
+    searchModel: z
+      .object({
+        sortType: z.string().optional(),
+        sortDirection: z.string().optional(),
+        chooseType: z.string().optional(),
+        offerType: z.string().optional(),
+        locations: z.array(z.string()).optional(),
+        page: z.number().optional(),
+        pageSize: z.number().optional(),
+        facilitiesRequired: z.array(z.string()).optional(),
+        objectTypes: z.array(z.string()).optional(),
+      })
+      .passthrough()
+      .nullable()
+      .optional(),
   })
   .passthrough();
 
@@ -57,6 +84,24 @@ function resolveDataDir(): string {
 
 let activeTransport: Transport | undefined;
 
+/**
+ * Returns true when the user has yaml-configured filters that this source
+ * cannot honour. Default values from {@link SearchConfig} (empty zipcodes,
+ * generic property/offer type, default sort) don't count as "configured" —
+ * they're the same as no input. Anything else (zipcodes, price range, rooms
+ * range, surface min, balcony/elevator flag, non-default sort) does.
+ */
+function hasUserConfiguredFilters(search: SearchConfig): boolean {
+  if (search.zipcodes.length > 0) return true;
+  if (search.price_min != null || search.price_max != null) return true;
+  if (search.rooms_min != null || search.rooms_max != null) return true;
+  if (search.surface_min != null) return true;
+  if (search.has_balcony != null || search.has_elevator != null) return true;
+  if (search.property_type !== 'APARTMENT_OR_HOUSE') return true;
+  if (search.sort_by !== 'dateCreated' || search.sort_direction !== 'desc') return true;
+  return false;
+}
+
 const plugin: Source = {
   name: 'source-immoscout24',
   configSchema: ConfigSchema,
@@ -80,7 +125,11 @@ const plugin: Source = {
         url: 'https://www.immoscout24.ch/',
         signal: ctx.signal,
         logger: ctx.logger,
-        readState: { jsPath: 'window.__INITIAL_STATE__.resultList.search.fullSearch.result' },
+        // Read the whole `fullSearch` slice so we can both:
+        //   - extract `.result` (listings + paging)
+        //   - inspect `.searchModel` (the live tab's filter state) to warn
+        //     when the user's yaml `cfg.search` doesn't match the tab.
+        readState: { jsPath: 'window.__INITIAL_STATE__.resultList.search.fullSearch' },
       });
       if (res.status === 404) {
         ctx.logger.warn(
@@ -111,7 +160,22 @@ const plugin: Source = {
         );
         return;
       }
-      const result = validated.data;
+      const fullSearch = validated.data;
+      const result = fullSearch.result;
+      // One-shot per-scan warning when yaml `cfg.search` is non-empty: this
+      // source reads the live tab's filter state, not the configured one, so
+      // yaml filters are silently ignored. Surface the drift loudly so users
+      // don't sit on stale results forever wondering why their config changes
+      // do nothing.
+      if (hasUserConfiguredFilters(cfg.search)) {
+        ctx.logger.warn(
+          {
+            configured: cfg.search,
+            tab_filters: fullSearch.searchModel ?? null,
+          },
+          'immoscout24: cfg.search is ignored — this source reads the live filter state from your open browser tab. To change filters, navigate inside the tab.',
+        );
+      }
       ctx.logger.info(
         { count: result.listings.length, total: result.resultCount },
         'immoscout24: read state from open tab',
