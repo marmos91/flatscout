@@ -618,9 +618,10 @@ function installChromePath(): void {
       // Don't forward — the popup's sendMessage already broadcasts to the
       // offscreen document directly. We just ensure offscreen exists in case
       // Chrome evicted it. The offscreen's own onMessage listener handles
-      // the reconnect. Also clear the single-client block so the offscreen
-      // doc's blocked check passes once it picks up the next welcome.
-      void chrome.storage.local.remove('bridgeBlockedReason').catch(() => {
+      // the reconnect. Also clear the single-client block AND any stale
+      // peer-attempt banner so the offscreen doc's blocked check passes
+      // once it picks up the next welcome.
+      void chrome.storage.local.remove(['bridgeBlockedReason', 'bridgePeerAttempt']).catch(() => {
         /* non-fatal */
       });
       void ensureOffscreen()
@@ -754,7 +755,10 @@ function installFirefoxPath(): void {
   async function clearBridgeBlocked(): Promise<void> {
     state.blocked = false;
     try {
-      await chrome.storage.local.remove('bridgeBlockedReason');
+      // Clear the peer-attempt banner alongside the block reason: once the
+      // user has reconnected to take over the bridge, the "another instance
+      // tried to connect" banner is stale and would otherwise persist.
+      await chrome.storage.local.remove(['bridgeBlockedReason', 'bridgePeerAttempt']);
     } catch {
       /* non-fatal */
     }

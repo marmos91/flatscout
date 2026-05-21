@@ -52,16 +52,17 @@ Default off; opt in with `enrich.enrich_via_bridge: true`.
 ## Configuration drift
 
 This source ingests **whatever the open browser tab shows** — the plugin reads
-`window.__INITIAL_STATE__.resultList.search.fullSearch.result` from your
-paired browser's currently-open ImmoScout24 search-results page. DataDome
-refuses to serve `/rent?wzip=...` as a raw fetch (the JSON only exists as a
+`window.__INITIAL_STATE__.resultList.search.fullSearch` from your paired
+browser's currently-open ImmoScout24 search-results page. DataDome refuses
+to serve `/rent?wzip=...` as a raw fetch (the JSON only exists as a
 SPA-emitted XHR from a fully-hydrated tab), so the only viable transport is
 "read whatever's on screen".
 
-That means `search:` in your yaml is **informational only**. The plugin
-compares it against the tab's live filter state (`searchModel`) and emits a
-one-shot per-scan `warn` log when they diverge, but it cannot change what
-the tab shows. To change filters:
+That means `search:` in your yaml is **informational only**. Whenever you
+have configured any non-default value under `search:` in yaml, the plugin
+emits a one-shot per-scan `warn` log noting that those values are ignored,
+and includes the tab's live `searchModel` in the log fields so you can see
+at a glance what the tab is actually filtered on. To change filters:
 
 1. Navigate inside the tab — adjust the SRP filters in the IS24 UI.
 2. Let the SPA re-render with the new results.

@@ -269,13 +269,19 @@ async function handleBridgeMessage(ws: WebSocket, raw: string): Promise<void> {
     if (reason === 'another_client_active') {
       state.blocked = true;
       // Tell the SW to persist the block + cancel any pending reconnect.
+      // If this send fails the SW won't know we're blocked, so the popup
+      // won't see a reason for the disconnect — log so a maintainer
+      // tailing the offscreen console at least has a breadcrumb. The
+      // popup-driven reconnect path is the user's recovery; there is no
+      // automatic retry because the very next reconnect would just be
+      // preempted again.
       void chrome.runtime
         .sendMessage({
           type: 'wabe-bridge:set-blocked',
           payload: { reason, detail: detail ?? null, at: Date.now() },
         })
-        .catch(() => {
-          /* SW may be busy; the block-state echo on next welcome restores it */
+        .catch((err: Error) => {
+          console.warn(`[wabe-bridge] offscreen failed to notify SW of block: ${err.message}`);
         });
       if (state.reconnectTimer !== null) {
         clearTimeout(state.reconnectTimer);

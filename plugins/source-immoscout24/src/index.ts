@@ -127,8 +127,9 @@ const plugin: Source = {
         logger: ctx.logger,
         // Read the whole `fullSearch` slice so we can both:
         //   - extract `.result` (listings + paging)
-        //   - inspect `.searchModel` (the live tab's filter state) to warn
-        //     when the user's yaml `cfg.search` doesn't match the tab.
+        //   - inspect `.searchModel` (the live tab's filter state) to log
+        //     it alongside the drift warning, helping users see at a glance
+        //     what their tab is currently filtered on vs what their yaml says.
         readState: { jsPath: 'window.__INITIAL_STATE__.resultList.search.fullSearch' },
       });
       if (res.status === 404) {

@@ -288,7 +288,7 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
         // preempting the previous socket — caused a reconnect storm when the
         // user had both Chrome and Firefox extensions paired with the same
         // secret. Now: existing connection wins, new connection is told why,
-        // and the existing extension can surface a "another instance tried"
+        // and the existing extension can surface an "another instance tried"
         // banner.
         if (activeSocket && activeSocket !== ws && activeSocket.readyState === activeSocket.OPEN) {
           try {
