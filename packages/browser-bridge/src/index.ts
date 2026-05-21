@@ -5,6 +5,7 @@ export {
   ClientHello,
   ClientMessage,
   PROTOCOL_VERSION,
+  ReadStateAction,
   ReadStateRequest,
   ServerMessage,
   ServerReject,

@@ -82,16 +82,51 @@ export const ServerPeerAttempt = z.object({
 export type ServerPeerAttempt = z.infer<typeof ServerPeerAttempt>;
 
 /**
+ * Sequenced pre-read actions executed in MAIN world before reading `js_path`.
+ * Used to drive in-tab SPA navigation between reads (e.g. paginate the
+ * immoscout24 SRP). All payloads are trusted plugin-supplied JS — never
+ * network input — but the length caps below provide a defensive DoS bound on
+ * the wire.
+ *
+ * - `eval` runs an arbitrary JS statement (wrapped in `new Function`). Use
+ *   this to dispatch a router action, click a "next page" control, etc.
+ * - `wait_for` polls `js_predicate` in MAIN world every `poll_ms` until the
+ *   expression returns truthy or `timeout_ms` elapses. Used to gate on the
+ *   SPA having hydrated the next page of state.
+ */
+export const ReadStateAction = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('eval'),
+    /** JS statement evaluated in MAIN world. Trusted — comes from a Wabe plugin, not network input. */
+    js: z.string().min(1).max(2_000),
+  }),
+  z.object({
+    kind: z.literal('wait_for'),
+    /** JS expression returning a boolean. Trusted — comes from a Wabe plugin, not network input. */
+    js_predicate: z.string().min(1).max(2_000),
+    timeout_ms: z.number().int().positive().max(30_000).default(10_000),
+    poll_ms: z.number().int().positive().max(2_000).default(200),
+  }),
+]);
+export type ReadStateAction = z.infer<typeof ReadStateAction>;
+
+/**
  * Read-state mode: instead of fetching `url`, the extension finds any tab open
- * at `new URL(url).host` and executes `js_path` in MAIN world. The expression's
- * value is JSON-stringified into the response body. Used by sources whose
- * portal serves a SPA-emitted XHR that DataDome refuses to replicate via raw
- * fetch (e.g. immoscout24's `/rent?wzip=...` URL). The plugin must accept that
- * the user keeps a real browsing tab open at the portal.
+ * at `new URL(url).host`, runs any `actions` in order, then executes `js_path`
+ * in MAIN world. The expression's value is JSON-stringified into the response
+ * body. Used by sources whose portal serves a SPA-emitted XHR that DataDome
+ * refuses to replicate via raw fetch (e.g. immoscout24's `/rent?wzip=...`
+ * URL). The plugin must accept that the user keeps a real browsing tab open
+ * at the portal.
  */
 export const ReadStateRequest = z.object({
   /** JS expression evaluated in MAIN world. Trusted — comes from a Wabe plugin, not network input. */
   js_path: z.string().min(1).max(2_000),
+  /**
+   * Optional pre-read actions executed in order before `js_path` is read.
+   * Capped at 8 to keep one read-state turn bounded.
+   */
+  actions: z.array(ReadStateAction).max(8).optional(),
 });
 export type ReadStateRequest = z.infer<typeof ReadStateRequest>;
 
