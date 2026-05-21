@@ -175,4 +175,4 @@ inline fixtures and `undici` `MockAgent`.
 
 ## License
 
-AGPL-3.0-or-later, matching the rest of the Wabe project.
+MIT, matching the rest of the Wabe project.

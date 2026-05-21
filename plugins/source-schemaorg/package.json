@@ -5,7 +5,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": { ".": "./dist/index.js" },
-  "license": "AGPL-3.0-or-later",
+  "license": "MIT",
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run",

@@ -25,4 +25,4 @@ The point of the bridge: source plugins that target DataDome/Cloudflare-protecte
 
 ## License
 
-AGPL-3.0-or-later.
+MIT.
