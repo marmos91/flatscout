@@ -1010,8 +1010,6 @@ function installFirefoxPath(): void {
  * are no-ops on Chrome (which uses the offscreen path) so this function is
  * only called from `installFirefoxPath`.
  *
- * Exported via export-ish naming for future test hooks; not re-exported to
- * keep `export {}` at the top intact.
  */
 function installFirefoxIdleHold(): void {
   // (a) Hold a Web Lock forever. Returns a Promise that never resolves; the
@@ -1034,14 +1032,14 @@ function installFirefoxIdleHold(): void {
 
   // (b) Periodic write to chrome.storage.session — extra activity signal,
   //     cheap, and self-cleans when the page is destroyed.
-  const sessionStorage = (
+  const sessionApi = (
     chrome.storage as typeof chrome.storage & {
       session?: { set(items: Record<string, unknown>): Promise<void> };
     }
   ).session;
-  if (sessionStorage && typeof sessionStorage.set === 'function') {
+  if (sessionApi && typeof sessionApi.set === 'function') {
     setInterval(() => {
-      sessionStorage.set({ lastIdleHoldAt: Date.now() }).catch(() => {
+      sessionApi.set({ lastIdleHoldAt: Date.now() }).catch(() => {
         /* non-fatal — storage.session may be unavailable in some contexts */
       });
     }, IN_PAGE_PING_MS);
