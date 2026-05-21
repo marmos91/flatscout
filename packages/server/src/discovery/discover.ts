@@ -1,5 +1,6 @@
 import { fingerprint } from '@flatscout/agency-fingerprint';
 import type { AgencyEntry } from '@flatscout/core';
+import { sleep } from '@flatscout/utils';
 import {
   type Candidate,
   distinctLegalNames,
@@ -50,17 +51,6 @@ export interface DiscoverSummary {
   by_platform: Record<string, number>;
   skipped_no_resolve: number;
   errors: number;
-}
-
-async function sleep(ms: number, signal: AbortSignal): Promise<void> {
-  if (ms <= 0 || signal.aborted) return;
-  await new Promise<void>((resolve, reject) => {
-    const t = setTimeout(resolve, ms);
-    signal.addEventListener('abort', () => {
-      clearTimeout(t);
-      reject(new Error('aborted'));
-    });
-  });
 }
 
 /**

@@ -1,7 +1,6 @@
-import { homedir } from 'node:os';
-import { join } from 'node:path';
 import { z } from 'zod';
 import type { Context, PluginExport, Source } from '@flatscout/plugin-sdk';
+import { resolveDataDir, sleep } from '@flatscout/utils';
 import { IS24SrpListingSchema } from './parse.js';
 import { mapSrpListing } from './map.js';
 import { mergePdpIntoListing } from './enrich.js';
@@ -112,12 +111,6 @@ const ConfigSchema = z.object({
 });
 type Config = z.infer<typeof ConfigSchema>;
 
-function resolveDataDir(): string {
-  if (process.env.FLATSCOUT_DATA_DIR) return process.env.FLATSCOUT_DATA_DIR;
-  const xdgData = process.env.XDG_DATA_HOME ?? join(homedir(), '.local', 'share');
-  return join(xdgData, 'flatscout');
-}
-
 let activeTransport: Transport | undefined;
 
 /**
@@ -180,28 +173,6 @@ async function readPage(
     return { kind: 'err', reason: 'shape', status: 200, issues: validated.error.issues.slice(0, 5) };
   }
   return { kind: 'ok', result: validated.data };
-}
-
-function sleep(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (signal.aborted) {
-      reject(new Error('aborted'));
-      return;
-    }
-    if (ms <= 0) {
-      resolve();
-      return;
-    }
-    const t = setTimeout(() => {
-      signal.removeEventListener('abort', onAbort);
-      resolve();
-    }, ms);
-    const onAbort = (): void => {
-      clearTimeout(t);
-      reject(new Error('aborted'));
-    };
-    signal.addEventListener('abort', onAbort, { once: true });
-  });
 }
 
 const plugin: Source = {

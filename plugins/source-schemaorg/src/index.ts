@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { PluginExport, Source, Context } from '@flatscout/plugin-sdk';
+import { sleep } from '@flatscout/utils';
 import { fetchSitemap } from './sitemap.js';
 import { fetchDetail } from './detail.js';
 import { extractListing } from './extract.js';
@@ -69,21 +70,6 @@ function matchesRegion(
   if (cities.size > 0 && city && cities.has(city.toLowerCase())) return true;
   if (cantons.size > 0 && region && cantons.has(region.toUpperCase())) return true;
   return false;
-}
-
-async function sleep(ms: number, signal: AbortSignal): Promise<void> {
-  if (ms <= 0) return;
-  // Bail immediately if already aborted — `addEventListener('abort')` only fires
-  // on *future* abort events, so a controller aborted before sleep() is entered
-  // would otherwise stall for the full duration.
-  if (signal.aborted) throw new Error('aborted');
-  await new Promise<void>((resolve, reject) => {
-    const t = setTimeout(resolve, ms);
-    signal.addEventListener('abort', () => {
-      clearTimeout(t);
-      reject(new Error('aborted'));
-    });
-  });
 }
 
 const plugin: Source = {

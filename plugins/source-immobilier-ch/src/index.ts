@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { PluginExport, Source, Context } from '@flatscout/plugin-sdk';
+import { sleep } from '@flatscout/utils';
 import { fetchSitemap } from './sitemap.js';
 import { fetchDetail } from './detail.js';
 import { mapDetail } from './map.js';
@@ -25,17 +26,6 @@ const ConfigSchema = z.object({
   zipcodes: z.array(z.string().regex(/^\d{4}$/, 'PLZ must be a 4-digit Swiss postal code')).default([]),
 });
 type Config = z.infer<typeof ConfigSchema>;
-
-async function sleep(ms: number, signal: AbortSignal): Promise<void> {
-  if (ms <= 0) return;
-  await new Promise<void>((resolve, reject) => {
-    const t = setTimeout(resolve, ms);
-    signal.addEventListener('abort', () => {
-      clearTimeout(t);
-      reject(new Error('aborted'));
-    });
-  });
-}
 
 const plugin: Source = {
   name: 'source-immobilier-ch',

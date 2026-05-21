@@ -20,6 +20,7 @@
     "@flatscout/server": "workspace:*",
     "@flatscout/source-homegate": "workspace:*",
     "@flatscout/source-schemaorg": "workspace:*",
+    "@flatscout/utils": "workspace:*",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "pino": "^9.4.0",

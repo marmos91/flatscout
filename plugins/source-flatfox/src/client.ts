@@ -1,4 +1,5 @@
 import { request, type Dispatcher } from 'undici';
+import { sleep } from '@flatscout/utils';
 import { FlatfoxHttpError } from './errors.js';
 import type { FlatfoxApiResult } from './map.js';
 import { buildQuery, type SearchConfig } from './search.js';
@@ -65,19 +66,4 @@ export async function fetchPage(
     await sleep(opts.backoff.base_ms * 2 ** attempt, opts.signal);
   }
   throw new FlatfoxHttpError(0, url, 'unreachable');
-}
-
-/** Promise-based sleep that rejects with `Error('aborted')` when `signal` aborts before the timeout. */
-export function sleep(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const t = setTimeout(resolve, ms);
-    signal.addEventListener(
-      'abort',
-      () => {
-        clearTimeout(t);
-        reject(new Error('aborted'));
-      },
-      { once: true },
-    );
-  });
 }

@@ -4,7 +4,8 @@
   "references": [
     { "path": "../../packages/core" },
     { "path": "../../packages/db" },
-    { "path": "../../packages/plugin-sdk" }
+    { "path": "../../packages/plugin-sdk" },
+    { "path": "../../packages/utils" }
   ],
   "include": ["src/**/*.ts"]
 }

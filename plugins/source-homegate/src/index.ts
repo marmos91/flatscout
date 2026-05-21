@@ -1,8 +1,7 @@
-import { homedir } from 'node:os';
-import { join } from 'node:path';
 import { z } from 'zod';
 import type { Context, PluginExport, Source } from '@flatscout/plugin-sdk';
-import { fetchSearch, sleep } from './client.js';
+import { resolveDataDir, sleep } from '@flatscout/utils';
+import { fetchSearch } from './client.js';
 import { mapHomegateResult, HomegateApiSchema } from './map.js';
 import { buildSearchBody, SearchConfig } from './search.js';
 import { selectTransport, type Transport } from './transport.js';
@@ -26,17 +25,6 @@ const ConfigSchema = z.object({
   fetch: FetchConfig.default({}),
 });
 type Config = z.infer<typeof ConfigSchema>;
-
-/**
- * Resolves the data directory the plugin should persist secrets and bridge
- * status under. Prefers `$FLATSCOUT_DATA_DIR`, then `$XDG_DATA_HOME`, then the
- * platform default — matching `@flatscout/cli`'s `resolvePaths`.
- */
-function resolveDataDir(): string {
-  if (process.env.FLATSCOUT_DATA_DIR) return process.env.FLATSCOUT_DATA_DIR;
-  const xdgData = process.env.XDG_DATA_HOME ?? join(homedir(), '.local', 'share');
-  return join(xdgData, 'flatscout');
-}
 
 let activeTransport: Transport | undefined;
 
@@ -113,7 +101,6 @@ const plugin: Source = {
  * import these instead of duplicating the literals.
  */
 export { AUDIENCE, AUTH_BASE, CLIENT_ID, REDIRECT_URI, SCOPE } from './constants.js';
-export { resolveDataDir };
 
 const exp: PluginExport = { kind: 'source', plugin };
 export default exp;
