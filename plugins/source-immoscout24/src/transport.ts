@@ -3,10 +3,15 @@ import {
   BrowserBridgeTransport,
   DaemonBridgeTransport,
   getCurrentBridge,
+  type ReadStateAction,
   type Transport as BridgeTransport,
 } from '@wabe/browser-bridge';
 
 export type TransportKind = 'bridge-inproc' | 'bridge-daemon';
+
+export type ReadStateActionInput =
+  | { kind: 'eval'; js: string }
+  | { kind: 'wait_for'; js_predicate: string; timeout_ms?: number; poll_ms?: number };
 
 export interface TransportRequestOpts {
   method: 'GET' | 'POST' | 'HEAD';
@@ -22,8 +27,11 @@ export interface TransportRequestOpts {
    * an internal SPA XHR; raw fetches get a DataDome challenge regardless of
    * cookie state. The plugin reads `window.__INITIAL_STATE__` from a tab the
    * user already has open at immoscout24.ch.
+   *
+   * Optional `actions` run in MAIN world before the state read — used to
+   * drive SPA pagination in the tab without losing the DataDome session.
    */
-  readState?: { jsPath: string };
+  readState?: { jsPath: string; actions?: ReadStateActionInput[] };
 }
 
 export interface TransportResponse {
@@ -45,13 +53,24 @@ export class IS24BridgeTransport implements Transport {
   ) {}
 
   async request(opts: TransportRequestOpts): Promise<TransportResponse> {
+    const readState = opts.readState
+      ? {
+          js_path: opts.readState.jsPath,
+          // The wire schema applies defaults for wait_for timeout_ms/poll_ms,
+          // so the inferred z.output type marks them required. Plugin callers
+          // pass the input-shape (optionals); cast to bridge over the asymmetry.
+          ...(opts.readState.actions
+            ? { actions: opts.readState.actions as unknown as ReadStateAction[] }
+            : {}),
+        }
+      : undefined;
     const resp = await this.inner.request({
       method: opts.method,
       url: opts.url,
       headers: { accept: opts.accept ?? 'text/html,application/xhtml+xml' },
       timeout_ms: opts.timeoutMs,
       signal: opts.signal,
-      ...(opts.readState ? { read_state: { js_path: opts.readState.jsPath } } : {}),
+      ...(readState ? { read_state: readState } : {}),
     });
     return { status: resp.status, body: resp.body };
   }
