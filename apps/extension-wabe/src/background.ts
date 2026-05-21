@@ -378,7 +378,7 @@ async function executeReadState(
         const [exec] = await chrome.scripting.executeScript({
           target: { tabId },
           world: 'MAIN',
-          // biome-ignore lint/security/noGlobalEval: action.js comes from a trusted plugin, not network input
+          // action.js comes from a trusted plugin, not network input — see protocol.ts ReadStateAction docs.
           func: (js: string) => {
             try {
               // eslint-disable-next-line @typescript-eslint/no-implied-eval
@@ -410,7 +410,7 @@ async function executeReadState(
       const [exec] = await chrome.scripting.executeScript({
         target: { tabId },
         world: 'MAIN',
-        // biome-ignore lint/security/noGlobalEval: predicate comes from a trusted plugin, not network input
+        // predicate comes from a trusted plugin, not network input — see protocol.ts ReadStateAction docs.
         func: async (predicate: string, totalMs: number, stepMs: number) => {
           const deadline = Date.now() + totalMs;
           // eslint-disable-next-line @typescript-eslint/no-implied-eval

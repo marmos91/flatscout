@@ -94,7 +94,7 @@ export type ServerPeerAttempt = z.infer<typeof ServerPeerAttempt>;
  *   expression returns truthy or `timeout_ms` elapses. Used to gate on the
  *   SPA having hydrated the next page of state.
  */
-export const ReadStateAction = z.union([
+export const ReadStateAction = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('eval'),
     /** JS statement evaluated in MAIN world. Trusted — comes from a Wabe plugin, not network input. */
