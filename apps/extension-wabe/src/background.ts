@@ -403,9 +403,14 @@ async function executeReadState(
       }
       continue;
     }
-    // wait_for
-    const timeoutMs = action.timeout_ms ?? 10_000;
-    const pollMs = action.poll_ms ?? 200;
+    if (action.kind !== 'wait_for') {
+      return { status: 422, headers: {}, body: `read-state: unknown action kind '${(action as { kind: string }).kind}'` };
+    }
+    // Clamp to protocol bounds — the in-process bridge path can skip the
+    // daemon's Zod validation, so a buggy caller could otherwise send
+    // poll_ms=0 (busy loop) or pathological timeout values.
+    const timeoutMs = Math.min(Math.max(action.timeout_ms ?? 10_000, 1), 30_000);
+    const pollMs = Math.min(Math.max(action.poll_ms ?? 200, 1), 2_000);
     try {
       const [exec] = await chrome.scripting.executeScript({
         target: { tabId },

@@ -184,6 +184,10 @@ async function readPage(
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new Error('aborted'));
+      return;
+    }
     if (ms <= 0) {
       resolve();
       return;
@@ -361,10 +365,21 @@ const plugin: Source = {
         lastPage = result.page;
 
         // Stop conditions: explicit hasNextPage=false, or we've reached the
-        // last page per pageCount. If neither field is present (the schema
-        // marks them optional / passthrough), fall back to max_pages.
+        // last page per pageCount. If `page` is absent from the response
+        // (Pinia schema marks it optional), we cannot drive SPA navigation
+        // deterministically — emit what we got and stop rather than spin on
+        // a stale wait_for predicate.
         if (result.hasNextPage === false) break;
-        if (result.page !== undefined && result.pageCount !== undefined && result.page >= result.pageCount) {
+        if (result.page === undefined) {
+          if (pagesRead < cfg.fetch.max_pages) {
+            ctx.logger.warn(
+              {},
+              'immoscout24: read-state lacks `page` field — pagination disabled, emitting only the current page',
+            );
+          }
+          break;
+        }
+        if (result.pageCount !== undefined && result.page >= result.pageCount) {
           break;
         }
       }
