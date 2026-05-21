@@ -38,5 +38,5 @@
   "bugs": {
     "url": "https://github.com/marmos91/flatscout/issues"
   },
-  "files": ["dist", "README.md", "LICENSE"]
+  "files": ["dist", "migrations", "README.md", "LICENSE"]
 }
