@@ -328,6 +328,10 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   prewarmedTabs.delete(tabId);
 });
 
+type ReadStateActionMessage =
+  | { kind: 'eval'; js: string }
+  | { kind: 'wait_for'; js_predicate: string; timeout_ms?: number; poll_ms?: number };
+
 interface BridgeRequestMessage {
   id: string;
   method: string;
@@ -335,17 +339,26 @@ interface BridgeRequestMessage {
   headers?: Record<string, string>;
   body?: string;
   timeout_ms?: number;
-  read_state?: { js_path: string };
+  read_state?: { js_path: string; actions?: ReadStateActionMessage[] };
 }
 
 /**
- * Read-state mode: find any tab whose URL host matches `targetHost`, then
- * evaluate `jsPath` in MAIN world. Returns the JSON-stringified value as the
- * response body. Used by sources whose portal won't replicate via raw fetch
- * (e.g. immoscout24 SRP, behind DataDome on SPA-emitted XHRs). The user must
- * keep a real browsing tab open at the portal — there's no fallback.
+ * Read-state mode: find any tab whose URL host matches `targetHost`, run any
+ * pre-read `actions` in order (e.g. drive SPA pagination), then evaluate
+ * `jsPath` in MAIN world. Returns the JSON-stringified value as the response
+ * body. Used by sources whose portal won't replicate via raw fetch (e.g.
+ * immoscout24 SRP, behind DataDome on SPA-emitted XHRs). The user must keep a
+ * real browsing tab open at the portal — there's no fallback.
+ *
+ * Action errors surface as HTTP-style statuses:
+ *  - 408 = `wait_for` timeout
+ *  - 422 = `eval` threw / `wait_for` predicate threw
  */
-async function executeReadState(targetHost: string, jsPath: string): Promise<InPageFetchResult> {
+async function executeReadState(
+  targetHost: string,
+  jsPath: string,
+  actions?: ReadStateActionMessage[],
+): Promise<InPageFetchResult> {
   // chrome.tabs.query requires a match pattern; the literal host filter works.
   const tabs = await chrome.tabs.query({ url: `*://${targetHost}/*` });
   const tabId =
@@ -358,6 +371,105 @@ async function executeReadState(targetHost: string, jsPath: string): Promise<InP
       body: `no tab open at ${targetHost} — open a real browsing session there to enable scanning`,
     };
   }
+
+  for (const action of actions ?? []) {
+    if (action.kind === 'eval') {
+      try {
+        const [exec] = await chrome.scripting.executeScript({
+          target: { tabId },
+          world: 'MAIN',
+          // biome-ignore lint/security/noGlobalEval: action.js comes from a trusted plugin, not network input
+          func: (js: string) => {
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-implied-eval
+              const fn = new Function(js);
+              fn();
+              return { ok: true as const };
+            } catch (e) {
+              return { ok: false as const, error: (e as Error).message };
+            }
+          },
+          args: [action.js],
+        });
+        const result = exec?.result as { ok: true } | { ok: false; error: string } | undefined;
+        if (!result) {
+          return { status: 422, headers: {}, body: 'read-state eval returned no result' };
+        }
+        if (!result.ok) {
+          return { status: 422, headers: {}, body: `read-state eval error: ${result.error}` };
+        }
+      } catch (err) {
+        return { status: 422, headers: {}, body: `read-state eval threw: ${(err as Error).message}` };
+      }
+      continue;
+    }
+    // wait_for
+    const timeoutMs = action.timeout_ms ?? 10_000;
+    const pollMs = action.poll_ms ?? 200;
+    try {
+      const [exec] = await chrome.scripting.executeScript({
+        target: { tabId },
+        world: 'MAIN',
+        // biome-ignore lint/security/noGlobalEval: predicate comes from a trusted plugin, not network input
+        func: async (predicate: string, totalMs: number, stepMs: number) => {
+          const deadline = Date.now() + totalMs;
+          // eslint-disable-next-line @typescript-eslint/no-implied-eval
+          let fn: () => unknown;
+          try {
+            fn = new Function(`return (${predicate});`) as () => unknown;
+          } catch (e) {
+            return { ok: false as const, kind: 'eval' as const, error: (e as Error).message };
+          }
+          while (Date.now() < deadline) {
+            try {
+              if (fn()) return { ok: true as const };
+            } catch (e) {
+              return { ok: false as const, kind: 'eval' as const, error: (e as Error).message };
+            }
+            await new Promise((r) => setTimeout(r, stepMs));
+          }
+          // Final check after the loop in case the deadline slipped past in
+          // the setTimeout queue.
+          try {
+            if (fn()) return { ok: true as const };
+          } catch (e) {
+            return { ok: false as const, kind: 'eval' as const, error: (e as Error).message };
+          }
+          return { ok: false as const, kind: 'timeout' as const };
+        },
+        args: [action.js_predicate, timeoutMs, pollMs],
+      });
+      const result = exec?.result as
+        | { ok: true }
+        | { ok: false; kind: 'timeout' }
+        | { ok: false; kind: 'eval'; error: string }
+        | undefined;
+      if (!result) {
+        return { status: 422, headers: {}, body: 'read-state wait_for returned no result' };
+      }
+      if (!result.ok) {
+        if (result.kind === 'timeout') {
+          return {
+            status: 408,
+            headers: {},
+            body: `read-state wait_for timed out after ${timeoutMs}ms`,
+          };
+        }
+        return {
+          status: 422,
+          headers: {},
+          body: `read-state wait_for predicate error: ${result.error}`,
+        };
+      }
+    } catch (err) {
+      return {
+        status: 422,
+        headers: {},
+        body: `read-state wait_for threw: ${(err as Error).message}`,
+      };
+    }
+  }
+
   try {
     const [exec] = await chrome.scripting.executeScript({
       target: { tabId },
@@ -397,7 +509,7 @@ async function executeReadState(targetHost: string, jsPath: string): Promise<InP
 async function executeProxyRequest(msg: BridgeRequestMessage): Promise<InPageFetchResult> {
   if (msg.read_state) {
     const host = new URL(msg.url).host;
-    return executeReadState(host, msg.read_state.js_path);
+    return executeReadState(host, msg.read_state.js_path, msg.read_state.actions);
   }
   const targetOrigin = new URL(msg.url).origin;
   const tabId = await ensureTabForOrigin(targetOrigin);

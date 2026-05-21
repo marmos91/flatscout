@@ -6,6 +6,7 @@ import {
   ClientHello,
   ClientMessage,
   PROTOCOL_VERSION,
+  ReadStateAction,
   ServerMessage,
   ServerPeerAttempt,
   ServerReject,
@@ -172,6 +173,63 @@ describe('BridgeRequest read_state', () => {
         method: 'GET',
         url: 'https://www.immoscout24.ch/',
         read_state: { js_path: 'x'.repeat(2001) },
+      }),
+    ).toThrow();
+  });
+
+  it('accepts read_state with sequenced eval + wait_for actions', () => {
+    const r = BridgeRequest.parse({
+      type: 'request',
+      id: 'r-state-4',
+      method: 'GET',
+      url: 'https://www.immoscout24.ch/',
+      read_state: {
+        js_path: 'window.__INITIAL_STATE__.resultList.search.fullSearch.result',
+        actions: [
+          { kind: 'eval', js: "document.querySelector('a[rel=next]').click()" },
+          {
+            kind: 'wait_for',
+            js_predicate: 'window.__INITIAL_STATE__.resultList.search.fullSearch.result.page === 2',
+            timeout_ms: 8000,
+            poll_ms: 150,
+          },
+        ],
+      },
+    });
+    expect(r.read_state?.actions).toHaveLength(2);
+    expect(r.read_state?.actions?.[0]?.kind).toBe('eval');
+    expect(r.read_state?.actions?.[1]?.kind).toBe('wait_for');
+  });
+
+  it('applies default timeout/poll values to wait_for', () => {
+    const a = ReadStateAction.parse({ kind: 'wait_for', js_predicate: 'true' });
+    expect(a.kind === 'wait_for' && a.timeout_ms).toBe(10_000);
+    expect(a.kind === 'wait_for' && a.poll_ms).toBe(200);
+  });
+
+  it('rejects more than 8 actions per read_state', () => {
+    const action = { kind: 'eval' as const, js: 'void 0' };
+    expect(() =>
+      BridgeRequest.parse({
+        type: 'request',
+        id: 'r-state-5',
+        method: 'GET',
+        url: 'https://www.immoscout24.ch/',
+        read_state: { js_path: 'x', actions: Array.from({ length: 9 }, () => action) },
+      }),
+    ).toThrow();
+  });
+
+  it('rejects action js longer than 2000 chars', () => {
+    expect(() => ReadStateAction.parse({ kind: 'eval', js: 'x'.repeat(2001) })).toThrow();
+  });
+
+  it('rejects wait_for timeout above 30s', () => {
+    expect(() =>
+      ReadStateAction.parse({
+        kind: 'wait_for',
+        js_predicate: 'true',
+        timeout_ms: 30_001,
       }),
     ).toThrow();
   });
