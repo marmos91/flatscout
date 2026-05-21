@@ -32,6 +32,17 @@ interface BridgeStats {
   recentRequests: RecentRequestEntry[];
 }
 
+interface BridgeBlockedReason {
+  reason: string;
+  detail: string | null;
+  at: number;
+}
+
+interface BridgePeerAttempt {
+  at: string;
+  extension_version: string;
+}
+
 interface StoredState {
   bridgeUrl?: string;
   authToken?: string;
@@ -39,6 +50,8 @@ interface StoredState {
   lastRequestAt?: number;
   lastAliveAt?: number;
   bridgeStats?: BridgeStats;
+  bridgeBlockedReason?: BridgeBlockedReason;
+  bridgePeerAttempt?: BridgePeerAttempt;
 }
 
 const dotEl = document.getElementById('dot') as HTMLSpanElement;
@@ -56,6 +69,10 @@ const pasteBtn = document.getElementById('paste') as HTMLButtonElement;
 const saveBtn = document.getElementById('save') as HTMLButtonElement;
 const testBtn = document.getElementById('test') as HTMLButtonElement;
 const forgetBtn = document.getElementById('forget') as HTMLButtonElement;
+const blockedPanelEl = document.getElementById('blockedPanel') as HTMLDivElement;
+const blockedTextEl = document.getElementById('blockedText') as HTMLSpanElement;
+const blockedReconnectBtn = document.getElementById('blockedReconnect') as HTMLButtonElement;
+const peerAttemptPanelEl = document.getElementById('peerAttemptPanel') as HTMLDivElement;
 
 function todayString(): string {
   const d = new Date();
@@ -97,6 +114,8 @@ async function loadState(): Promise<StoredState> {
     'lastRequestAt',
     'lastAliveAt',
     'bridgeStats',
+    'bridgeBlockedReason',
+    'bridgePeerAttempt',
   ])) as StoredState;
 }
 
@@ -199,11 +218,31 @@ function renderRecent(s: StoredState): void {
   }
 }
 
+function renderBlockedAndPeer(s: StoredState): void {
+  if (s.bridgeBlockedReason) {
+    const detail =
+      s.bridgeBlockedReason.detail ?? 'Another browser extension is connected to this Wabe daemon.';
+    blockedTextEl.textContent = detail;
+    blockedPanelEl.hidden = false;
+  } else {
+    blockedPanelEl.hidden = true;
+  }
+  if (s.bridgePeerAttempt) {
+    const at = Date.parse(s.bridgePeerAttempt.at);
+    const age = Number.isFinite(at) ? fmtAge(at) : 'just now';
+    peerAttemptPanelEl.textContent = `Another browser extension tried to connect ${age}.`;
+    peerAttemptPanelEl.hidden = false;
+  } else {
+    peerAttemptPanelEl.hidden = true;
+  }
+}
+
 async function render(): Promise<void> {
   const s = await loadState();
   renderStatus(s);
   renderStats(s);
   renderRecent(s);
+  renderBlockedAndPeer(s);
 }
 
 function showError(text: string): void {
@@ -257,6 +296,18 @@ saveBtn.addEventListener('click', async () => {
   await chrome.storage.local.set({ bridgeUrl, authToken });
   await chrome.runtime.sendMessage({ type: 'wabe-bridge:reconnect' });
   showInfo('Saved — reconnecting…', RECONNECT_FEEDBACK_MS);
+  setTimeout(() => void render(), RECONNECT_FEEDBACK_MS);
+});
+
+blockedReconnectBtn.addEventListener('click', async () => {
+  clearError();
+  await chrome.storage.local.remove(['bridgeBlockedReason', 'bridgePeerAttempt']);
+  try {
+    await chrome.runtime.sendMessage({ type: 'wabe-bridge:reconnect' });
+    showInfo('Reconnecting…', RECONNECT_FEEDBACK_MS);
+  } catch (err) {
+    showError(`Reconnect failed: ${(err as Error).message}`);
+  }
   setTimeout(() => void render(), RECONNECT_FEEDBACK_MS);
 });
 

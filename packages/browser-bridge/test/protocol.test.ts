@@ -7,6 +7,7 @@ import {
   ClientMessage,
   PROTOCOL_VERSION,
   ServerMessage,
+  ServerPeerAttempt,
   ServerReject,
   ServerWelcome,
 } from '../src/protocol.js';
@@ -97,6 +98,32 @@ describe('ServerReject', () => {
   it('parses a reject with reason', () => {
     const r = ServerReject.parse({ type: 'reject', reason: 'bad token' });
     expect(r.reason).toBe('bad token');
+    expect(r.detail).toBeUndefined();
+  });
+  it('parses a reject with optional detail', () => {
+    const r = ServerReject.parse({
+      type: 'reject',
+      reason: 'another_client_active',
+      detail: 'A bridge client is already connected. Disconnect the other browser extension first.',
+    });
+    expect(r.reason).toBe('another_client_active');
+    expect(r.detail).toMatch(/already connected/);
+  });
+});
+
+describe('ServerPeerAttempt', () => {
+  it('parses a peer_attempt with version + iso timestamp', () => {
+    const at = new Date().toISOString();
+    const m = ServerPeerAttempt.parse({
+      type: 'peer_attempt',
+      extension_version: '0.1.2',
+      at,
+    });
+    expect(m.extension_version).toBe('0.1.2');
+    expect(m.at).toBe(at);
+  });
+  it('rejects a peer_attempt missing fields', () => {
+    expect(() => ServerPeerAttempt.parse({ type: 'peer_attempt', extension_version: '0.1.2' })).toThrow();
   });
 });
 
@@ -227,7 +254,7 @@ describe('BridgeError', () => {
 });
 
 describe('discriminated unions', () => {
-  it('ServerMessage accepts welcome / reject / request', () => {
+  it('ServerMessage accepts welcome / reject / request / peer_attempt', () => {
     expect(ServerMessage.parse({ type: 'welcome', protocol_version: 1 }).type).toBe('welcome');
     expect(ServerMessage.parse({ type: 'reject', reason: 'x' }).type).toBe('reject');
     expect(
@@ -238,6 +265,13 @@ describe('discriminated unions', () => {
         url: 'https://x/',
       }).type,
     ).toBe('request');
+    expect(
+      ServerMessage.parse({
+        type: 'peer_attempt',
+        extension_version: '0.0.1',
+        at: '2026-05-21T00:00:00.000Z',
+      }).type,
+    ).toBe('peer_attempt');
   });
   it('ClientMessage accepts hello / response / error', () => {
     expect(

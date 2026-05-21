@@ -54,8 +54,29 @@ export type ServerWelcome = z.infer<typeof ServerWelcome>;
 export const ServerReject = z.object({
   type: z.literal('reject'),
   reason: z.string(),
+  /**
+   * Optional human-readable detail. Carried verbatim through to the extension
+   * popup. Stable enough for end-users to read; the machine-readable reason
+   * remains in `reason`.
+   */
+  detail: z.string().optional(),
 });
 export type ServerReject = z.infer<typeof ServerReject>;
+
+/**
+ * One-shot notification sent to the currently-connected extension when a
+ * second extension instance attempts (and is rejected from) connecting with
+ * a valid token. Lets the popup surface "another instance tried to connect"
+ * without dropping the live session.
+ */
+export const ServerPeerAttempt = z.object({
+  type: z.literal('peer_attempt'),
+  /** Version string the peer client sent in its hello. Useful for diagnostics. */
+  extension_version: z.string(),
+  /** ISO 8601 timestamp of the rejected attempt. */
+  at: z.string(),
+});
+export type ServerPeerAttempt = z.infer<typeof ServerPeerAttempt>;
 
 /**
  * Read-state mode: instead of fetching `url`, the extension finds any tab open
@@ -116,6 +137,7 @@ export const ServerMessage = z.discriminatedUnion('type', [
   ServerWelcome,
   ServerReject,
   ServerHeartbeat,
+  ServerPeerAttempt,
   BridgeRequest,
 ]);
 export type ServerMessage = z.infer<typeof ServerMessage>;
