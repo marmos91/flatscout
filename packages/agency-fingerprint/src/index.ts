@@ -19,7 +19,7 @@ export interface FingerprintResult {
   sitemap_url?: string;
 }
 
-const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 wabe-fingerprint/1';
+const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 flatscout-fingerprint/1';
 
 interface FetchOutcome {
   html: string;

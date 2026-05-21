@@ -31,7 +31,7 @@ export interface Transport {
  * Routes requests through the connected browser extension.
  *
  * If no explicit `BridgeServer` is passed, falls back to the module-level
- * `getCurrentBridge()` singleton (the one started by `wabe start`).
+ * `getCurrentBridge()` singleton (the one started by `flatscout start`).
  */
 export class BrowserBridgeTransport implements Transport {
   constructor(private readonly bridge?: BridgeServer) {}

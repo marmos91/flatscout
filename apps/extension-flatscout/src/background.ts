@@ -1,16 +1,16 @@
 export {};
 
 /**
- * Wabe Bridge — service worker / event page.
+ * Flatscout Bridge — service worker / event page.
  *
  * Two paths, feature-detected at load time:
  *
  *  - **Chrome (HAS_OFFSCREEN):** the SW does NOT own a WebSocket. A long-lived
  *    offscreen document (see `offscreen.ts`) holds the WS to the local
- *    `@wabe/browser-bridge` server and proxies each request through the SW
- *    via `chrome.runtime.sendMessage({ type: 'wabe-bridge:proxy' })`. The SW
+ *    `@flatscout/browser-bridge` server and proxies each request through the SW
+ *    via `chrome.runtime.sendMessage({ type: 'flatscout-bridge:proxy' })`. The SW
  *    only runs the per-request `chrome.scripting.executeScript` and forwards
- *    `wabe-bridge:reconnect` from the popup down to the offscreen doc.
+ *    `flatscout-bridge:reconnect` from the popup down to the offscreen doc.
  *
  *  - **Firefox (no offscreen API):** the existing SW+alarm behavior — the
  *    background page owns the WS directly, with a 1-minute keepalive alarm
@@ -26,7 +26,7 @@ export {};
 
 const DEFAULT_BRIDGE_URL = 'ws://127.0.0.1:8431/bridge';
 const PROTOCOL_VERSION = 1;
-const KEEPALIVE_ALARM = 'wabe-bridge-keepalive';
+const KEEPALIVE_ALARM = 'flatscout-bridge-keepalive';
 // Ask for 15s ticks. Firefox MV3 clamps to a minimum of 0.5 (30s) for
 // unpacked extensions and 1.0 (60s) for packed, so the effective period is
 // at least 30s. Combined with the 5s in-page setInterval below, this gives
@@ -316,10 +316,10 @@ async function ensureRequestPrewarm(tabId: number, origin: string): Promise<void
       });
       done.add(url);
       const status = (exec?.result as InPageFetchResult | undefined)?.status;
-      console.log(`[wabe-bridge] prewarm ${url} → ${status ?? '(no result)'}`);
+      console.log(`[flatscout-bridge] prewarm ${url} → ${status ?? '(no result)'}`);
     } catch (err) {
       // Don't poison the cache — leave room for the next request to retry.
-      console.warn(`[wabe-bridge] prewarm ${url} failed: ${(err as Error).message}`);
+      console.warn(`[flatscout-bridge] prewarm ${url} failed: ${(err as Error).message}`);
     }
   }
 }
@@ -404,7 +404,11 @@ async function executeReadState(
       continue;
     }
     if (action.kind !== 'wait_for') {
-      return { status: 422, headers: {}, body: `read-state: unknown action kind '${(action as { kind: string }).kind}'` };
+      return {
+        status: 422,
+        headers: {},
+        body: `read-state: unknown action kind '${(action as { kind: string }).kind}'`,
+      };
     }
     // Clamp to protocol bounds — the in-process bridge path can skip the
     // daemon's Zod validation, so a buggy caller could otherwise send
@@ -671,7 +675,7 @@ async function ensureOffscreen(): Promise<void> {
     .createDocument({
       url: OFFSCREEN_URL,
       reasons: ['WORKERS'],
-      justification: 'persistent WebSocket to local Wabe agent',
+      justification: 'persistent WebSocket to local Flatscout agent',
     })
     .catch((err: Error) => {
       // Concurrent callers raced through `hasDocument()`; another won.
@@ -702,7 +706,7 @@ async function prewarmTabs(): Promise<void> {
     try {
       await ensureTabForOrigin(origin);
     } catch (err) {
-      console.warn(`[wabe-bridge] prewarm ${origin} failed: ${(err as Error).message}`);
+      console.warn(`[flatscout-bridge] prewarm ${origin} failed: ${(err as Error).message}`);
     }
   }
 }
@@ -723,7 +727,7 @@ function installChromePath(): void {
   void ensureOffscreen();
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (message?.type === 'wabe-bridge:proxy') {
+    if (message?.type === 'flatscout-bridge:proxy') {
       // Self-heal: offscreen may have been evicted by Chrome low-memory reclaim.
       void ensureOffscreen()
         .then(() => executeProxyRequest(message.payload as BridgeRequestMessage))
@@ -731,7 +735,7 @@ function installChromePath(): void {
         .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
       return true; // async response
     }
-    if (message?.type === 'wabe-bridge:reconnect') {
+    if (message?.type === 'flatscout-bridge:reconnect') {
       // Don't forward — the popup's sendMessage already broadcasts to the
       // offscreen document directly. We just ensure offscreen exists in case
       // Chrome evicted it. The offscreen's own onMessage listener handles
@@ -746,7 +750,7 @@ function installChromePath(): void {
         .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
       return true;
     }
-    if (message?.type === 'wabe-bridge:get-config') {
+    if (message?.type === 'flatscout-bridge:get-config') {
       // Offscreen documents don't have chrome.storage in their subset; proxy.
       void chrome.storage.local
         .get(['bridgeUrl', 'authToken'])
@@ -759,7 +763,7 @@ function installChromePath(): void {
         .catch(() => sendResponse({ bridgeUrl: 'ws://127.0.0.1:8431/bridge', token: null }));
       return true;
     }
-    if (message?.type === 'wabe-bridge:set-state') {
+    if (message?.type === 'flatscout-bridge:set-state') {
       const payload = (message.payload ?? {}) as {
         lastConnectedAt?: number;
         lastAliveAt?: number;
@@ -771,14 +775,14 @@ function installChromePath(): void {
         .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
       return true;
     }
-    if (message?.type === 'wabe-bridge:record-request') {
+    if (message?.type === 'flatscout-bridge:record-request') {
       const payload = (message.payload ?? {}) as RecordRequestPayload;
       void recordRequestStats(payload)
         .then(() => sendResponse({ ok: true }))
         .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
       return true;
     }
-    if (message?.type === 'wabe-bridge:set-tab-overrides') {
+    if (message?.type === 'flatscout-bridge:set-tab-overrides') {
       const payload = (message.payload ?? []) as IncomingTabOverride[];
       applyTabOverrides(Array.isArray(payload) ? payload : []);
       // Open warm tabs for any newly-registered origins eagerly so the first
@@ -787,7 +791,7 @@ function installChromePath(): void {
       sendResponse({ ok: true });
       return true;
     }
-    if (message?.type === 'wabe-bridge:set-blocked') {
+    if (message?.type === 'flatscout-bridge:set-blocked') {
       const payload = (message.payload ?? {}) as {
         reason?: string;
         detail?: string | null;
@@ -805,7 +809,7 @@ function installChromePath(): void {
         .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
       return true;
     }
-    if (message?.type === 'wabe-bridge:set-peer-attempt') {
+    if (message?.type === 'flatscout-bridge:set-peer-attempt') {
       const payload = (message.payload ?? {}) as { at?: string; extension_version?: string };
       void chrome.storage.local
         .set({
@@ -818,11 +822,11 @@ function installChromePath(): void {
         .catch((err: Error) => sendResponse({ ok: false, message: err.message }));
       return true;
     }
-    if (message?.type === 'wabe-bridge:reload-extension') {
+    if (message?.type === 'flatscout-bridge:reload-extension') {
       // Offscreen-initiated reload (Chrome). The SW has chrome.runtime.reload
       // even though the offscreen doc doesn't. Mirrors the Firefox path where
       // the BG itself calls reload().
-      console.log('[wabe-bridge] reload request from offscreen; reloading');
+      console.log('[flatscout-bridge] reload request from offscreen; reloading');
       chrome.runtime.reload();
       sendResponse({ ok: true });
       return true;
@@ -932,7 +936,7 @@ function installFirefoxPath(): void {
     } catch (err) {
       const e = err as Error;
       console.warn(
-        `[wabe-bridge] request ${msg.id.slice(0, 8)} failed after ${Date.now() - tStart}ms: ${e.message}`,
+        `[flatscout-bridge] request ${msg.id.slice(0, 8)} failed after ${Date.now() - tStart}ms: ${e.message}`,
       );
       ws.send(
         JSON.stringify({
@@ -963,14 +967,14 @@ function installFirefoxPath(): void {
       await chrome.storage.local.set({ lastConnectedAt: Date.now() });
       if (!state.everPaired) {
         state.everPaired = true;
-        console.log('[wabe-bridge] paired with wabe agent');
+        console.log('[flatscout-bridge] paired with flatscout agent');
       }
       // Daemon supplies its current view of the dist/background.js hash;
       // self-reload if it diverges from ours. Lets the dev loop be
       // "rebuild ext → daemon notices change" without manually clicking
       // Reload in about:debugging.
       if (typeof msg.bundle_hash === 'string') {
-        console.log('[wabe-bridge] welcome bundle_hash =', msg.bundle_hash.slice(0, 12));
+        console.log('[flatscout-bridge] welcome bundle_hash =', msg.bundle_hash.slice(0, 12));
         await maybeSelfReload(msg.bundle_hash);
       }
       if (Array.isArray(msg.tab_overrides)) {
@@ -992,7 +996,7 @@ function installFirefoxPath(): void {
     if (msg.type === 'reject') {
       const reason = typeof msg.reason === 'string' ? msg.reason : 'unknown';
       const detail = typeof msg.detail === 'string' ? msg.detail : undefined;
-      console.warn('[wabe-bridge] rejected by server:', reason, detail ?? '');
+      console.warn('[flatscout-bridge] rejected by server:', reason, detail ?? '');
       if (reason === 'another_client_active') {
         await setBridgeBlocked(reason, detail);
         // Stop the reconnect loop until the user explicitly clicks Reconnect.
@@ -1042,7 +1046,7 @@ function installFirefoxPath(): void {
       selfBundleHash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
       return selfBundleHash;
     } catch (err) {
-      console.warn('[wabe-bridge] failed to hash own bundle:', (err as Error).message);
+      console.warn('[flatscout-bridge] failed to hash own bundle:', (err as Error).message);
       return null;
     }
   }
@@ -1054,7 +1058,7 @@ function installFirefoxPath(): void {
     if (!own || own === daemonHash) return;
     reloadScheduled = true;
     console.log(
-      `[wabe-bridge] bundle hash drifted (own=${own.slice(0, 8)} daemon=${daemonHash.slice(0, 8)}); reloading`,
+      `[flatscout-bridge] bundle hash drifted (own=${own.slice(0, 8)} daemon=${daemonHash.slice(0, 8)}); reloading`,
     );
     // Small delay so the heartbeat reply doesn't get cut mid-send.
     setTimeout(() => chrome.runtime.reload(), 250);
@@ -1080,7 +1084,7 @@ function installFirefoxPath(): void {
       ws = new WebSocket(bridgeUrl);
     } catch (err) {
       state.connecting = false;
-      console.warn(`[wabe-bridge] failed to open WS: ${(err as Error).message}`);
+      console.warn(`[flatscout-bridge] failed to open WS: ${(err as Error).message}`);
       scheduleReconnect();
       return;
     }
@@ -1118,7 +1122,7 @@ function installFirefoxPath(): void {
   }
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (message?.type === 'wabe-bridge:reconnect') {
+    if (message?.type === 'flatscout-bridge:reconnect') {
       if (state.ws) {
         try {
           state.ws.close();
@@ -1138,7 +1142,7 @@ function installFirefoxPath(): void {
       sendResponse({ ok: true });
       return true;
     }
-    if (message?.type === 'wabe-bridge:record-request') {
+    if (message?.type === 'flatscout-bridge:record-request') {
       const payload = (message.payload ?? {}) as RecordRequestPayload;
       void recordRequestStats(payload)
         .then(() => sendResponse({ ok: true }))
@@ -1244,13 +1248,13 @@ function installFirefoxIdleHold(): void {
       // Swallow rejections so a transient platform error doesn't take the
       // bridge down.
       void locks
-        .request('wabe-bridge-keepalive', { mode: 'shared' }, () => new Promise<void>(() => {}))
+        .request('flatscout-bridge-keepalive', { mode: 'shared' }, () => new Promise<void>(() => {}))
         .catch((err: Error) => {
-          console.warn(`[wabe-bridge] navigator.locks.request failed: ${err.message}`);
+          console.warn(`[flatscout-bridge] navigator.locks.request failed: ${err.message}`);
         });
     }
   } catch (err) {
-    console.warn(`[wabe-bridge] navigator.locks unavailable: ${(err as Error).message}`);
+    console.warn(`[flatscout-bridge] navigator.locks unavailable: ${(err as Error).message}`);
   }
 
   // (b) Periodic write to chrome.storage.session — extra activity signal,

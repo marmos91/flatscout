@@ -6,7 +6,7 @@ import { type BridgeStatus, readHeartbeat, startHeartbeat } from '../src/heartbe
 
 let dir: string;
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-heartbeat-'));
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-heartbeat-'));
 });
 afterEach(() => {
   rmSync(dir, { recursive: true, force: true });

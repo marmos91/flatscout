@@ -6,7 +6,7 @@ import { type ExtensionBrowser, buildManifest } from './build-manifest';
 
 function copyRawAssets(files: Array<{ from: string; to: string }>): Plugin {
   return {
-    name: 'wabe-copy-raw-assets',
+    name: 'flatscout-copy-raw-assets',
     apply: 'build',
     writeBundle(opts) {
       const outDir = opts.dir ?? 'dist';
@@ -20,7 +20,7 @@ function copyRawAssets(files: Array<{ from: string; to: string }>): Plugin {
 }
 
 /**
- * Bundles the Wabe Bridge extension as manifest-v3.
+ * Bundles the Flatscout Bridge extension as manifest-v3.
  *
  * Output: `dist/<browser>/` (e.g. `dist/chrome/`, `dist/firefox/`). Load that
  * directory unpacked via `chrome://extensions` (Developer mode → Load unpacked)
@@ -29,12 +29,12 @@ function copyRawAssets(files: Array<{ from: string; to: string }>): Plugin {
  * Firefox MV3 still ships with `background.service_worker` disabled — we have
  * to advertise the same entry point as `background.scripts` instead. Chrome
  * MV3 requires `service_worker`. We compute the right shape at build time
- * based on `WABE_EXT_BROWSER` (see `./build-manifest.ts`).
+ * based on `FLATSCOUT_EXT_BROWSER` (see `./build-manifest.ts`).
  */
 export default defineConfig(() => {
-  const browserEnv = process.env.WABE_EXT_BROWSER ?? 'chrome';
+  const browserEnv = process.env.FLATSCOUT_EXT_BROWSER ?? 'chrome';
   if (browserEnv !== 'chrome' && browserEnv !== 'firefox') {
-    throw new Error(`WABE_EXT_BROWSER must be 'chrome' or 'firefox', got '${browserEnv}'`);
+    throw new Error(`FLATSCOUT_EXT_BROWSER must be 'chrome' or 'firefox', got '${browserEnv}'`);
   }
   const browser: ExtensionBrowser = browserEnv;
   const baseManifest = JSON.parse(readFileSync(resolve(__dirname, 'manifest.json'), 'utf8')) as Record<

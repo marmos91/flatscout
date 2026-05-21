@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import type { Command } from 'commander';
 import { parse as parseYaml } from 'yaml';
 import { request } from 'undici';
-import { AgencyRegistry, type AgencyRegistry as AgencyRegistryType } from '@wabe/core';
+import { AgencyRegistry, type AgencyRegistry as AgencyRegistryType } from '@flatscout/core';
 
 export function registerValidate(parent: Command): void {
   parent

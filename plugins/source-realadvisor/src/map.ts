@@ -1,4 +1,4 @@
-import type { RawListing } from '@wabe/core';
+import type { RawListing } from '@flatscout/core';
 import type { RawHit } from './client.js';
 
 /** Slugify a locality (e.g. "Wäldi-Berg" → "waldi-berg") for realadvisor URL paths. */
@@ -28,7 +28,7 @@ function buildUrl(h: RawHit): string {
 }
 
 /**
- * Map a realadvisor `RawHit` to Wabe's `RawListing`. Returns null when the hit
+ * Map a realadvisor `RawHit` to Flatscout's `RawListing`. Returns null when the hit
  * is unusable (e.g. missing id).
  */
 export function mapHit(h: RawHit): RawListing | null {

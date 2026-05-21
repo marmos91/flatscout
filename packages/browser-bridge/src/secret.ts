@@ -13,7 +13,7 @@ export function generateSecret(): string {
  * Returns the persisted bridge secret, generating + writing one on first call.
  *
  * Stored at `${dataDir}/bridge-secret` with mode 0600 on unix. This is the
- * first file in Wabe to use the `${dataDir}/<secret-name>` pattern; later
+ * first file in Flatscout to use the `${dataDir}/<secret-name>` pattern; later
  * secret stores can mirror it.
  */
 export function loadOrGenerateSecret(dataDir: string): string {

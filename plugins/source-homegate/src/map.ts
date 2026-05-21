@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { classifyRentalTerm, type RawListing } from '@wabe/core';
+import { classifyRentalTerm, type RawListing } from '@flatscout/core';
 
 /**
  * Strict-but-tolerant Zod schema for one search result envelope. The inner
@@ -151,7 +151,7 @@ export type HomegateResultEnvelope = z.infer<typeof HomegateApiSchema>;
  * falls back to `de`/`en` when `primary` is missing.
  *
  * `rental_term` / `lease_until` are derived from the same multilingual
- * classifier used by `@wabe/source-flatfox` — Homegate's search fieldset
+ * classifier used by `@flatscout/source-flatfox` — Homegate's search fieldset
  * does not expose a structured "furnished" / "temporary" flag.
  */
 export function mapHomegateResult(envelope: HomegateResultEnvelope): RawListing {

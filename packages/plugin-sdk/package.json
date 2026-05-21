@@ -1,5 +1,5 @@
 {
-  "name": "@wabe/plugin-sdk",
+  "name": "@flatscout/plugin-sdk",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@wabe/core": "workspace:*",
+    "@flatscout/core": "workspace:*",
     "pino": "^9.4.0",
     "zod": "^3.23.8"
   },

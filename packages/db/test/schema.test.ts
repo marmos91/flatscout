@@ -9,7 +9,7 @@ let dir: string;
 let dbPath: string;
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-db-'));
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-db-'));
   dbPath = join(dir, 'test.db');
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));

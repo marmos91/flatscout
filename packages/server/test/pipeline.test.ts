@@ -3,19 +3,19 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { openDb, migrate, type WabeDb } from '@wabe/db';
-import type { RawListing } from '@wabe/core';
-import type { Notifier, Source } from '@wabe/plugin-sdk';
+import { openDb, migrate, type FlatscoutDb } from '@flatscout/db';
+import type { RawListing } from '@flatscout/core';
+import type { Notifier, Source } from '@flatscout/plugin-sdk';
 import { CircuitBreaker } from '../src/circuit.js';
 import { Quota } from '../src/quota.js';
 import { disposeSources, runOnce } from '../src/pipeline.js';
 import { createLogger } from '../src/logger.js';
 
 let dir: string;
-let db: WabeDb;
+let db: FlatscoutDb;
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-pipe-'));
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-pipe-'));
   db = openDb(join(dir, 'pipe.db'));
   migrate(db);
 });

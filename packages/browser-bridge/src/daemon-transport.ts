@@ -74,7 +74,7 @@ export class DaemonBridgeTransport implements Transport {
       JSON.stringify({
         type: 'hello',
         protocol_version: PROTOCOL_VERSION,
-        extension_version: 'wabe-cli-requester',
+        extension_version: 'flatscout-cli-requester',
         auth_token_hex: secret,
       }),
     );

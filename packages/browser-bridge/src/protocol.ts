@@ -10,7 +10,7 @@ export const ClientHello = z.object({
   // peer_attempt echo — the existing client surfaces this verbatim in its
   // popup. 64 chars covers any plausible semver + suffix.
   extension_version: z.string().min(1).max(64),
-  /** Hex-encoded shared secret proving the extension was paired with this wabe instance. */
+  /** Hex-encoded shared secret proving the extension was paired with this flatscout instance. */
   auth_token_hex: z.string().regex(/^[0-9a-f]{64}$/),
 });
 export type ClientHello = z.infer<typeof ClientHello>;
@@ -97,12 +97,12 @@ export type ServerPeerAttempt = z.infer<typeof ServerPeerAttempt>;
 export const ReadStateAction = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('eval'),
-    /** JS statement evaluated in MAIN world. Trusted — comes from a Wabe plugin, not network input. */
+    /** JS statement evaluated in MAIN world. Trusted — comes from a Flatscout plugin, not network input. */
     js: z.string().min(1).max(2_000),
   }),
   z.object({
     kind: z.literal('wait_for'),
-    /** JS expression returning a boolean. Trusted — comes from a Wabe plugin, not network input. */
+    /** JS expression returning a boolean. Trusted — comes from a Flatscout plugin, not network input. */
     js_predicate: z.string().min(1).max(2_000),
     timeout_ms: z.number().int().positive().max(30_000).default(10_000),
     poll_ms: z.number().int().positive().max(2_000).default(200),
@@ -120,7 +120,7 @@ export type ReadStateAction = z.infer<typeof ReadStateAction>;
  * at the portal.
  */
 export const ReadStateRequest = z.object({
-  /** JS expression evaluated in MAIN world. Trusted — comes from a Wabe plugin, not network input. */
+  /** JS expression evaluated in MAIN world. Trusted — comes from a Flatscout plugin, not network input. */
   js_path: z.string().min(1).max(2_000),
   /**
    * Optional pre-read actions executed in order before `js_path` is read.

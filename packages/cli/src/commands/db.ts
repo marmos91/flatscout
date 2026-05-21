@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import * as p from '@clack/prompts';
-import { openDb } from '@wabe/db';
+import { openDb } from '@flatscout/db';
 import { resolvePaths } from '../paths.js';
 
 interface RollbackOptions {
@@ -8,7 +8,7 @@ interface RollbackOptions {
 }
 
 /**
- * Registers `wabe db <subcommand>` for database maintenance.
+ * Registers `flatscout db <subcommand>` for database maintenance.
  *
  * `db rollback-collapse` reverses migration 0005 by swapping `listings_legacy`
  * back into `listings`. Refuses if migrations later than 0005 are applied —
@@ -80,6 +80,6 @@ export function registerDb(prog: Command): void {
         conn._raw.pragma('foreign_keys = ON');
       }
 
-      console.log('Rollback complete. Re-run `wabe migrate` to re-apply the collapse.');
+      console.log('Rollback complete. Re-run `flatscout migrate` to re-apply the collapse.');
     });
 }

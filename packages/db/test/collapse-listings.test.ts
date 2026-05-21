@@ -2,12 +2,12 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { canonicalKey, SOURCE_PRIORITY_DEFAULTS } from '@wabe/core';
-import { openDb, migrate, collapseListings, type WabeDb } from '../src/index.js';
+import { canonicalKey, SOURCE_PRIORITY_DEFAULTS } from '@flatscout/core';
+import { openDb, migrate, collapseListings, type FlatscoutDb } from '../src/index.js';
 
 let dir: string | undefined;
-function freshDb(): WabeDb {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-collapse-'));
+function freshDb(): FlatscoutDb {
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-collapse-'));
   const db = openDb(join(dir, 'test.db'));
   migrate(db);
   return db;
@@ -68,7 +68,7 @@ function legacyPayload(row: SeedLegacyRow): string {
   });
 }
 
-function seedLegacyState(db: WabeDb, legacyRows: SeedLegacyRow[]): void {
+function seedLegacyState(db: FlatscoutDb, legacyRows: SeedLegacyRow[]): void {
   const raw = db._raw;
   // Recreate the pre-collapse table shape so the runner can read it.
   raw.exec('DROP TABLE IF EXISTS listings_old');

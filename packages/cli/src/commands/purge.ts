@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import * as p from '@clack/prompts';
-import { migrate, openDb, type WabeDb } from '@wabe/db';
+import { migrate, openDb, type FlatscoutDb } from '@flatscout/db';
 import { resolvePaths } from '../paths.js';
 
 interface PurgeOptions {
@@ -40,7 +40,7 @@ const TARGETS: TargetSpec[] = [
 ];
 
 /**
- * Registers the `wabe purge` subcommand: deletes rows from selected tables.
+ * Registers the `flatscout purge` subcommand: deletes rows from selected tables.
  * Without flags, prompts the user interactively. Always asks for confirmation
  * unless `--yes` is set. Use `--all` to nuke everything (preserves schema).
  */
@@ -111,7 +111,7 @@ async function selectTargets(opts: PurgeOptions): Promise<TargetSpec[]> {
   return TARGETS.filter((t) => picked.includes(t.flag));
 }
 
-function countRows(db: WabeDb, targets: TargetSpec[]): Array<{ table: string; before: number }> {
+function countRows(db: FlatscoutDb, targets: TargetSpec[]): Array<{ table: string; before: number }> {
   const tables = uniqueOrdered(targets.flatMap((t) => t.tables));
   return tables.map((table) => {
     const row = db._raw.prepare(`SELECT COUNT(*) AS c FROM ${table}`).get() as { c: number };
@@ -119,7 +119,7 @@ function countRows(db: WabeDb, targets: TargetSpec[]): Array<{ table: string; be
   });
 }
 
-function truncate(db: WabeDb, tables: string[]): void {
+function truncate(db: FlatscoutDb, tables: string[]): void {
   const tx = db._raw.transaction((tbls: string[]) => {
     for (const t of tbls) db._raw.exec(`DELETE FROM ${t}`);
   });

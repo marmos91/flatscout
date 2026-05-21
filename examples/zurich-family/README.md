@@ -1,4 +1,4 @@
-# Zurich Family — reference Wabe config
+# Zurich Family — reference Flatscout config
 
 A worked example targeting 3+ room rentals in Zürich under CHF 5000/month, scored
 on rent-value, size, and rooms. Uses the `source-flatfox` shipping source plugin
@@ -15,11 +15,11 @@ and the `notifier-telegram` sink.
 
 ## Install
 
-1. Copy the config tree into your wabe config directory:
+1. Copy the config tree into your flatscout config directory:
 
    ```bash
-   mkdir -p ~/.config/wabe
-   cp -R examples/zurich-family/config/* ~/.config/wabe/
+   mkdir -p ~/.config/flatscout
+   cp -R examples/zurich-family/config/* ~/.config/flatscout/
    ```
 
 2. Create a `.env` next to the config (or export the variables in your shell):
@@ -38,15 +38,15 @@ and the `notifier-telegram` sink.
 3. Initialise the database and verify environment:
 
    ```bash
-   pnpm wabe migrate
-   pnpm wabe doctor
+   pnpm flatscout migrate
+   pnpm flatscout doctor
    ```
 
 4. Run a one-shot scan, or start the daemon:
 
    ```bash
-   pnpm wabe scan            # single pipeline pass
-   pnpm wabe start           # cron-scheduled daemon
+   pnpm flatscout scan            # single pipeline pass
+   pnpm flatscout start           # cron-scheduled daemon
    ```
 
 ## Customising

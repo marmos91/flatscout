@@ -1,5 +1,5 @@
-import { Listing, type RawListing, resolveFields } from '@wabe/core';
-import type { WabeDb } from '@wabe/db';
+import { Listing, type RawListing, resolveFields } from '@flatscout/core';
+import type { FlatscoutDb } from '@flatscout/db';
 
 export interface UpsertResult {
   changed: boolean;
@@ -18,7 +18,7 @@ export interface UpsertResult {
  * for downstream logging compatibility.
  */
 export function mergeUpsertCanonical(
-  db: WabeDb,
+  db: FlatscoutDb,
   raw: RawListing,
   ck: string,
   incomingPriority: number,
@@ -81,14 +81,14 @@ export function mergeUpsertCanonical(
 }
 
 /** Overwrite a known canonical row's payload — used by the enricher stage. */
-export function writeListingPayload(db: WabeDb, listing: Listing): void {
+export function writeListingPayload(db: FlatscoutDb, listing: Listing): void {
   const now = Date.now();
   updateRow(db, listing, now);
   updateFts(db, listing);
 }
 
 /** Read the materialised canonical row by canonical_key (= id). */
-export function readListing(db: WabeDb, ck: string): Listing | null {
+export function readListing(db: FlatscoutDb, ck: string): Listing | null {
   const row = db._raw
     .prepare<[string], { payload: string }>('SELECT payload FROM listings WHERE id = ?')
     .get(ck);
@@ -116,7 +116,7 @@ function materialise(raw: RawListing, ck: string, priority: number, now: Date): 
   });
 }
 
-function insertRow(db: WabeDb, l: Listing, now: number): void {
+function insertRow(db: FlatscoutDb, l: Listing, now: number): void {
   db._raw
     .prepare(
       'INSERT INTO listings (id,source,url,fingerprint,payload,first_seen_at,last_seen_at,status,canonical_key,source_priority,seen_on_sources) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
@@ -136,7 +136,7 @@ function insertRow(db: WabeDb, l: Listing, now: number): void {
     );
 }
 
-function updateRow(db: WabeDb, l: Listing, now: number): void {
+function updateRow(db: FlatscoutDb, l: Listing, now: number): void {
   db._raw
     .prepare(
       'UPDATE listings SET source=?, url=?, payload=?, last_seen_at=?, source_priority=?, seen_on_sources=? WHERE id=?',
@@ -144,11 +144,11 @@ function updateRow(db: WabeDb, l: Listing, now: number): void {
     .run(l.source, l.url, JSON.stringify(l), now, l.source_priority, JSON.stringify(l.seen_on_sources), l.id);
 }
 
-function insertFts(db: WabeDb, l: Listing): void {
+function insertFts(db: FlatscoutDb, l: Listing): void {
   db._raw.prepare('INSERT INTO listings_fts (id, description) VALUES (?, ?)').run(l.id, l.description ?? '');
 }
 
-function updateFts(db: WabeDb, l: Listing): void {
+function updateFts(db: FlatscoutDb, l: Listing): void {
   db._raw.prepare('DELETE FROM listings_fts WHERE id = ?').run(l.id);
   insertFts(db, l);
 }

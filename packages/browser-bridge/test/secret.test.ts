@@ -6,7 +6,7 @@ import { generateSecret, loadOrGenerateSecret, validateToken } from '../src/secr
 
 let dir: string;
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-bridge-secret-'));
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-bridge-secret-'));
 });
 afterEach(() => {
   rmSync(dir, { recursive: true, force: true });

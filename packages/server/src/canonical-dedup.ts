@@ -1,4 +1,4 @@
-import type { Listing } from '@wabe/core';
+import type { Listing } from '@flatscout/core';
 import type { UpsertResult } from './dedupe.js';
 
 export interface DedupVerdict {

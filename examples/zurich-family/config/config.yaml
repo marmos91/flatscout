@@ -3,7 +3,7 @@ enabled:
     - {name: flatfox-zurich,      plugin: source-flatfox,              config: plugins/source-flatfox.yaml}
     # source-homegate selects a transport at runtime: BrowserBridge (paired extension)
     # → Playwright (headless fallback) → Undici (anonymous). Set top.bridge.enabled: true
-    # below and run `wabe bridge pair` to wire up the extension; headless deployments
+    # below and run `flatscout bridge pair` to wire up the extension; headless deployments
     # work as-is via the Playwright transport.
     - {name: homegate-zurich,     plugin: source-homegate,             config: plugins/source-homegate.yaml}
     - {name: realadvisor-zurich,  plugin: source-realadvisor,          config: plugins/source-realadvisor.yaml}
@@ -16,8 +16,8 @@ enabled:
     - {name: commute, plugin: enricher-commute, config: commute.yaml}
 log:
   level: info
-# Browser-bridge daemon. When enabled, `wabe start` exposes a local WebSocket
-# that a paired Wabe Bridge extension can connect to; source-homegate +
+# Browser-bridge daemon. When enabled, `flatscout start` exposes a local WebSocket
+# that a paired Flatscout Bridge extension can connect to; source-homegate +
 # source-immoscout24 then route their HTTPS calls through the genuine
 # browser session (bypassing DataDome / Cloudflare). Required for those
 # sources — there is no headless fallback.

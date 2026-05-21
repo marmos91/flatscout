@@ -2,12 +2,12 @@ import crypto from 'node:crypto';
 import * as p from '@clack/prompts';
 import type { Command } from 'commander';
 import { request } from 'undici';
-import { setHomegateTokens } from '@wabe/server';
-import { AUDIENCE, AUTH_BASE, CLIENT_ID, REDIRECT_URI, SCOPE } from '@wabe/source-homegate';
+import { setHomegateTokens } from '@flatscout/server';
+import { AUDIENCE, AUTH_BASE, CLIENT_ID, REDIRECT_URI, SCOPE } from '@flatscout/source-homegate';
 import { resolvePaths } from '../paths.js';
 
 // Re-exported so existing tests can keep importing them from the login module
-// without churn — the canonical source is `@wabe/source-homegate`.
+// without churn — the canonical source is `@flatscout/source-homegate`.
 export { AUDIENCE, AUTH_BASE, CLIENT_ID, REDIRECT_URI, SCOPE };
 
 /**
@@ -160,7 +160,7 @@ export function decodeIdTokenPayload(jwt: string): { sub?: string; email?: strin
 }
 
 /**
- * Registers `wabe login <provider>`. Currently only `homegate` is supported.
+ * Registers `flatscout login <provider>`. Currently only `homegate` is supported.
  *
  * Interactive OOB OAuth2 + PKCE flow:
  *   1. Generate PKCE + state.

@@ -9,7 +9,7 @@ const logger = pino({ level: 'silent' });
 
 describe('selectTransport (homegate)', () => {
   it('throws when no in-process bridge and no daemon heartbeat', async () => {
-    const tmp = mkdtempSync(join(tmpdir(), 'wabe-hg-sel-'));
+    const tmp = mkdtempSync(join(tmpdir(), 'flatscout-hg-sel-'));
     await expect(selectTransport({ dataDir: tmp, logger })).rejects.toThrow(/browser bridge/i);
     rmSync(tmp, { recursive: true, force: true });
   });

@@ -1,4 +1,4 @@
-import type { RawListing } from '@wabe/core';
+import type { RawListing } from '@flatscout/core';
 import type { DetailPayload } from './detail.js';
 
 /**

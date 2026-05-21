@@ -13,7 +13,7 @@ let port: number;
 let secret: string;
 
 beforeEach(async () => {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-bridge-fanout-'));
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-bridge-fanout-'));
   secret = loadOrGenerateSecret(dir);
   bridge = await startBridgeServer({ dataDir: dir, port: 0 });
   port = bridge.port;
@@ -254,7 +254,7 @@ describe('DaemonBridgeTransport', () => {
   });
 
   it('returns null when heartbeat file is missing', async () => {
-    const tmp2 = mkdtempSync(join(tmpdir(), 'wabe-bridge-noheart-'));
+    const tmp2 = mkdtempSync(join(tmpdir(), 'flatscout-bridge-noheart-'));
     const t = await DaemonBridgeTransport.tryConnect(tmp2);
     expect(t).toBeNull();
     rmSync(tmp2, { recursive: true, force: true });
@@ -287,7 +287,7 @@ describe('DaemonBridgeTransport', () => {
   });
 
   it('returns null when bridge-secret file is missing', async () => {
-    const tmp3 = mkdtempSync(join(tmpdir(), 'wabe-bridge-nosecret-'));
+    const tmp3 = mkdtempSync(join(tmpdir(), 'flatscout-bridge-nosecret-'));
     const status = {
       connected: true,
       inflight: 0,

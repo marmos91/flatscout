@@ -33,7 +33,7 @@ export async function fetchDetail(url: string, signal: AbortSignal): Promise<Det
     redirect: 'follow',
     headers: {
       'user-agent':
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 wabe-schemaorg/1',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 flatscout-schemaorg/1',
       accept: 'text/html,application/xhtml+xml,*/*;q=0.8',
     },
   });

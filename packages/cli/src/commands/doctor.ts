@@ -3,14 +3,14 @@ import { join } from 'node:path';
 import type { Command } from 'commander';
 import { request } from 'undici';
 import { parse as parseYaml } from 'yaml';
-import { loadConfig, loadPlugins, loadSecrets, readHeartbeat } from '@wabe/server';
-import { openDb } from '@wabe/db';
+import { loadConfig, loadPlugins, loadSecrets, readHeartbeat } from '@flatscout/server';
+import { openDb } from '@flatscout/db';
 import { resolvePaths } from '../paths.js';
 
 /** Sources that route through DataDome-protected APIs and therefore require the bridge. */
 const DATADOME_SOURCES = ['source-homegate', 'source-immoscout24'] as const;
 
-/** Registers the `wabe doctor` subcommand: probes config, DB, plugin loading, and external APIs. */
+/** Registers the `flatscout doctor` subcommand: probes config, DB, plugin loading, and external APIs. */
 export function registerDoctor(prog: Command): void {
   prog
     .command('doctor')
@@ -97,7 +97,7 @@ export function registerDoctor(prog: Command): void {
       if (loadedCfg?.top.bridge.enabled) {
         const hb = readHeartbeat(paths.dataDir);
         if (!hb) {
-          result('browser bridge', true, 'enabled but no heartbeat — is `wabe start` running?');
+          result('browser bridge', true, 'enabled but no heartbeat — is `flatscout start` running?');
         } else if (hb.age_ms > 15_000) {
           result('browser bridge', true, `stale (heartbeat ${Math.round(hb.age_ms / 1000)}s old)`);
         } else if (!hb.connected) {
@@ -134,7 +134,7 @@ export function registerDoctor(prog: Command): void {
           result(
             'bridge required by DataDome sources',
             false,
-            `sources [${enabledDataDomeSources.join(', ')}] need bridge paired+connected. Enable \`top.bridge.enabled\` and run \`wabe bridge pair\` + \`wabe start\`.`,
+            `sources [${enabledDataDomeSources.join(', ')}] need bridge paired+connected. Enable \`top.bridge.enabled\` and run \`flatscout bridge pair\` + \`flatscout start\`.`,
           );
         } else {
           result('bridge required by DataDome sources', true, enabledDataDomeSources.join(', '));

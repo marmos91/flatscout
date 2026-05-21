@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import type { RawListing } from '@wabe/core';
+import type { RawListing } from '@flatscout/core';
 import type { Context } from './context.js';
 
 /**

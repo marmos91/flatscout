@@ -2,14 +2,14 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { migrate, openDb, type WabeDb } from '@wabe/db';
-import { canonicalKey } from '@wabe/core';
-import type { RawListing } from '@wabe/core';
+import { migrate, openDb, type FlatscoutDb } from '@flatscout/db';
+import { canonicalKey } from '@flatscout/core';
+import type { RawListing } from '@flatscout/core';
 import { mergeUpsertCanonical, readListing, writeListingPayload } from '../src/dedupe.js';
 
 let dir: string;
-function freshDb(): WabeDb {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-dedup-'));
+function freshDb(): FlatscoutDb {
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-dedup-'));
   const db = openDb(join(dir, 'test.db'));
   migrate(db);
   return db;

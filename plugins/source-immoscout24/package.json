@@ -1,5 +1,5 @@
 {
-  "name": "@wabe/source-immoscout24",
+  "name": "@flatscout/source-immoscout24",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -12,10 +12,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@wabe/browser-bridge": "workspace:*",
-    "@wabe/core": "workspace:*",
-    "@wabe/db": "workspace:*",
-    "@wabe/plugin-sdk": "workspace:*",
+    "@flatscout/browser-bridge": "workspace:*",
+    "@flatscout/core": "workspace:*",
+    "@flatscout/db": "workspace:*",
+    "@flatscout/plugin-sdk": "workspace:*",
     "pino": "^9.4.0",
     "undici": "^6.19.8",
     "zod": "^3.23.8"

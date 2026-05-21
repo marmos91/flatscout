@@ -6,7 +6,7 @@ import { loadConfig } from '../src/config.js';
 
 let dir: string;
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-load-'));
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-load-'));
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 

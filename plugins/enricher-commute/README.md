@@ -1,4 +1,4 @@
-# @wabe/enricher-commute
+# @flatscout/enricher-commute
 
 First-party `Enricher` plugin: computes per-target × per-mode commute time and writes it to `listing.enriched.commute`.
 
@@ -33,7 +33,7 @@ targets:
     modes: [transit, cycling]
 ```
 
-> Coordinates anywhere in this file (`targets[X].coords`) are `[lng, lat]` — the same GeoJSON order Wabe uses for `Listing.location.coords`. Easy to flip; double-check before running.
+> Coordinates anywhere in this file (`targets[X].coords`) are `[lng, lat]` — the same GeoJSON order Flatscout uses for `Listing.location.coords`. Easy to flip; double-check before running.
 
 ## Consuming in filters / scoring
 
@@ -52,7 +52,7 @@ targets:
 
 Missing target / mode evaluates to `Infinity` (filter) / `undefined` (scoring); `linear + invert: true` makes a shorter commute score higher; `on_missing: zero` contributes zero score for absent data.
 
-The `computed_at` field on each cached payload reflects when the listing was last enriched — on cache hits this is the time of the enrich call, not the original computation. Use `wabe cache clear --commute` if you need to force recomputation (e.g. after a GTFS refresh).
+The `computed_at` field on each cached payload reflects when the listing was last enriched — on cache hits this is the time of the enrich call, not the original computation. Use `flatscout cache clear --commute` if you need to force recomputation (e.g. after a GTFS refresh).
 
 ## Self-hosted infra
 
@@ -60,4 +60,4 @@ See `docker/commute/` for the ORS + Motis + Pelias docker-compose recipe.
 
 ## Invalidation
 
-`wabe cache clear --commute` truncates the commute and geocode caches. The next scan repopulates them.
+`flatscout cache clear --commute` truncates the commute and geocode caches. The next scan repopulates them.

@@ -1,27 +1,27 @@
-# @wabe/source-homegate
+# @flatscout/source-homegate
 
 ## Requirements
 
-`source-homegate` **requires the Wabe browser bridge**. DataDome (Homegate's
+`source-homegate` **requires the Flatscout browser bridge**. DataDome (Homegate's
 anti-bot stack) blocks any request that does not originate from a real Homegate
-page context. Run `wabe bridge pair` once, load the extension, then start
-`wabe start`. If no bridge is paired, plugin init fails fast with a clear error.
+page context. Run `flatscout bridge pair` once, load the extension, then start
+`flatscout start`. If no bridge is paired, plugin init fails fast with a clear error.
 
-Sibling CLI processes (`wabe scan --source source-homegate`) connect to the
+Sibling CLI processes (`flatscout scan --source source-homegate`) connect to the
 running daemon's bridge via `${dataDir}/bridge.status.json` and route requests
 through the daemon's paired extension. Without a daemon running, the scan
 fails fast.
 
 ## What it is
 
-A Wabe **source** plugin that fetches Swiss rental listings from
+A Flatscout **source** plugin that fetches Swiss rental listings from
 [Homegate](https://www.homegate.ch) by replaying the iOS app's anonymous
 search endpoint (`POST https://api.homegate.ch/search/listings`) against the
 canonical header set captured in
 [`docs/research/2026-05-18-homegate-investigation.md`](../../docs/research/2026-05-18-homegate-investigation.md).
 
 The API is gated by **DataDome + Cloudflare** anti-bot. Every request is
-dispatched through the Wabe browser bridge — a hidden tab loaded at the
+dispatched through the Flatscout browser bridge — a hidden tab loaded at the
 genuine Homegate origin runs `fetch` from page context via
 `chrome.scripting.executeScript({ world: 'MAIN' })`, so DataDome's hooked
 `window.fetch` signs the request. No cookie harvesting, no Playwright
@@ -29,7 +29,7 @@ fallback — the bridge is the only supported transport.
 
 ## Install & enable
 
-The plugin is part of the Wabe monorepo and ships as `@wabe/source-homegate`.
+The plugin is part of the Flatscout monorepo and ships as `@flatscout/source-homegate`.
 Enable it in your `config.yaml`:
 
 ```yaml
@@ -84,8 +84,8 @@ sources:
 
 Homegate's search fieldset does **not** carry a structured
 `isFurnished` / `isTemporary` flag. The mapper instead reuses the same
-multilingual classifier (`classifyRentalTerm` in `@wabe/core`) as
-`@wabe/source-flatfox`:
+multilingual classifier (`classifyRentalTerm` in `@flatscout/core`) as
+`@flatscout/source-flatfox`:
 
 1. **Description regex**: DE/FR/IT/EN lexicon detects markers like
    `befristet`, `möbliert`, `auf Zeit`, `meublé`, `temporaneo`,
@@ -104,12 +104,12 @@ A separate **Auth0 PKCE flow** is provided for endpoints that bind to a
 user account (favourites, saved searches, the future applicator). This
 is unrelated to the anonymous search path:
 
-- `wabe login homegate` — exchanges a PKCE authorization code (OOB
+- `flatscout login homegate` — exchanges a PKCE authorization code (OOB
   copy-paste flow) for refresh and access tokens, persisted at
   `${dataDir}/secrets.json` with mode 0600.
 - The plugin's `auth.ts` handles refresh-token rotation on next scan
   when the access token is close to expiry.
-- `wabe logout homegate` — revokes the refresh token at Auth0
+- `flatscout logout homegate` — revokes the refresh token at Auth0
   (`/oauth/revoke`) and clears local credentials.
 
 User-bound endpoints are not yet consumed by the v1 read-only search
@@ -126,10 +126,10 @@ path; the plumbing ships ahead of the next applicator spec.
 
 ## Troubleshooting
 
-- **`source-homegate requires the Wabe browser bridge`** — no in-process
-  bridge (you're not running inside `wabe start`) and no daemon reachable
-  via `${dataDir}/bridge.status.json`. Start `wabe start` with the
-  extension paired, or run `wabe bridge pair` to set it up.
+- **`source-homegate requires the Flatscout browser bridge`** — no in-process
+  bridge (you're not running inside `flatscout start`) and no daemon reachable
+  via `${dataDir}/bridge.status.json`. Start `flatscout start` with the
+  extension paired, or run `flatscout bridge pair` to set it up.
 - **`HomegateAntiBotError` (403)** — DataDome rejected a request that
   was already routed through the bridge. The operator should reload
   Homegate in the paired browser to refresh the page-context session;
@@ -152,4 +152,4 @@ path; the plumbing ships ahead of the next applicator spec.
 
 ## License
 
-MIT, matching the rest of the Wabe project.
+MIT, matching the rest of the Flatscout project.

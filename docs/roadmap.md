@@ -50,8 +50,6 @@ A digest mode on the Telegram notifier complementing the existing per-listing fa
 
 Work required before the first public release on npm.
 
-- **Rebrand `wabe` → `flatscout`.** Every `@wabe/*` package → `@flatscout/*`. Rename the CLI binary, the `WABE_DATA_DIR` env var, the GitHub repo, log tags, and documentation. The npm org `flatscout` is claimed.
-- **`CONTRIBUTING.md`.** Dev setup (pnpm, Node 22), commit + branch conventions, PR process, testing rules, how to add a new plugin via `@flatscout/plugin-sdk`.
 - **Code polish pass.** Consolidate duplicated patterns (data-dir resolution, undici pool wiring, logger child setup, env interpolation) into a shared `@flatscout/utils` package. Strip over-decomposed helpers and AI-flavored verbosity. Address residual lint and format issues across the workspace.
 - **CI/CD release pipeline.**
   - `ci.yml` on every push and PR: lint, format-check, typecheck, test, build.

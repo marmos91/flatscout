@@ -18,7 +18,7 @@ beforeEach(() => {
   agent = new MockAgent();
   agent.disableNetConnect();
   setGlobalDispatcher(agent);
-  dir = mkdtempSync(join(tmpdir(), 'wabe-homegate-auth-'));
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-homegate-auth-'));
 });
 
 afterEach(async () => {

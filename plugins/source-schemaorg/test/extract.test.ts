@@ -97,7 +97,7 @@ describe('extractListing — tier 2 (open graph + regex)', () => {
   });
 
   it('returns null when price missing', () => {
-    const html = OG_PAGE.replace('Miete: CHF 2\'850.- / Monat', 'Miete auf Anfrage');
+    const html = OG_PAGE.replace("Miete: CHF 2'850.- / Monat", 'Miete auf Anfrage');
     expect(extractOpenGraph(html, 'https://x.ch')).toBeNull();
   });
 

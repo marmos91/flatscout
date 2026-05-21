@@ -24,7 +24,7 @@ importers:
         specifier: ^2.1.1
         version: 2.1.9(@types/node@22.19.19)
 
-  apps/extension-wabe:
+  apps/extension-flatscout:
     devDependencies:
       '@types/chrome':
         specifier: ^0.0.275
@@ -47,21 +47,21 @@ importers:
 
   examples/zurich-family:
     devDependencies:
+      '@flatscout/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@flatscout/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      '@flatscout/source-flatfox':
+        specifier: workspace:*
+        version: link:../../plugins/source-flatfox
+      '@flatscout/source-homegate':
+        specifier: workspace:*
+        version: link:../../plugins/source-homegate
       '@types/node':
         specifier: ^22.7.4
         version: 22.19.19
-      '@wabe/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@wabe/server':
-        specifier: workspace:*
-        version: link:../../packages/server
-      '@wabe/source-flatfox':
-        specifier: workspace:*
-        version: link:../../plugins/source-flatfox
-      '@wabe/source-homegate':
-        specifier: workspace:*
-        version: link:../../plugins/source-homegate
       typescript:
         specifier: ^5.6.2
         version: 5.9.3
@@ -118,25 +118,25 @@ importers:
       '@clack/prompts':
         specifier: ^0.7.0
         version: 0.7.0
-      '@wabe/agency-fingerprint':
+      '@flatscout/agency-fingerprint':
         specifier: workspace:*
         version: link:../agency-fingerprint
-      '@wabe/core':
+      '@flatscout/core':
         specifier: workspace:*
         version: link:../core
-      '@wabe/db':
+      '@flatscout/db':
         specifier: workspace:*
         version: link:../db
-      '@wabe/plugin-sdk':
+      '@flatscout/plugin-sdk':
         specifier: workspace:*
         version: link:../plugin-sdk
-      '@wabe/server':
+      '@flatscout/server':
         specifier: workspace:*
         version: link:../server
-      '@wabe/source-homegate':
+      '@flatscout/source-homegate':
         specifier: workspace:*
         version: link:../../plugins/source-homegate
-      '@wabe/source-schemaorg':
+      '@flatscout/source-schemaorg':
         specifier: workspace:*
         version: link:../../plugins/source-schemaorg
       commander:
@@ -192,7 +192,7 @@ importers:
 
   packages/db:
     dependencies:
-      '@wabe/core':
+      '@flatscout/core':
         specifier: workspace:*
         version: link:../core
       better-sqlite3:
@@ -220,7 +220,7 @@ importers:
 
   packages/plugin-sdk:
     dependencies:
-      '@wabe/core':
+      '@flatscout/core':
         specifier: workspace:*
         version: link:../core
       pino:
@@ -242,48 +242,48 @@ importers:
 
   packages/server:
     dependencies:
+      '@flatscout/agency-fingerprint':
+        specifier: workspace:*
+        version: link:../agency-fingerprint
+      '@flatscout/browser-bridge':
+        specifier: workspace:*
+        version: link:../browser-bridge
+      '@flatscout/core':
+        specifier: workspace:*
+        version: link:../core
+      '@flatscout/db':
+        specifier: workspace:*
+        version: link:../db
+      '@flatscout/enricher-commute':
+        specifier: workspace:*
+        version: link:../../plugins/enricher-commute
+      '@flatscout/notifier-telegram':
+        specifier: workspace:*
+        version: link:../../plugins/notifier-telegram
+      '@flatscout/plugin-sdk':
+        specifier: workspace:*
+        version: link:../plugin-sdk
+      '@flatscout/source-flatfox':
+        specifier: workspace:*
+        version: link:../../plugins/source-flatfox
+      '@flatscout/source-homegate':
+        specifier: workspace:*
+        version: link:../../plugins/source-homegate
+      '@flatscout/source-immobilier-ch':
+        specifier: workspace:*
+        version: link:../../plugins/source-immobilier-ch
+      '@flatscout/source-immoscout24':
+        specifier: workspace:*
+        version: link:../../plugins/source-immoscout24
+      '@flatscout/source-realadvisor':
+        specifier: workspace:*
+        version: link:../../plugins/source-realadvisor
+      '@flatscout/source-schemaorg':
+        specifier: workspace:*
+        version: link:../../plugins/source-schemaorg
       '@noble/ed25519':
         specifier: ^2.1.0
         version: 2.3.0
-      '@wabe/agency-fingerprint':
-        specifier: workspace:*
-        version: link:../agency-fingerprint
-      '@wabe/browser-bridge':
-        specifier: workspace:*
-        version: link:../browser-bridge
-      '@wabe/core':
-        specifier: workspace:*
-        version: link:../core
-      '@wabe/db':
-        specifier: workspace:*
-        version: link:../db
-      '@wabe/enricher-commute':
-        specifier: workspace:*
-        version: link:../../plugins/enricher-commute
-      '@wabe/notifier-telegram':
-        specifier: workspace:*
-        version: link:../../plugins/notifier-telegram
-      '@wabe/plugin-sdk':
-        specifier: workspace:*
-        version: link:../plugin-sdk
-      '@wabe/source-flatfox':
-        specifier: workspace:*
-        version: link:../../plugins/source-flatfox
-      '@wabe/source-homegate':
-        specifier: workspace:*
-        version: link:../../plugins/source-homegate
-      '@wabe/source-immobilier-ch':
-        specifier: workspace:*
-        version: link:../../plugins/source-immobilier-ch
-      '@wabe/source-immoscout24':
-        specifier: workspace:*
-        version: link:../../plugins/source-immoscout24
-      '@wabe/source-realadvisor':
-        specifier: workspace:*
-        version: link:../../plugins/source-realadvisor
-      '@wabe/source-schemaorg':
-        specifier: workspace:*
-        version: link:../../plugins/source-schemaorg
       node-cron:
         specifier: ^3.0.3
         version: 3.0.3
@@ -318,13 +318,13 @@ importers:
 
   plugins/enricher-commute:
     dependencies:
-      '@wabe/core':
+      '@flatscout/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@wabe/db':
+      '@flatscout/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@wabe/plugin-sdk':
+      '@flatscout/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
       p-limit:
@@ -358,10 +358,10 @@ importers:
 
   plugins/notifier-telegram:
     dependencies:
-      '@wabe/core':
+      '@flatscout/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@wabe/plugin-sdk':
+      '@flatscout/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
       grammy:
@@ -383,10 +383,10 @@ importers:
 
   plugins/source-flatfox:
     dependencies:
-      '@wabe/core':
+      '@flatscout/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@wabe/plugin-sdk':
+      '@flatscout/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
       undici:
@@ -408,13 +408,13 @@ importers:
 
   plugins/source-homegate:
     dependencies:
-      '@wabe/browser-bridge':
+      '@flatscout/browser-bridge':
         specifier: workspace:*
         version: link:../../packages/browser-bridge
-      '@wabe/core':
+      '@flatscout/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@wabe/plugin-sdk':
+      '@flatscout/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
       pino:
@@ -439,10 +439,10 @@ importers:
 
   plugins/source-immobilier-ch:
     dependencies:
-      '@wabe/core':
+      '@flatscout/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@wabe/plugin-sdk':
+      '@flatscout/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
       fast-xml-parser:
@@ -470,16 +470,16 @@ importers:
 
   plugins/source-immoscout24:
     dependencies:
-      '@wabe/browser-bridge':
+      '@flatscout/browser-bridge':
         specifier: workspace:*
         version: link:../../packages/browser-bridge
-      '@wabe/core':
+      '@flatscout/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@wabe/db':
+      '@flatscout/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@wabe/plugin-sdk':
+      '@flatscout/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
       pino:
@@ -504,10 +504,10 @@ importers:
 
   plugins/source-realadvisor:
     dependencies:
-      '@wabe/core':
+      '@flatscout/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@wabe/plugin-sdk':
+      '@flatscout/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
       pino:
@@ -532,10 +532,10 @@ importers:
 
   plugins/source-schemaorg:
     dependencies:
-      '@wabe/core':
+      '@flatscout/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@wabe/plugin-sdk':
+      '@flatscout/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
       fast-xml-parser:

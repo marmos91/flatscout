@@ -3,10 +3,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { FiltersFile, RentalTermFile, ScoringFile } from '@wabe/core';
-import { mapFlatfoxListing, type FlatfoxApiResult } from '@wabe/source-flatfox/dist/map.js';
-import sourceHomegate from '@wabe/source-homegate';
-import { mapHomegateResult, HomegateApiSchema } from '@wabe/source-homegate/dist/map.js';
+import { FiltersFile, RentalTermFile, ScoringFile } from '@flatscout/core';
+import { mapFlatfoxListing, type FlatfoxApiResult } from '@flatscout/source-flatfox/dist/map.js';
+import sourceHomegate from '@flatscout/source-homegate';
+import { mapHomegateResult, HomegateApiSchema } from '@flatscout/source-homegate/dist/map.js';
 
 // NOTE: deviated from plan — use import.meta.url instead of __dirname since the
 // test runs as an ESM module (project-wide "type": "module").

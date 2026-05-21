@@ -4,7 +4,7 @@ import {
   DaemonBridgeTransport,
   getCurrentBridge,
   type Transport as BridgeTransport,
-} from '@wabe/browser-bridge';
+} from '@flatscout/browser-bridge';
 
 export type TransportKind = 'bridge-inproc' | 'bridge-daemon';
 
@@ -68,8 +68,8 @@ export interface SelectTransportOpts {
 
 /**
  * Selects a bridge transport at plugin init:
- *   1. `BrowserBridgeTransport` if `wabe start`'s in-process bridge is paired.
- *   2. `DaemonBridgeTransport` if a sibling `wabe start` daemon is running and
+ *   1. `BrowserBridgeTransport` if `flatscout start`'s in-process bridge is paired.
+ *   2. `DaemonBridgeTransport` if a sibling `flatscout start` daemon is running and
  *      reachable via `${dataDir}/bridge.status.json`.
  *
  * If neither path is available the plugin throws — DataDome blocks all other
@@ -89,7 +89,7 @@ export async function selectTransport(opts: SelectTransportOpts): Promise<Transp
     });
   }
   throw new Error(
-    'source-homegate requires the Wabe browser bridge. ' +
-      'Start `wabe start` with the extension paired, or run `wabe bridge pair` to set it up.',
+    'source-homegate requires the Flatscout browser bridge. ' +
+      'Start `flatscout start` with the extension paired, or run `flatscout bridge pair` to set it up.',
   );
 }

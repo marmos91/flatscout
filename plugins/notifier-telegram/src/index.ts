@@ -1,6 +1,6 @@
 import { Bot, InlineKeyboard } from 'grammy';
 import { z } from 'zod';
-import type { Context, Notifier, PluginExport } from '@wabe/plugin-sdk';
+import type { Context, Notifier, PluginExport } from '@flatscout/plugin-sdk';
 import { renderCard } from './card.js';
 
 const ConfigSchema = z.object({

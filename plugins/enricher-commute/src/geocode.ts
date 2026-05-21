@@ -79,8 +79,8 @@ async function geocodeNominatim(address: string, deps: GeocodeDeps): Promise<Geo
       method: 'GET',
       headers: {
         accept: 'application/json',
-        // Nominatim ToS requires a descriptive User-Agent. wabe identifies itself.
-        'user-agent': 'wabe-enricher-commute/0 (https://github.com/marmos91/wabe)',
+        // Nominatim ToS requires a descriptive User-Agent. flatscout identifies itself.
+        'user-agent': 'flatscout-enricher-commute/0 (https://github.com/marmos91/flatscout)',
       },
       signal: deps.signal,
       bodyTimeout: deps.timeoutMs,

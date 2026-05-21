@@ -39,7 +39,7 @@ async function writeSecrets(dataDir: string, secrets: SecretsFile): Promise<void
   await writeFile(tmp, JSON.stringify(secrets, null, 2), { mode: 0o600 });
   await rename(tmp, path);
   // Re-apply chmod after rename — `writeFile`'s `mode` option does not survive
-  // `rename` across all platforms (mirrors `@wabe/server`'s `secrets.ts`).
+  // `rename` across all platforms (mirrors `@flatscout/server`'s `secrets.ts`).
   await chmod(path, 0o600);
 }
 

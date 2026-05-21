@@ -1,8 +1,8 @@
 import * as p from '@clack/prompts';
 import type { Command } from 'commander';
 import { request } from 'undici';
-import { loadSecrets, saveSecrets } from '@wabe/server';
-import { AUTH_BASE, CLIENT_ID } from '@wabe/source-homegate';
+import { loadSecrets, saveSecrets } from '@flatscout/server';
+import { AUTH_BASE, CLIENT_ID } from '@flatscout/source-homegate';
 import { resolvePaths } from '../paths.js';
 
 /**
@@ -36,7 +36,7 @@ export async function revokeRefreshToken(token: string): Promise<boolean> {
 }
 
 /**
- * Registers `wabe logout <provider>`. Currently only `homegate` is supported.
+ * Registers `flatscout logout <provider>`. Currently only `homegate` is supported.
  *
  * Flow:
  *   1. Confirm the destructive intent.

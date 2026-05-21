@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MockAgent, setGlobalDispatcher, getGlobalDispatcher, type Dispatcher } from 'undici';
-import { AUTH_BASE, CLIENT_ID } from '@wabe/source-homegate';
+import { AUTH_BASE, CLIENT_ID } from '@flatscout/source-homegate';
 import { revokeRefreshToken } from '../src/commands/logout.js';
 
 function withMock<T>(fn: (agent: MockAgent) => Promise<T>): Promise<T> {

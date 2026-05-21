@@ -1,9 +1,5 @@
 import { fetch } from 'undici';
-import {
-  type Candidate,
-  isPortalOrCdn,
-  normaliseToCandidate,
-} from './candidates.js';
+import { type Candidate, isPortalOrCdn, normaliseToCandidate } from './candidates.js';
 
 const HREF_RE = /<a[^>]+href=["']([^"']+)["'][^>]*>/gi;
 
@@ -44,8 +40,7 @@ export async function crawlSeed(url: string, signal: AbortSignal): Promise<Candi
     method: 'GET',
     redirect: 'follow',
     headers: {
-      'user-agent':
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 wabe-discover/1',
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 flatscout-discover/1',
       accept: 'text/html,*/*;q=0.8',
     },
   });

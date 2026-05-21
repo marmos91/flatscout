@@ -1,5 +1,5 @@
-import type { Listing } from '@wabe/core';
-import type { ListingEvent } from '@wabe/plugin-sdk';
+import type { Listing } from '@flatscout/core';
+import type { ListingEvent } from '@flatscout/plugin-sdk';
 
 export interface RenderedCard {
   text: string;
@@ -10,9 +10,9 @@ export interface RenderedCard {
 
 /**
  * Sources whose detail URLs are DataDome-walled — Telegram's link-preview bot
- * (its own UA, not Wabe's transport) will get 403 trying to unfurl, so suppress
+ * (its own UA, not Flatscout's transport) will get 403 trying to unfurl, so suppress
  * the inline preview. Note: this is purely about Telegram's preview fetch;
- * Wabe's own fetch goes through the browser bridge / Playwright / undici
+ * Flatscout's own fetch goes through the browser bridge / Playwright / undici
  * transport selector and is unaffected.
  */
 const PREVIEW_SUPPRESS_SOURCES = new Set(['source-immoscout24', 'source-homegate', 'source-comparis']);

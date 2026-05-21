@@ -70,7 +70,7 @@ export function startBundleHashTracker(bundlePath: string): BundleHashTracker {
 
 /**
  * Best-effort auto-discovery of the extension's background.js bundle path
- * by walking up from `cwd` looking for `apps/extension-wabe/dist/<browser>/`.
+ * by walking up from `cwd` looking for `apps/extension-flatscout/dist/<browser>/`.
  * Returns the first existing candidate; defaults to the `firefox` build
  * since that's the only one that benefits from auto-reload today (Chrome
  * MV3 reloads are blocked by Chrome's strict load-unpacked semantics
@@ -81,7 +81,7 @@ export function autodetectBundlePath(cwd: string = process.cwd()): string | null
   let dir = resolvePath(cwd);
   while (true) {
     for (const browser of candidates) {
-      const candidate = join(dir, 'apps', 'extension-wabe', 'dist', browser, 'src', 'background.js');
+      const candidate = join(dir, 'apps', 'extension-flatscout', 'dist', browser, 'src', 'background.js');
       if (existsSync(candidate)) return candidate;
     }
     const parent = resolvePath(dir, '..');

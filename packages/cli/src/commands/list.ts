@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import { openDb } from '@wabe/db';
+import { openDb } from '@flatscout/db';
 import { resolvePaths } from '../paths.js';
 
 interface Row {
@@ -11,7 +11,7 @@ interface Row {
   final: number | null;
 }
 
-/** Registers the `wabe list` subcommand: tabulates persisted listings joined with their most-recent score. */
+/** Registers the `flatscout list` subcommand: tabulates persisted listings joined with their most-recent score. */
 export function registerList(prog: Command): void {
   prog
     .command('list')

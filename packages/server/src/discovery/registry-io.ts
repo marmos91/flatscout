@@ -1,9 +1,9 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-import { AgencyRegistry, type AgencyEntry } from '@wabe/core';
+import { AgencyRegistry, type AgencyEntry } from '@flatscout/core';
 
 /**
- * Read the local "discovered" registry. The file is owned by Wabe (Bundle B
+ * Read the local "discovered" registry. The file is owned by Flatscout (Bundle B
  * discovery writes to it) and lives alongside the user-curated registry. A
  * missing file is treated as an empty registry rather than an error so the
  * very first scan has nothing to merge against.

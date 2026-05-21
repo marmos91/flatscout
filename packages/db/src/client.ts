@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import * as schema from './schema.js';
 
-export type WabeDb = BetterSQLite3Database<typeof schema> & { _raw: Database.Database };
+export type FlatscoutDb = BetterSQLite3Database<typeof schema> & { _raw: Database.Database };
 
 /**
  * Opens (creating if needed) a SQLite database file and returns a Drizzle
@@ -12,13 +12,13 @@ export type WabeDb = BetterSQLite3Database<typeof schema> & { _raw: Database.Dat
  * also exposes the underlying better-sqlite3 connection as `_raw` for
  * prepared-statement code paths that bypass Drizzle.
  */
-export function openDb(filename: string): WabeDb {
+export function openDb(filename: string): FlatscoutDb {
   const sqlite = new Database(filename);
   sqlite.pragma('journal_mode = WAL');
   sqlite.pragma('foreign_keys = ON');
   // NOTE: deviated from plan — cast via `unknown` because drizzle's returned type lacks `_raw`,
   // which TS strict mode rejects as a non-overlapping cast. We assign `_raw` immediately after.
-  const db = drizzle(sqlite, { schema }) as unknown as WabeDb;
+  const db = drizzle(sqlite, { schema }) as unknown as FlatscoutDb;
   db._raw = sqlite;
   return db;
 }

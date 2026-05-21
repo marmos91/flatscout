@@ -43,9 +43,7 @@ describe('extractDescriptionUrls (Path B)', () => {
     const cs = extractDescriptionUrls(
       'Erstbezug — Mehr Infos auf https://wohnpark-buchholzstrasse.ch und unter https://walde.ch.',
     );
-    expect(cs.map((c) => c.id)).toEqual(
-      expect.arrayContaining(['wohnpark-buchholzstrasse', 'walde']),
-    );
+    expect(cs.map((c) => c.id)).toEqual(expect.arrayContaining(['wohnpark-buchholzstrasse', 'walde']));
     expect(cs.every((c) => c.source === 'pdp-url-mined')).toBe(true);
   });
 
@@ -63,9 +61,7 @@ describe('extractDescriptionUrls (Path B)', () => {
   });
 
   it('dedupes by id', () => {
-    const cs = extractDescriptionUrls(
-      'https://walde.ch/x https://walde.ch/y www.walde.ch https://walde.ch',
-    );
+    const cs = extractDescriptionUrls('https://walde.ch/x https://walde.ch/y www.walde.ch https://walde.ch');
     expect(cs.filter((c) => c.id === 'walde')).toHaveLength(1);
   });
 

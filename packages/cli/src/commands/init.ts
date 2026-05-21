@@ -3,8 +3,8 @@ import { dirname, join, relative } from 'node:path';
 import type { Command } from 'commander';
 import * as p from '@clack/prompts';
 import { resolveExampleDir, resolvePaths } from '../paths.js';
-import { openDb } from '@wabe/db';
-import { migrate } from '@wabe/db';
+import { openDb } from '@flatscout/db';
+import { migrate } from '@flatscout/db';
 
 const SAMPLE_CONFIG_YAML = `\
 enabled:
@@ -102,7 +102,7 @@ function rentalTermSample(opts: {
 }
 
 /**
- * Registers the `wabe init` subcommand: interactively prompts the user for
+ * Registers the `flatscout init` subcommand: interactively prompts the user for
  * Telegram credentials and search parameters, then writes a starter set of
  * config files, a `.env`, and runs initial DB migrations.
  *
@@ -124,7 +124,7 @@ export function registerInit(prog: Command): void {
 
       if (opts.example || opts.exampleDir) {
         const sourceDir = opts.exampleDir ?? resolveExampleDir(opts.example as string);
-        p.intro(`wabe init --example ${opts.example ?? '(custom)'}`);
+        p.intro(`flatscout init --example ${opts.example ?? '(custom)'}`);
         const stats = copyTreeRecursive(sourceDir, paths.configDir, force);
         const envPath = join(process.cwd(), '.env');
         const envWritten = writeEnvIfAbsent(envPath, ENV_SKELETON);
@@ -139,12 +139,12 @@ export function registerInit(prog: Command): void {
           `source: ${sourceDir}\nconfig: ${paths.configDir}\ndata:   ${paths.dataDir}\nfiles written: ${stats.written.length}\n${envNote}\nmigrations applied: ${m.applied.length}${skippedNote}`,
         );
         p.outro(
-          'done — fill in .env (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID), then run `wabe doctor` and `wabe scan`.',
+          'done — fill in .env (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID), then run `flatscout doctor` and `flatscout scan`.',
         );
         return;
       }
 
-      p.intro('wabe init');
+      p.intro('flatscout init');
 
       const tgToken = await p.text({ message: 'Telegram bot token (from @BotFather):' });
       if (p.isCancel(tgToken)) return p.cancel('aborted');
@@ -234,7 +234,7 @@ export function registerInit(prog: Command): void {
       p.note(
         `config: ${paths.configDir}\ndata:   ${paths.dataDir}\n${envNote}\nmigrations applied: ${m.applied.length}`,
       );
-      p.outro('done — run `wabe doctor` to verify, then `wabe scan`.');
+      p.outro('done — run `flatscout doctor` to verify, then `flatscout scan`.');
     });
 }
 
@@ -247,7 +247,7 @@ function writeIfMissing(file: string, content: string, force = false): void {
 /**
  * Writes a file only when it does not already exist. Unlike `writeIfMissing`,
  * `--force` is intentionally NOT honored here — used for `.env` so user-entered
- * secrets are never clobbered by a re-run of `wabe init`.
+ * secrets are never clobbered by a re-run of `flatscout init`.
  *
  * @returns true if the file was newly written, false if an existing one was preserved.
  */

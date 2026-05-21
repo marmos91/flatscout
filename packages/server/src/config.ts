@@ -1,7 +1,13 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
-import { interpolateEnv, FiltersFile, RentalTermFile, type RentalTermPolicy, ScoringFile } from '@wabe/core';
+import {
+  interpolateEnv,
+  FiltersFile,
+  RentalTermFile,
+  type RentalTermPolicy,
+  ScoringFile,
+} from '@flatscout/core';
 import { parse as parseYaml } from 'yaml';
 import { loadRegistry } from './agency-registry/loader.js';
 import { expandRegistry, BUNDLED_ADAPTERS } from './agency-registry/expand.js';
@@ -26,7 +32,7 @@ export const TopConfig = z.object({
   }),
   log: z.object({ level: z.string().default('info') }).default({ level: 'info' }),
   /**
-   * Optional browser-bridge daemon. When enabled, `wabe start` binds a
+   * Optional browser-bridge daemon. When enabled, `flatscout start` binds a
    * WebSocket server on 127.0.0.1:`port` (loopback is hard-enforced) so a
    * paired browser extension can proxy HTTPS requests on behalf of source
    * plugins.
@@ -114,10 +120,7 @@ export function loadYaml<T>(path: string): T {
  *
  * @throws when any file is missing or fails schema validation.
  */
-export async function loadConfig(
-  configDir: string,
-  opts: { dataDir?: string } = {},
-): Promise<LoadedConfig> {
+export async function loadConfig(configDir: string, opts: { dataDir?: string } = {}): Promise<LoadedConfig> {
   const top = TopConfig.parse(loadYaml(join(configDir, 'config.yaml')));
   const filters = FiltersFile.parse(loadYaml(join(configDir, 'filters.yaml')));
   const scoring = ScoringFile.parse(loadYaml(join(configDir, 'scoring.yaml')));
@@ -188,7 +191,7 @@ async function expandAgenciesIfPresent(
   const hasDiscovered = discoveredFile ? existsSync(discoveredFile) : false;
   if (!meta && !hasDiscovered) return null;
 
-  let registry: import('@wabe/core').AgencyRegistry | null = null;
+  let registry: import('@flatscout/core').AgencyRegistry | null = null;
   if (meta) {
     const metaCfgPath = join(configDir, meta.config);
     if (!existsSync(metaCfgPath)) throw new Error(`agencies meta config not found: ${metaCfgPath}`);
@@ -222,7 +225,7 @@ async function expandAgenciesIfPresent(
   // override an auto-detected one.
   if (discoveredFile && hasDiscovered) {
     const raw = loadYaml<unknown>(discoveredFile);
-    const parsed = (await import('@wabe/core')).AgencyRegistry.safeParse(raw);
+    const parsed = (await import('@flatscout/core')).AgencyRegistry.safeParse(raw);
     if (parsed.success) {
       const baseAgencies = registry?.agencies ?? [];
       const userIds = new Set(baseAgencies.map((a) => a.id));

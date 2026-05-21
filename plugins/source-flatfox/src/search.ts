@@ -19,9 +19,7 @@ export const SearchConfig = z.object({
    * after the JSON response lands. Mapped to `Listing.location.postal_code`
    * via `r.zipcode`; null-zip listings are dropped when the allowlist is set.
    */
-  zipcodes: z
-    .array(z.string().regex(/^\d{4}$/, 'PLZ must be a 4-digit Swiss postal code'))
-    .default([]),
+  zipcodes: z.array(z.string().regex(/^\d{4}$/, 'PLZ must be a 4-digit Swiss postal code')).default([]),
   price_max: z.number().int().positive().optional(),
   price_min: z.number().int().positive().optional(),
   rooms_min: z.number().optional(),

@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import type { Command } from 'commander';
-import { openDb } from '@wabe/db';
-import { discoverAgencies } from '@wabe/server';
+import { openDb } from '@flatscout/db';
+import { discoverAgencies } from '@flatscout/server';
 import { resolvePaths } from '../../paths.js';
 
 export function registerDiscover(parent: Command): void {

@@ -1,6 +1,6 @@
 # Self-hosted commute routing stack
 
-Three services backing `@wabe/enricher-commute`:
+Three services backing `@flatscout/enricher-commute`:
 
 | Service | Host port | Container port | Role |
 |---------|-----------|----------------|------|
@@ -32,11 +32,11 @@ Subsequent `make up` runs skip graph rebuild — the persistent `./ors-graphs/` 
 
 ## Known gaps
 
-- **Motis 2.x** uses `{ itineraries: [...] }` response shape; `@wabe/enricher-commute`'s `route-motis.ts` parses Motis 1.x's `{ content: { connections: [...] } }`. Transit mode currently returns null at runtime; track in the issue queue.
+- **Motis 2.x** uses `{ itineraries: [...] }` response shape; `@flatscout/enricher-commute`'s `route-motis.ts` parses Motis 1.x's `{ content: { connections: [...] } }`. Transit mode currently returns null at runtime; track in the issue queue.
 - **GTFS URL rotates weekly.** The Makefile pins a specific resource; if `make data-gtfs` 404s, fetch the current URL from <https://data.opentransportdata.swiss/dataset/timetable-2026-gtfs2020> and override via `GTFS_URL=<url> make data-gtfs`.
 
 ## Notes
 
 - All data under `./*-data/` and `./ors-graphs/` is gitignored.
-- The Wabe daemon expects these endpoints at the URLs in `commute.yaml`. Default ports match this compose file.
-- `wabe doctor` probes `/ors/v2/health`, `/`, `/v1/status` respectively; unreachable endpoints surface as `[WARN]` (informational — never fails the doctor exit code).
+- The Flatscout daemon expects these endpoints at the URLs in `commute.yaml`. Default ports match this compose file.
+- `flatscout doctor` probes `/ors/v2/health`, `/`, `/v1/status` respectively; unreachable endpoints surface as `[WARN]` (informational — never fails the doctor exit code).

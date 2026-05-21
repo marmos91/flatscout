@@ -1,7 +1,11 @@
-import type { RawListing } from '@wabe/core';
+import type { RawListing } from '@flatscout/core';
 import type { ExtractedListing } from './extract.js';
 
-export function mapDetail(agencyId: string, url: string, extracted: ExtractedListing | null): RawListing | null {
+export function mapDetail(
+  agencyId: string,
+  url: string,
+  extracted: ExtractedListing | null,
+): RawListing | null {
   if (!extracted) return null;
   const idMatch = url.match(/-(\d+)(?:\?|$)/) ?? url.match(/\/(\d+)(?:\?|\/?$)/);
   const idPart = idMatch ? idMatch[1] : url;

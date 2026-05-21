@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3';
-import type { CommuteMode } from '@wabe/core';
+import type { CommuteMode } from '@flatscout/core';
 
 export type Coord = [number, number]; // [lat, lng]
 export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';

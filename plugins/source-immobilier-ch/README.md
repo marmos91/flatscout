@@ -1,4 +1,4 @@
-# @wabe/source-immobilier-ch
+# @flatscout/source-immobilier-ch
 
 Source plugin for [immobilier.ch](https://www.immobilier.ch). HTML-scraping plugin built on the site's public sitemap + embedded JSON-LD blocks. No anti-bot, no auth.
 
@@ -32,6 +32,6 @@ url_must_include: ['/zurich/zurich/']
 
 ## Tests
 
-`pnpm --filter @wabe/source-immobilier-ch test`
+`pnpm --filter @flatscout/source-immobilier-ch test`
 
 XML parsing, JSON-LD extraction, and mapping use inline fixtures. No live network calls.

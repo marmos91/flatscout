@@ -39,13 +39,9 @@ function fromJsonLd(
   url: string,
   aux?: ReturnType<typeof collectJsonLdFacts>,
 ): ExtractedListing {
-  const apartmentAux = aux?.anchorCandidates.find(
-    (c) => (c['@type'] as string) === 'Apartment' && c !== l,
-  );
+  const apartmentAux = aux?.anchorCandidates.find((c) => (c['@type'] as string) === 'Apartment' && c !== l);
   const houseAux = aux?.anchorCandidates.find(
-    (c) =>
-      (c['@type'] as string) === 'House' ||
-      (c['@type'] as string) === 'SingleFamilyResidence',
+    (c) => (c['@type'] as string) === 'House' || (c['@type'] as string) === 'SingleFamilyResidence',
   );
   const sup = apartmentAux ?? houseAux;
   const supAddress = (sup?.address ?? l.address) as JsonLdListing['address'];
@@ -61,7 +57,7 @@ function fromJsonLd(
       const direct = toNum((o as { price?: unknown }).price);
       if (direct !== null) {
         price = direct;
-        currency = currency ?? ((o as { priceCurrency?: string }).priceCurrency ?? undefined);
+        currency = currency ?? (o as { priceCurrency?: string }).priceCurrency ?? undefined;
         break;
       }
       const spec = (o as { priceSpecification?: { price?: unknown; priceCurrency?: string } })
@@ -81,7 +77,7 @@ function fromJsonLd(
       const sp = toNum((ps as { price?: unknown }).price);
       if (sp !== null) {
         price = sp;
-        currency = currency ?? ((ps as { priceCurrency?: string }).priceCurrency ?? undefined);
+        currency = currency ?? (ps as { priceCurrency?: string }).priceCurrency ?? undefined;
         break;
       }
     }
@@ -119,7 +115,8 @@ function fromJsonLd(
 }
 
 const META_PROPERTY_RE = /<meta[^>]+(?:property|name)=["']([^"']+)["'][^>]+content=["']([^"']*)["'][^>]*>/gi;
-const META_CONTENT_FIRST_RE = /<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']([^"']+)["'][^>]*>/gi;
+const META_CONTENT_FIRST_RE =
+  /<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']([^"']+)["'][^>]*>/gi;
 // CHF or "Fr." prefix, optional space, then an amount with optional thousands
 // separators (apostrophe, comma, dot, space). Reject < 200 (too cheap to be a
 // listing) and > 5_000_000 (too expensive). Match per-month and total alike;
@@ -139,7 +136,7 @@ function parsePriceLike(raw: string): number | null {
   const m = cleaned.match(/^(\d+)(?:[\.,](\d{1,2}))?$/);
   if (m) {
     const whole = Number.parseInt(m[1] ?? '0', 10);
-    const dec = m[2] ? Number.parseInt(m[2], 10) / 10 ** (m[2].length) : 0;
+    const dec = m[2] ? Number.parseInt(m[2], 10) / 10 ** m[2].length : 0;
     return Number.isFinite(whole) ? whole + dec : null;
   }
   // Fallback: strip all non-digits, accept if length plausible.
@@ -160,7 +157,8 @@ function readMeta(html: string): Meta {
   const visit = (prop: string, content: string) => {
     const p = prop.toLowerCase();
     if (p === 'og:title') meta.ogTitle = meta.ogTitle ?? content;
-    else if (p === 'og:description' || p === 'description') meta.ogDescription = meta.ogDescription ?? content;
+    else if (p === 'og:description' || p === 'description')
+      meta.ogDescription = meta.ogDescription ?? content;
     else if (p === 'og:image' || p === 'og:image:url' || p === 'og:image:secure_url') {
       meta.ogImage = meta.ogImage ?? [];
       if (content) meta.ogImage.push(content);
@@ -185,9 +183,7 @@ export function extractOpenGraph(html: string, url: string): ExtractedListing | 
   const meta = readMeta(html);
   // Strip script/style content from the candidate text so JS literals don't
   // produce phantom prices.
-  const visible = html
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ');
+  const visible = html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ');
   const priceMatch = visible.match(PRICE_RE);
   const price = priceMatch?.[1] ? parsePriceLike(priceMatch[1]) : null;
   const roomsMatch = visible.match(ROOMS_RE);

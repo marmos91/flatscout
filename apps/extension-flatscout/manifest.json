@@ -1,21 +1,21 @@
 {
   "manifest_version": 3,
-  "name": "Wabe Bridge",
+  "name": "Flatscout Bridge",
   "version": "0.0.0",
-  "description": "Proxies HTTPS requests from your real browser to a local Wabe agent over WebSocket (bypasses anti-bot walls).",
+  "description": "Proxies HTTPS requests from your real browser to a local Flatscout agent over WebSocket (bypasses anti-bot walls).",
   "background": {
     "service_worker": "src/background.ts",
     "type": "module"
   },
   "action": {
     "default_popup": "src/popup.html",
-    "default_title": "Wabe Bridge"
+    "default_title": "Flatscout Bridge"
   },
   "permissions": ["storage", "cookies", "alarms", "declarativeNetRequest", "tabs", "scripting"],
   "declarative_net_request": {
     "rule_resources": [
       {
-        "id": "wabe_origin_rewrite",
+        "id": "flatscout_origin_rewrite",
         "enabled": true,
         "path": "src/dnr-rules.json"
       }
@@ -32,7 +32,7 @@
   ],
   "browser_specific_settings": {
     "gecko": {
-      "id": "wabe-bridge@wabe.local",
+      "id": "flatscout-bridge@flatscout.local",
       "strict_min_version": "121.0"
     }
   }

@@ -1,5 +1,5 @@
 {
-  "name": "wabe",
+  "name": "flatscout",
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
@@ -14,7 +14,7 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "ci": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test",
-    "wabe": "node packages/cli/dist/index.js"
+    "flatscout": "node packages/cli/dist/index.js"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

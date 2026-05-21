@@ -18,8 +18,8 @@ import { splash } from './splash.js';
 
 const program = new Command();
 program
-  .name('wabe')
-  .description('Wabe — Swiss apartment hunting agent')
+  .name('flatscout')
+  .description('Flatscout — Swiss apartment hunting agent')
   .version('0.0.0')
   .option('-c, --config <dir>', 'config directory (overrides XDG)')
   .option('-d, --data-dir <dir>', 'data directory (overrides XDG)')
@@ -27,7 +27,7 @@ program
 
 program
   .command('splash')
-  .description('print the Wabe splash banner')
+  .description('print the Flatscout splash banner')
   .action(() => {
     console.log(splash());
   });

@@ -1,16 +1,16 @@
 export {};
 
 /**
- * Wabe Bridge — offscreen document.
+ * Flatscout Bridge — offscreen document.
  *
- * Holds the long-lived WebSocket to the local @wabe/browser-bridge server.
+ * Holds the long-lived WebSocket to the local @flatscout/browser-bridge server.
  * The MV3 service worker would otherwise suspend after ~30s of idle and kill
  * the socket. The offscreen document does not suspend; it owns the WS for
  * the lifetime of the extension.
  *
  * Per-request flow:
  *  bridge server -> WS (this doc)
- *   -> chrome.runtime.sendMessage({ type: 'wabe-bridge:proxy', payload })
+ *   -> chrome.runtime.sendMessage({ type: 'flatscout-bridge:proxy', payload })
  *     -> background.ts (SW wakes)
  *       -> chrome.scripting.executeScript({ world: 'MAIN' })
  *     <- result
@@ -71,7 +71,7 @@ interface ConfigReply {
 
 async function readConfig(): Promise<ConfigReply> {
   try {
-    const reply = (await chrome.runtime.sendMessage({ type: 'wabe-bridge:get-config' })) as
+    const reply = (await chrome.runtime.sendMessage({ type: 'flatscout-bridge:get-config' })) as
       | ConfigReply
       | undefined;
     if (reply && typeof reply === 'object') {
@@ -81,16 +81,18 @@ async function readConfig(): Promise<ConfigReply> {
       };
     }
   } catch (err) {
-    console.warn(`[wabe-bridge:offscreen] get-config failed: ${(err as Error).message}`);
+    console.warn(`[flatscout-bridge:offscreen] get-config failed: ${(err as Error).message}`);
   }
   return { bridgeUrl: DEFAULT_BRIDGE_URL, token: null };
 }
 
 /** Fire-and-forget. SW persists overrides + reprewarms newly-registered tabs. */
 function forwardTabOverrides(overrides: unknown[]): void {
-  void chrome.runtime.sendMessage({ type: 'wabe-bridge:set-tab-overrides', payload: overrides }).catch(() => {
-    /* SW may be busy; the next heartbeat re-pushes the same list */
-  });
+  void chrome.runtime
+    .sendMessage({ type: 'flatscout-bridge:set-tab-overrides', payload: overrides })
+    .catch(() => {
+      /* SW may be busy; the next heartbeat re-pushes the same list */
+    });
 }
 
 /** Fire-and-forget. SW writes to chrome.storage.local on our behalf. */
@@ -99,7 +101,7 @@ function recordState(patch: {
   lastAliveAt?: number;
   lastRequestAt?: number;
 }): void {
-  void chrome.runtime.sendMessage({ type: 'wabe-bridge:set-state', payload: patch }).catch(() => {
+  void chrome.runtime.sendMessage({ type: 'flatscout-bridge:set-state', payload: patch }).catch(() => {
     /* SW may be busy; popup still reads via SW on next render */
   });
 }
@@ -112,7 +114,7 @@ function recordRequest(payload: {
   ms: number;
   errorMessage?: string;
 }): void {
-  void chrome.runtime.sendMessage({ type: 'wabe-bridge:record-request', payload }).catch(() => {
+  void chrome.runtime.sendMessage({ type: 'flatscout-bridge:record-request', payload }).catch(() => {
     /* SW may be busy; loss of a single stats record is non-fatal */
   });
 }
@@ -129,7 +131,7 @@ function scheduleReconnect(): void {
 
 function safeSend(ws: WebSocket, payload: string): boolean {
   if (ws.readyState !== WebSocket.OPEN) {
-    console.warn('[wabe-bridge:offscreen] dropping send: WS not OPEN');
+    console.warn('[flatscout-bridge:offscreen] dropping send: WS not OPEN');
     forceReconnect();
     return false;
   }
@@ -137,7 +139,7 @@ function safeSend(ws: WebSocket, payload: string): boolean {
     ws.send(payload);
     return true;
   } catch (err) {
-    console.warn(`[wabe-bridge:offscreen] ws.send threw: ${(err as Error).message}`);
+    console.warn(`[flatscout-bridge:offscreen] ws.send threw: ${(err as Error).message}`);
     forceReconnect();
     return false;
   }
@@ -162,16 +164,16 @@ function forceReconnect(): void {
 
 async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<void> {
   const t0 = Date.now();
-  console.log(`[wabe-bridge:offscreen] proxy ${msg.method} ${msg.url.slice(0, 80)}`);
+  console.log(`[flatscout-bridge:offscreen] proxy ${msg.method} ${msg.url.slice(0, 80)}`);
   try {
     const reply = (await chrome.runtime.sendMessage({
-      type: 'wabe-bridge:proxy',
+      type: 'flatscout-bridge:proxy',
       payload: msg,
     })) as { ok: true; result: InPageFetchResult } | { ok: false; message: string };
     if (reply?.ok) {
       const elapsed = Date.now() - t0;
       console.log(
-        `[wabe-bridge:offscreen] proxy ok ${reply.result.status} (${elapsed}ms) ${msg.id.slice(0, 8)}`,
+        `[flatscout-bridge:offscreen] proxy ok ${reply.result.status} (${elapsed}ms) ${msg.id.slice(0, 8)}`,
       );
       safeSend(
         ws,
@@ -192,7 +194,7 @@ async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<v
     } else {
       const elapsed = Date.now() - t0;
       const message = reply?.message ?? 'background proxy failed';
-      console.warn(`[wabe-bridge:offscreen] proxy fail ${message} (${elapsed}ms)`);
+      console.warn(`[flatscout-bridge:offscreen] proxy fail ${message} (${elapsed}ms)`);
       safeSend(
         ws,
         JSON.stringify({
@@ -212,7 +214,7 @@ async function proxyRequest(ws: WebSocket, msg: BridgeRequestMessage): Promise<v
   } catch (err) {
     const elapsed = Date.now() - t0;
     const message = (err as Error).message;
-    console.warn(`[wabe-bridge:offscreen] proxy threw: ${message}`);
+    console.warn(`[flatscout-bridge:offscreen] proxy threw: ${message}`);
     safeSend(
       ws,
       JSON.stringify({
@@ -243,7 +245,7 @@ async function handleBridgeMessage(ws: WebSocket, raw: string): Promise<void> {
     recordState({ lastConnectedAt: Date.now(), lastAliveAt: Date.now() });
     if (!state.everPaired) {
       state.everPaired = true;
-      console.log('[wabe-bridge:offscreen] paired with wabe agent');
+      console.log('[flatscout-bridge:offscreen] paired with flatscout agent');
     }
     if (typeof msg.bundle_hash === 'string') {
       void maybeSelfReload(msg.bundle_hash);
@@ -265,7 +267,7 @@ async function handleBridgeMessage(ws: WebSocket, raw: string): Promise<void> {
   if (msg.type === 'reject') {
     const reason = typeof msg.reason === 'string' ? msg.reason : 'unknown';
     const detail = typeof msg.detail === 'string' ? msg.detail : undefined;
-    console.warn('[wabe-bridge:offscreen] rejected by server:', reason, detail ?? '');
+    console.warn('[flatscout-bridge:offscreen] rejected by server:', reason, detail ?? '');
     if (reason === 'another_client_active') {
       state.blocked = true;
       // Tell the SW to persist the block + cancel any pending reconnect.
@@ -277,11 +279,11 @@ async function handleBridgeMessage(ws: WebSocket, raw: string): Promise<void> {
       // preempted again.
       void chrome.runtime
         .sendMessage({
-          type: 'wabe-bridge:set-blocked',
+          type: 'flatscout-bridge:set-blocked',
           payload: { reason, detail: detail ?? null, at: Date.now() },
         })
         .catch((err: Error) => {
-          console.warn(`[wabe-bridge] offscreen failed to notify SW of block: ${err.message}`);
+          console.warn(`[flatscout-bridge] offscreen failed to notify SW of block: ${err.message}`);
         });
       if (state.reconnectTimer !== null) {
         clearTimeout(state.reconnectTimer);
@@ -296,7 +298,7 @@ async function handleBridgeMessage(ws: WebSocket, raw: string): Promise<void> {
     const peerVersion = typeof msg.extension_version === 'string' ? msg.extension_version : 'unknown';
     void chrome.runtime
       .sendMessage({
-        type: 'wabe-bridge:set-peer-attempt',
+        type: 'flatscout-bridge:set-peer-attempt',
         payload: { at, extension_version: peerVersion },
       })
       .catch(() => {
@@ -330,7 +332,7 @@ async function getSelfBundleHash(): Promise<string | null> {
     selfBundleHash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
     return selfBundleHash;
   } catch (err) {
-    console.warn('[wabe-bridge:offscreen] failed to hash own bundle:', (err as Error).message);
+    console.warn('[flatscout-bridge:offscreen] failed to hash own bundle:', (err as Error).message);
     return null;
   }
 }
@@ -342,13 +344,13 @@ async function maybeSelfReload(daemonHash: string): Promise<void> {
   if (!own || own === daemonHash) return;
   reloadScheduled = true;
   console.log(
-    `[wabe-bridge:offscreen] bundle hash drifted (own=${own.slice(0, 8)} daemon=${daemonHash.slice(0, 8)}); requesting reload`,
+    `[flatscout-bridge:offscreen] bundle hash drifted (own=${own.slice(0, 8)} daemon=${daemonHash.slice(0, 8)}); requesting reload`,
   );
   // Offscreen documents don't have `chrome.runtime.reload` — delegate to the
   // service worker, which holds the full chrome.runtime surface.
   setTimeout(() => {
-    void chrome.runtime.sendMessage({ type: 'wabe-bridge:reload-extension' }).catch((err: Error) => {
-      console.warn('[wabe-bridge:offscreen] reload request failed:', err.message);
+    void chrome.runtime.sendMessage({ type: 'flatscout-bridge:reload-extension' }).catch((err: Error) => {
+      console.warn('[flatscout-bridge:offscreen] reload request failed:', err.message);
     });
   }, 250);
 }
@@ -370,7 +372,7 @@ async function connect(): Promise<void> {
     ws = new WebSocket(bridgeUrl);
   } catch (err) {
     state.connecting = false;
-    console.warn(`[wabe-bridge:offscreen] failed to open WS: ${(err as Error).message}`);
+    console.warn(`[flatscout-bridge:offscreen] failed to open WS: ${(err as Error).message}`);
     scheduleReconnect();
     return;
   }
@@ -404,7 +406,7 @@ async function connect(): Promise<void> {
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type === 'wabe-bridge:reconnect') {
+  if (message?.type === 'flatscout-bridge:reconnect') {
     if (state.ws) {
       try {
         state.ws.close();
