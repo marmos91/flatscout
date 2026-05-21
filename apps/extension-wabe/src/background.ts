@@ -979,5 +979,69 @@ function installFirefoxPath(): void {
   // server-side 5s keepalives it keeps the WS fully active.
   setInterval(tickKeepalive, IN_PAGE_PING_MS);
 
+  // Firefox MV3 has no `chrome.offscreen`, and `background.persistent: true`
+  // is rejected by the manifest validator (MV3 forbids persistent backgrounds
+  // even though Firefox kept `background.scripts` working). The event page
+  // suspends after ~30s idle, dropping the WS until the next alarm tick.
+  //
+  // Defense in depth (no single trick is officially documented as
+  // suspension-blocking, so we layer cheap ones):
+  //
+  //   a) Web Lock held for the lifetime of the page. `navigator.locks.request`
+  //      with an unresolved Promise keeps a lock acquired forever. Firefox's
+  //      idle bookkeeping treats outstanding locks as in-flight work and
+  //      defers suspension while one is held.
+  //   b) chrome.storage.session writes alongside the existing storage.local
+  //      pings — storage activity counts as work for the same accounting.
+  //      Feature-detected: `storage.session` landed in Firefox 115 but guard
+  //      anyway so the SW boots cleanly on older targets.
+  //   c) The existing 5s in-page setInterval + 15s alarm remain as catch-up
+  //      / wake-up paths in case (a) and (b) ever get tightened.
+  installFirefoxIdleHold();
+
   void connect();
+}
+
+/**
+ * Belt-and-suspenders keepalive for the Firefox MV3 event page.
+ *
+ * Holds an unresolved Web Lock for the page's lifetime and writes a heartbeat
+ * to `chrome.storage.session` every {@link IN_PAGE_PING_MS} milliseconds. Both
+ * are no-ops on Chrome (which uses the offscreen path) so this function is
+ * only called from `installFirefoxPath`.
+ *
+ */
+function installFirefoxIdleHold(): void {
+  // (a) Hold a Web Lock forever. Returns a Promise that never resolves; the
+  //     lock is released only when the event page is actually destroyed.
+  try {
+    const locks = (navigator as Navigator & { locks?: LockManager }).locks;
+    if (locks && typeof locks.request === 'function') {
+      // `mode: 'shared'` lets multiple SW boots coexist without queuing.
+      // Swallow rejections so a transient platform error doesn't take the
+      // bridge down.
+      void locks
+        .request('wabe-bridge-keepalive', { mode: 'shared' }, () => new Promise<void>(() => {}))
+        .catch((err: Error) => {
+          console.warn(`[wabe-bridge] navigator.locks.request failed: ${err.message}`);
+        });
+    }
+  } catch (err) {
+    console.warn(`[wabe-bridge] navigator.locks unavailable: ${(err as Error).message}`);
+  }
+
+  // (b) Periodic write to chrome.storage.session — extra activity signal,
+  //     cheap, and self-cleans when the page is destroyed.
+  const sessionApi = (
+    chrome.storage as typeof chrome.storage & {
+      session?: { set(items: Record<string, unknown>): Promise<void> };
+    }
+  ).session;
+  if (sessionApi && typeof sessionApi.set === 'function') {
+    setInterval(() => {
+      sessionApi.set({ lastIdleHoldAt: Date.now() }).catch(() => {
+        /* non-fatal — storage.session may be unavailable in some contexts */
+      });
+    }, IN_PAGE_PING_MS);
+  }
 }

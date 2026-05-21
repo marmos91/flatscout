@@ -1,7 +1,8 @@
 import { copyFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { defineConfig, type Plugin } from 'vite';
+import { type Plugin, defineConfig } from 'vite';
 import webExtension from 'vite-plugin-web-extension';
+import { type ExtensionBrowser, buildManifest } from './build-manifest';
 
 function copyRawAssets(files: Array<{ from: string; to: string }>): Plugin {
   return {
@@ -28,29 +29,27 @@ function copyRawAssets(files: Array<{ from: string; to: string }>): Plugin {
  * Firefox MV3 still ships with `background.service_worker` disabled — we have
  * to advertise the same entry point as `background.scripts` instead. Chrome
  * MV3 requires `service_worker`. We compute the right shape at build time
- * based on `WABE_EXT_BROWSER`.
+ * based on `WABE_EXT_BROWSER` (see `./build-manifest.ts`).
  */
 export default defineConfig(() => {
-  const browser = process.env.WABE_EXT_BROWSER ?? 'chrome';
+  const browserEnv = process.env.WABE_EXT_BROWSER ?? 'chrome';
+  if (browserEnv !== 'chrome' && browserEnv !== 'firefox') {
+    throw new Error(`WABE_EXT_BROWSER must be 'chrome' or 'firefox', got '${browserEnv}'`);
+  }
+  const browser: ExtensionBrowser = browserEnv;
   const baseManifest = JSON.parse(readFileSync(resolve(__dirname, 'manifest.json'), 'utf8')) as Record<
     string,
     unknown
   >;
-  const manifest = { ...baseManifest } as Record<string, unknown>;
-  if (browser === 'firefox') {
-    // Firefox MV3 dropped support for `persistent: true` (warns on load).
-    // Background suspends after ~30s idle; rely instead on server-side
-    // application-level keepalive (JSON message every 10s) — see
-    // `@wabe/browser-bridge`'s server.ts PING_INTERVAL_MS.
-    manifest.background = { scripts: ['src/background.ts'] };
-  } else {
-    // Chrome: offscreen API is supported; add the permission so the SW can spawn
-    // a persistent offscreen document for the bridge WebSocket. Firefox MV3 has
-    // no offscreen API — its build omits the permission.
-    const perms = Array.isArray(manifest.permissions) ? [...(manifest.permissions as string[])] : [];
-    if (!perms.includes('offscreen')) perms.push('offscreen');
-    manifest.permissions = perms;
-  }
+  // Firefox MV3: background suspends after ~30s idle. We deliberately do NOT
+  // set `background.persistent: true` (MV3 rejects it). Instead, the runtime
+  // background script layers `navigator.locks` + `chrome.storage.session`
+  // writes on top of the existing alarm + setInterval — see
+  // `src/background.ts:installFirefoxIdleHold`.
+  // Chrome MV3: gets an extra `offscreen` permission so the SW can spawn a
+  // persistent offscreen document that owns the WebSocket. Firefox would warn
+  // on the unknown permission, so it's Chrome-only.
+  const manifest = buildManifest(baseManifest, browser);
   return {
     plugins: [
       webExtension({
