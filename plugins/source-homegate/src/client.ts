@@ -1,4 +1,5 @@
 import type { Logger } from 'pino';
+import { sleep } from '@flatscout/utils';
 import { HomegateAntiBotError, HomegateHttpError, HomegateParseError } from './errors.js';
 import type { SearchBody } from './search.js';
 import type { Transport } from './transport.js';
@@ -73,19 +74,4 @@ export async function fetchSearch(body: SearchBody, ctx: FetchContext): Promise<
     attempt += 1;
   }
   throw new HomegateHttpError(0, url, 'unreachable');
-}
-
-/** Promise-based sleep that rejects with `Error('aborted')` when `signal` aborts before the timeout. */
-export function sleep(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const t = setTimeout(resolve, ms);
-    signal.addEventListener(
-      'abort',
-      () => {
-        clearTimeout(t);
-        reject(new Error('aborted'));
-      },
-      { once: true },
-    );
-  });
 }

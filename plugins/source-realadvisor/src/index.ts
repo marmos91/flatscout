@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import type { PluginExport, Source, Context } from '@flatscout/plugin-sdk';
+import { sleep } from '@flatscout/utils';
 import { SearchConfig } from './search.js';
-import { fetchPage, sleep } from './client.js';
+import { fetchPage } from './client.js';
 import { mapHit } from './map.js';
 
 const FetchConfig = z.object({

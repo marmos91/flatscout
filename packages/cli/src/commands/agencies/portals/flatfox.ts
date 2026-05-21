@@ -1,4 +1,5 @@
 import { request } from 'undici';
+import { sleep } from '@flatscout/utils';
 import type { PortalImpl, PortalListing } from './types.js';
 
 const ENDPOINT = 'https://flatfox.ch/api/v1/public-listing/';
@@ -26,21 +27,6 @@ interface FlatfoxPage {
 function listingUrl(r: FlatfoxResult): string {
   if (r.url) return `https://flatfox.ch${r.url}`;
   return `https://flatfox.ch/en/flat/${r.slug ?? r.pk}/`;
-}
-
-async function sleep(ms: number, signal: AbortSignal): Promise<void> {
-  if (ms <= 0 || signal.aborted) return;
-  await new Promise<void>((resolve, reject) => {
-    const t = setTimeout(resolve, ms);
-    signal.addEventListener(
-      'abort',
-      () => {
-        clearTimeout(t);
-        reject(new Error('aborted'));
-      },
-      { once: true },
-    );
-  });
 }
 
 export const flatfoxPortal: PortalImpl = {

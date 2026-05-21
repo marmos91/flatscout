@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveDataDir } from '@flatscout/utils';
 
 export interface ResolvedPaths {
   configDir: string;
@@ -20,9 +21,8 @@ export interface ResolvedPaths {
  */
 export function resolvePaths(opts: { config?: string; dataDir?: string } = {}): ResolvedPaths {
   const xdgConfig = process.env.XDG_CONFIG_HOME ?? join(homedir(), '.config');
-  const xdgData = process.env.XDG_DATA_HOME ?? join(homedir(), '.local', 'share');
   const configDir = opts.config ?? process.env.FLATSCOUT_CONFIG_DIR ?? join(xdgConfig, 'flatscout');
-  const dataDir = opts.dataDir ?? process.env.FLATSCOUT_DATA_DIR ?? join(xdgData, 'flatscout');
+  const dataDir = opts.dataDir ?? resolveDataDir();
   mkdirSync(configDir, { recursive: true });
   mkdirSync(dataDir, { recursive: true });
   return { configDir, dataDir, dbFile: join(dataDir, 'flatscout.db') };

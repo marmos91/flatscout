@@ -5,7 +5,8 @@
     { "path": "../core" },
     { "path": "../db" },
     { "path": "../plugin-sdk" },
-    { "path": "../server" }
+    { "path": "../server" },
+    { "path": "../utils" }
   ],
   "include": ["src/**/*.ts"]
 }

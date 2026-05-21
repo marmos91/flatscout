@@ -16,6 +16,7 @@
   "dependencies": {
     "@flatscout/core": "workspace:*",
     "@flatscout/plugin-sdk": "workspace:*",
+    "@flatscout/utils": "workspace:*",
     "undici": "^6.19.8",
     "zod": "^3.23.8"
   },

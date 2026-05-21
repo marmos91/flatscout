@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import pino from 'pino';
-import { fetchSrp, sleep } from '../src/client.js';
+import { fetchSrp } from '../src/client.js';
 import { IS24AntiBotError, IS24HttpError } from '../src/errors.js';
 import type { Transport, TransportRequestOpts, TransportResponse } from '../src/transport.js';
 
@@ -101,19 +101,5 @@ describe('fetchSrp', () => {
         backoff: { on: [500], retries: 2, base_ms: 1000 },
       }),
     ).rejects.toThrow(/aborted/);
-  });
-});
-
-describe('sleep', () => {
-  it('resolves after the configured delay', async () => {
-    const start = Date.now();
-    await sleep(5, new AbortController().signal);
-    expect(Date.now() - start).toBeGreaterThanOrEqual(4);
-  });
-
-  it('rejects with "aborted" when the signal fires', async () => {
-    const ac = new AbortController();
-    setTimeout(() => ac.abort(), 1);
-    await expect(sleep(1000, ac.signal)).rejects.toThrow(/aborted/);
   });
 });

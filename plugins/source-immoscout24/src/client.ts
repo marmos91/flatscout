@@ -1,4 +1,5 @@
 import type { Logger } from 'pino';
+import { sleep } from '@flatscout/utils';
 import { IS24AntiBotError, IS24HttpError } from './errors.js';
 import type { Transport } from './transport.js';
 
@@ -47,18 +48,4 @@ export async function fetchSrp(url: string, ctx: FetchContext): Promise<FetchSrp
     attempt += 1;
   }
   throw new IS24HttpError(0, url, 'unreachable');
-}
-
-export function sleep(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const t = setTimeout(resolve, ms);
-    signal.addEventListener(
-      'abort',
-      () => {
-        clearTimeout(t);
-        reject(new Error('aborted'));
-      },
-      { once: true },
-    );
-  });
 }

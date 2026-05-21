@@ -1,4 +1,5 @@
 import { request } from 'undici';
+import { sleep } from '@flatscout/utils';
 import { buildSearchParams, type SearchConfig } from './search.js';
 
 export interface BackoffPolicy {
@@ -64,17 +65,6 @@ export interface RawHit {
 export interface RealAdvisorPage {
   total_count: number;
   listings: RawHit[];
-}
-
-export async function sleep(ms: number, signal: AbortSignal): Promise<void> {
-  if (ms <= 0) return;
-  await new Promise<void>((resolve, reject) => {
-    const t = setTimeout(resolve, ms);
-    signal.addEventListener('abort', () => {
-      clearTimeout(t);
-      reject(new Error('aborted'));
-    });
-  });
 }
 
 export async function fetchPage(cfg: SearchConfig, page: number, opts: ClientOpts): Promise<RealAdvisorPage> {
