@@ -6,7 +6,10 @@ export const PROTOCOL_VERSION = 1;
 export const ClientHello = z.object({
   type: z.literal('hello'),
   protocol_version: z.literal(PROTOCOL_VERSION),
-  extension_version: z.string(),
+  // Bounded to keep already-paired peers from bloating chrome.storage via the
+  // peer_attempt echo — the existing client surfaces this verbatim in its
+  // popup. 64 chars covers any plausible semver + suffix.
+  extension_version: z.string().min(1).max(64),
   /** Hex-encoded shared secret proving the extension was paired with this wabe instance. */
   auth_token_hex: z.string().regex(/^[0-9a-f]{64}$/),
 });

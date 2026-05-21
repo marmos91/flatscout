@@ -58,6 +58,19 @@ describe('ClientHello', () => {
       }),
     ).toThrow();
   });
+  it('rejects an oversized extension_version (storage-bloat bound)', () => {
+    // ServerPeerAttempt echoes hello.extension_version verbatim into the
+    // existing client's chrome.storage.local — cap the input so a paired peer
+    // can't drown the popup with a megabyte of garbage.
+    expect(() =>
+      ClientHello.parse({
+        type: 'hello',
+        protocol_version: 1,
+        extension_version: 'x'.repeat(65),
+        auth_token_hex: 'a'.repeat(64),
+      }),
+    ).toThrow();
+  });
 });
 
 describe('ServerWelcome', () => {
