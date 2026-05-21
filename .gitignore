@@ -1,19 +1,21 @@
-node_modules/
-dist/
-.turbo/
-coverage/
+
+!.env.example
+.DS_Store
 .env
 .env.*
-!.env.example
+.npmrc
+.npmrc.publish
+.turbo/
 *.tsbuildinfo
-.DS_Store
+/.planning/
+# Wabe data dir runtime artefacts (defensive — these normally live outside the repo)
+coverage/
+dist/
+homegate-cookies.json
+homegate-install.json
+node_modules/
+secrets.json
 wabe.db
 wabe.db-journal
 wabe.db-shm
 wabe.db-wal
-/.planning/
-
-# Wabe data dir runtime artefacts (defensive — these normally live outside the repo)
-secrets.json
-homegate-cookies.json
-homegate-install.json
