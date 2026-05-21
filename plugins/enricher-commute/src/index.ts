@@ -1,5 +1,5 @@
-import type { Enricher, Context } from '@wabe/plugin-sdk';
-import type { Listing } from '@wabe/core';
+import type { Enricher, Context } from '@flatscout/plugin-sdk';
+import type { Listing } from '@flatscout/core';
 import type Database from 'better-sqlite3';
 import { CommuteConfig } from './schemas.js';
 import { enrichCommute } from './enrich.js';

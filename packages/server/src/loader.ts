@@ -1,4 +1,4 @@
-import type { PluginExport, PluginKind } from '@wabe/plugin-sdk';
+import type { PluginExport, PluginKind } from '@flatscout/plugin-sdk';
 import type { LoadedConfig } from './config.js';
 import { loadPluginConfig } from './config.js';
 
@@ -48,7 +48,7 @@ async function load<K extends PluginKind>(
   entry: { name: string; plugin: string; config: string },
   cfg: LoadedConfig,
 ): Promise<LoadedPlugin<K>> {
-  const packageName = entry.plugin.startsWith('@') ? entry.plugin : `@wabe/${entry.plugin}`;
+  const packageName = entry.plugin.startsWith('@') ? entry.plugin : `@flatscout/${entry.plugin}`;
   const mod = (await import(packageName)) as { default?: PluginExport };
   if (!mod.default) throw new Error(`plugin ${packageName} missing default export`);
   if (mod.default.kind !== expectedKind) {

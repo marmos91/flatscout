@@ -6,7 +6,7 @@ import { join } from 'node:path';
  *
  * IMPORTANT: this shape MUST stay in sync with the parallel reader/writer in
  * `plugins/source-homegate/src/auth.ts`. Plugins cannot depend on
- * `@wabe/server` (the server is what loads them), so the same file is touched
+ * `@flatscout/server` (the server is what loads them), so the same file is touched
  * from two places. Keep keys and types identical between the two modules.
  */
 export interface HomegateSecrets {

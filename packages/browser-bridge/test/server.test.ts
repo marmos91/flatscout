@@ -13,7 +13,7 @@ let port: number;
 let secret: string;
 
 beforeEach(async () => {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-bridge-srv-'));
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-bridge-srv-'));
   secret = loadOrGenerateSecret(dir);
   bridge = await startBridgeServer({ dataDir: dir, port: 0 });
   port = bridge.port;
@@ -324,7 +324,7 @@ describe('startBridgeServer single-client invariant', () => {
 
 describe('startBridgeServer loopback enforcement', () => {
   it('always binds 127.0.0.1 even when StartOpts has no host field', async () => {
-    const tmp = mkdtempSync(join(tmpdir(), 'wabe-bridge-loopback-'));
+    const tmp = mkdtempSync(join(tmpdir(), 'flatscout-bridge-loopback-'));
     const b = await startBridgeServer({ dataDir: tmp, port: 0 });
     const ws = new WebSocket(`ws://127.0.0.1:${b.port}/bridge`);
     await new Promise<void>((r, reject) => {

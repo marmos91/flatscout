@@ -3,17 +3,17 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pino } from 'pino';
-import { openDb, migrate, type WabeDb } from '@wabe/db';
+import { openDb, migrate, type FlatscoutDb } from '@flatscout/db';
 import { runOnce } from '../src/pipeline.js';
 import type { LoadedPlugin } from '../src/loader.js';
-import type { Source, Enricher, Notifier } from '@wabe/plugin-sdk';
+import type { Source, Enricher, Notifier } from '@flatscout/plugin-sdk';
 import { Quota } from '../src/quota.js';
 
 let dir: string;
-let db: WabeDb;
+let db: FlatscoutDb;
 
-function freshDb(): WabeDb {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-enrich-'));
+function freshDb(): FlatscoutDb {
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-enrich-'));
   db = openDb(join(dir, 'enrich.db'));
   migrate(db);
   return db;

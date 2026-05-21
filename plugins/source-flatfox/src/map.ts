@@ -1,4 +1,4 @@
-import { classifyRentalTerm, type RawListing } from '@wabe/core';
+import { classifyRentalTerm, type RawListing } from '@flatscout/core';
 
 export interface FlatfoxApiResult {
   pk: number;

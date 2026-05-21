@@ -4,8 +4,8 @@ import {
   resolveFields,
   SOURCE_PRIORITY_DEFAULTS,
   DEFAULT_SOURCE_PRIORITY,
-} from '@wabe/core';
-import type { WabeDb } from './client.js';
+} from '@flatscout/core';
+import type { FlatscoutDb } from './client.js';
 
 interface LegacyRow {
   id: string;
@@ -18,7 +18,7 @@ interface LegacyRow {
   last_seen_at: number;
 }
 
-type RawDb = WabeDb['_raw'];
+type RawDb = FlatscoutDb['_raw'];
 
 /**
  * Fold rows from `listings_old` into the new `listings` table via resolveFields().
@@ -31,7 +31,7 @@ type RawDb = WabeDb['_raw'];
  * to re-invoke after a crash because the entire body is wrapped in a single
  * transaction.
  */
-export function collapseListings(db: WabeDb): void {
+export function collapseListings(db: FlatscoutDb): void {
   const raw = db._raw;
   if (!tableExistsByName(raw, 'listings_old')) return;
 

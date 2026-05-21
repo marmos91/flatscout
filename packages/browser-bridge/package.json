@@ -1,5 +1,5 @@
 {
-  "name": "@wabe/browser-bridge",
+  "name": "@flatscout/browser-bridge",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",

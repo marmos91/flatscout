@@ -1,4 +1,4 @@
-import type { WabeDb } from '@wabe/db';
+import type { FlatscoutDb } from '@flatscout/db';
 
 function utcDay(d: Date = new Date()): string {
   return d.toISOString().slice(0, 10);
@@ -14,7 +14,7 @@ function utcDay(d: Date = new Date()): string {
  */
 export class Quota {
   constructor(
-    private db: WabeDb,
+    private db: FlatscoutDb,
     private dailyMax: number,
   ) {}
 

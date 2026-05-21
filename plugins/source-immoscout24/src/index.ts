@@ -1,7 +1,7 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
-import type { Context, PluginExport, Source } from '@wabe/plugin-sdk';
+import type { Context, PluginExport, Source } from '@flatscout/plugin-sdk';
 import { IS24SrpListingSchema } from './parse.js';
 import { mapSrpListing } from './map.js';
 import { mergePdpIntoListing } from './enrich.js';
@@ -113,9 +113,9 @@ const ConfigSchema = z.object({
 type Config = z.infer<typeof ConfigSchema>;
 
 function resolveDataDir(): string {
-  if (process.env.WABE_DATA_DIR) return process.env.WABE_DATA_DIR;
+  if (process.env.FLATSCOUT_DATA_DIR) return process.env.FLATSCOUT_DATA_DIR;
   const xdgData = process.env.XDG_DATA_HOME ?? join(homedir(), '.local', 'share');
-  return join(xdgData, 'wabe');
+  return join(xdgData, 'flatscout');
 }
 
 let activeTransport: Transport | undefined;

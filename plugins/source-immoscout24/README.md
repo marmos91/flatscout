@@ -1,16 +1,16 @@
-# @wabe/source-immoscout24
+# @flatscout/source-immoscout24
 
 Search-based source plugin for [ImmoScout24.ch](https://www.immoscout24.ch).
-Paginates the SRP (search-result page) through the Wabe browser bridge and
+Paginates the SRP (search-result page) through the Flatscout browser bridge and
 emits one `Listing` per result — rooms, price, surface, photos, description,
 geo, all from the SRP card. Optional PDP enrichment fills contact channels
 (phone / email / form URL) on opt-in.
 
 ## Requirements
 
-DataDome + Cloudflare protect every IS24 dynamic surface. The Wabe browser
+DataDome + Cloudflare protect every IS24 dynamic surface. The Flatscout browser
 bridge is the only viable transport: in-process when running inside
-`wabe start`, or via the daemon's `/dispatch` when run as a sibling CLI
+`flatscout start`, or via the daemon's `/dispatch` when run as a sibling CLI
 process. Without a bridge the plugin fails fast at init.
 
 See `docs/research/2026-05-18-immoscout24-investigation.md` for the
@@ -66,13 +66,13 @@ at a glance what the tab is actually filtered on. To change filters:
 
 1. Navigate inside the tab — adjust the SRP filters in the IS24 UI.
 2. Let the SPA re-render with the new results.
-3. The next Wabe scan will pick up the new listings.
+3. The next Flatscout scan will pick up the new listings.
 
 If you depend on a specific filter set, keep the tab pinned to that URL.
 
 ## Tests
 
-`pnpm --filter @wabe/source-immoscout24 test`
+`pnpm --filter @flatscout/source-immoscout24 test`
 
 The captured SRP fixture under `test/fixtures/srp-zurich-page1.html` exercises
 `parse.ts`, `map.ts`, and `enrich.ts` without live network access.

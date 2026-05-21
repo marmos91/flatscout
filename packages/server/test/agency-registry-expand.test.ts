@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AgencyRegistry } from '@wabe/core';
+import { AgencyRegistry } from '@flatscout/core';
 import { expandRegistry } from '../src/agency-registry/expand.js';
 
 const reg: AgencyRegistry = AgencyRegistry.parse({

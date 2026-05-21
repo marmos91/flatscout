@@ -1,5 +1,5 @@
 {
-  "name": "@wabe/db",
+  "name": "@flatscout/db",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@wabe/core": "workspace:*",
+    "@flatscout/core": "workspace:*",
     "better-sqlite3": "^11.3.0",
     "drizzle-orm": "^0.34.0"
   },

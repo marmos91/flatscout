@@ -39,7 +39,7 @@ export interface SearchBody {
    * Optional fieldset selector. `'srp-list'` is the compact projection used by
    * the iOS app's search-results page (drops `lister`, `availableFrom`,
    * `externalIds`, …). Omit the field entirely to receive the full projection,
-   * which is what Wabe needs to populate agency / contact / availability.
+   * which is what Flatscout needs to populate agency / contact / availability.
    */
   fieldset?: 'srp-list';
   query: SearchQuery;

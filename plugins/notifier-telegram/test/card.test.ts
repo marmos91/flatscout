@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { renderCard } from '../src/card.js';
-import type { Listing } from '@wabe/core';
+import type { Listing } from '@flatscout/core';
 
 const baseListing: Listing = {
   id: 'f:1',

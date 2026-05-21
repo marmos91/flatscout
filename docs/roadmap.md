@@ -4,10 +4,10 @@ Tracks what shipped recently, what's designed and queued for implementation, and
 
 ## Recently shipped (2026-05-21)
 
-- **Firefox MV3 keepalive** ([#14](https://github.com/marmos91/wabe/pull/14)) — Web Lock + `chrome.storage.session` writes on the Firefox path keep the background event page from suspending and dropping the bridge WebSocket. Chrome offscreen path untouched.
-- **Documentation refresh** ([#15](https://github.com/marmos91/wabe/pull/15)) — README rewritten as user documentation. Internal planning docs (`docs/superpowers/plans/`, `docs/superpowers/specs/`) removed. This roadmap added.
-- **IS24 pagination** ([#16](https://github.com/marmos91/wabe/pull/16)) — the bridge's read-state protocol gained sequenced pre-read actions (`eval` to drive SPA navigation, `wait_for` to gate on hydration). `source-immoscout24` now walks up to `max_pages` pages from the user's open tab by clicking the next-page control and waiting for the Pinia store to advance.
-- **Bridge single-client UX + IS24 config-drift warning** ([#17](https://github.com/marmos91/wabe/pull/17)) — second extension instance connecting with a valid token is now rejected with a structured reason and the existing socket is notified, replacing the old silent preempt loop. `source-immoscout24` warns once per scan when yaml `cfg.search` is set, since that source ingests the live tab's filter state and ignores yaml filters.
+- **Firefox MV3 keepalive** ([#14](https://github.com/marmos91/flatscout/pull/14)) — Web Lock + `chrome.storage.session` writes on the Firefox path keep the background event page from suspending and dropping the bridge WebSocket. Chrome offscreen path untouched.
+- **Documentation refresh** ([#15](https://github.com/marmos91/flatscout/pull/15)) — README rewritten as user documentation. Internal planning docs (`docs/superpowers/plans/`, `docs/superpowers/specs/`) removed. This roadmap added.
+- **IS24 pagination** ([#16](https://github.com/marmos91/flatscout/pull/16)) — the bridge's read-state protocol gained sequenced pre-read actions (`eval` to drive SPA navigation, `wait_for` to gate on hydration). `source-immoscout24` now walks up to `max_pages` pages from the user's open tab by clicking the next-page control and waiting for the Pinia store to advance.
+- **Bridge single-client UX + IS24 config-drift warning** ([#17](https://github.com/marmos91/flatscout/pull/17)) — second extension instance connecting with a valid token is now rejected with a structured reason and the existing socket is notified, replacing the old silent preempt loop. `source-immoscout24` warns once per scan when yaml `cfg.search` is set, since that source ingests the live tab's filter state and ignores yaml filters.
 
 ## Planned product features
 
@@ -50,8 +50,6 @@ A digest mode on the Telegram notifier complementing the existing per-listing fa
 
 Work required before the first public release on npm.
 
-- **Rebrand `wabe` → `flatscout`.** Every `@wabe/*` package → `@flatscout/*`. Rename the CLI binary, the `WABE_DATA_DIR` env var, the GitHub repo, log tags, and documentation. The npm org `flatscout` is claimed.
-- **`CONTRIBUTING.md`.** Dev setup (pnpm, Node 22), commit + branch conventions, PR process, testing rules, how to add a new plugin via `@flatscout/plugin-sdk`.
 - **Code polish pass.** Consolidate duplicated patterns (data-dir resolution, undici pool wiring, logger child setup, env interpolation) into a shared `@flatscout/utils` package. Strip over-decomposed helpers and AI-flavored verbosity. Address residual lint and format issues across the workspace.
 - **CI/CD release pipeline.**
   - `ci.yml` on every push and PR: lint, format-check, typecheck, test, build.

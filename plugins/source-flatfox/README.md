@@ -1,11 +1,11 @@
-# @wabe/source-flatfox
+# @flatscout/source-flatfox
 
 ## What it is
 
-A Wabe **source** plugin that fetches Swiss rental listings from
+A Flatscout **source** plugin that fetches Swiss rental listings from
 [Flatfox](https://flatfox.ch)'s public REST API
 (`https://flatfox.ch/api/v1/public-listing/`) and emits canonical
-`RawListing` records into the Wabe pipeline.
+`RawListing` records into the Flatscout pipeline.
 
 The API requires no authentication. The plugin uses an `undici` connection
 pool with polite pacing, exponential backoff on 429/5xx, and honors the
@@ -13,7 +13,7 @@ orchestrator's `AbortSignal`.
 
 ## Install & enable
 
-The plugin is part of the Wabe monorepo and ships as `@wabe/source-flatfox`.
+The plugin is part of the Flatscout monorepo and ships as `@flatscout/source-flatfox`.
 Enable it in your `config.yaml`:
 
 ```yaml
@@ -175,4 +175,4 @@ inline fixtures and `undici` `MockAgent`.
 
 ## License
 
-MIT, matching the rest of the Wabe project.
+MIT, matching the rest of the Flatscout project.

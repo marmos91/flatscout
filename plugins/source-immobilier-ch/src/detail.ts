@@ -39,7 +39,7 @@ export async function fetchDetail(url: string, signal: AbortSignal): Promise<Det
   const res = await request(url, {
     signal,
     method: 'GET',
-    headers: { 'user-agent': 'Mozilla/5.0 wabe/0', accept: 'text/html' },
+    headers: { 'user-agent': 'Mozilla/5.0 flatscout/0', accept: 'text/html' },
   });
   if (res.statusCode !== 200) throw new Error(`detail ${url} responded ${res.statusCode}`);
   const html = await res.body.text();

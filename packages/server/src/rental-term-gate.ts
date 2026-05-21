@@ -1,4 +1,4 @@
-import type { Listing, RentalTermPolicy } from '@wabe/core';
+import type { Listing, RentalTermPolicy } from '@flatscout/core';
 
 /** Average month length used for duration arithmetic (Gregorian average). */
 const MS_PER_MONTH = 1000 * 60 * 60 * 24 * 30.44;

@@ -14,18 +14,18 @@ export interface ResolvedPaths {
  * explicit overrides taking highest precedence.
  *
  * Precedence (highest first): explicit `opts.config`/`opts.dataDir` → env vars
- * `WABE_CONFIG_DIR` / `WABE_DATA_DIR` → `$XDG_CONFIG_HOME` / `$XDG_DATA_HOME` →
+ * `FLATSCOUT_CONFIG_DIR` / `FLATSCOUT_DATA_DIR` → `$XDG_CONFIG_HOME` / `$XDG_DATA_HOME` →
  * platform defaults under `~/.config` and `~/.local/share`. Both directories
  * are created if missing.
  */
 export function resolvePaths(opts: { config?: string; dataDir?: string } = {}): ResolvedPaths {
   const xdgConfig = process.env.XDG_CONFIG_HOME ?? join(homedir(), '.config');
   const xdgData = process.env.XDG_DATA_HOME ?? join(homedir(), '.local', 'share');
-  const configDir = opts.config ?? process.env.WABE_CONFIG_DIR ?? join(xdgConfig, 'wabe');
-  const dataDir = opts.dataDir ?? process.env.WABE_DATA_DIR ?? join(xdgData, 'wabe');
+  const configDir = opts.config ?? process.env.FLATSCOUT_CONFIG_DIR ?? join(xdgConfig, 'flatscout');
+  const dataDir = opts.dataDir ?? process.env.FLATSCOUT_DATA_DIR ?? join(xdgData, 'flatscout');
   mkdirSync(configDir, { recursive: true });
   mkdirSync(dataDir, { recursive: true });
-  return { configDir, dataDir, dbFile: join(dataDir, 'wabe.db') };
+  return { configDir, dataDir, dbFile: join(dataDir, 'flatscout.db') };
 }
 
 /**

@@ -1,8 +1,8 @@
 import type { Logger } from 'pino';
 import type Database from 'better-sqlite3';
-import type { CommuteMode } from '@wabe/core';
-import { Listing as ListingSchema } from '@wabe/core';
-import type { Listing } from '@wabe/core';
+import type { CommuteMode } from '@flatscout/core';
+import { Listing as ListingSchema } from '@flatscout/core';
+import type { Listing } from '@flatscout/core';
 import pLimit from 'p-limit';
 import type { CommuteConfig } from './schemas.js';
 import { CommuteCache, normalizeAddress, type Coord, type Weekday } from './cache.js';

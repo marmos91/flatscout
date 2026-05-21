@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { PluginExport, Source, Context } from '@wabe/plugin-sdk';
+import type { PluginExport, Source, Context } from '@flatscout/plugin-sdk';
 import { fetchSitemap } from './sitemap.js';
 import { fetchDetail } from './detail.js';
 import { extractListing } from './extract.js';
@@ -42,7 +42,9 @@ const ConfigSchema = z.object({
    */
   region_filter: z
     .object({
-      postal_codes: z.array(z.string().regex(/^\d{4}$/, 'PLZ must be a 4-digit Swiss postal code')).default([]),
+      postal_codes: z
+        .array(z.string().regex(/^\d{4}$/, 'PLZ must be a 4-digit Swiss postal code'))
+        .default([]),
       cities: z.array(z.string().min(1)).default([]),
       cantons: z.array(z.string().length(2)).default([]),
     })
@@ -57,7 +59,7 @@ type Config = z.infer<typeof ConfigSchema>;
  * field fails — better to drop ambiguous units than notify out-of-zone.
  */
 function matchesRegion(
-  listing: import('@wabe/core').RawListing,
+  listing: import('@flatscout/core').RawListing,
   plz: Set<string>,
   cities: Set<string>,
   cantons: Set<string>,
@@ -140,10 +142,7 @@ const plugin: Source = {
       }
     }
     if (regionEnabled && droppedByRegion > 0) {
-      ctx.logger.info(
-        { dropped: droppedByRegion, scanned },
-        'schemaorg: region_filter dropped listings',
-      );
+      ctx.logger.info({ dropped: droppedByRegion, scanned }, 'schemaorg: region_filter dropped listings');
     }
   },
 };

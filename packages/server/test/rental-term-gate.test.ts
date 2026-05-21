@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Listing, RentalTermPolicy } from '@wabe/core';
+import type { Listing, RentalTermPolicy } from '@flatscout/core';
 import { passes } from '../src/rental-term-gate.js';
 
 const NOW = new Date('2026-05-18T00:00:00Z');

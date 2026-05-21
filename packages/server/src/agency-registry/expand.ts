@@ -1,4 +1,4 @@
-import type { AgencyEntry, AgencyRegistry } from '@wabe/core';
+import type { AgencyEntry, AgencyRegistry } from '@flatscout/core';
 
 export interface ExpandedSource {
   /** Synthetic name for the loaded plugin instance (also drives logging + breaker keys). */
@@ -63,7 +63,7 @@ export interface ExpandOptions {
 /**
  * Expands enabled agency rows into synthetic source-plugin entries that the
  * regular plugin loader can resolve. Rows referencing a platform whose adapter
- * isn't bundled in the current Wabe build go into `skipped` (never throws),
+ * isn't bundled in the current Flatscout build go into `skipped` (never throws),
  * keeping registries forward-compatible with future bundled adapters.
  */
 export function expandRegistry(
@@ -102,9 +102,7 @@ export function expandRegistry(
     if (opts.regionFilter) {
       const rf = opts.regionFilter;
       const hasAny =
-        (rf.postal_codes?.length ?? 0) > 0 ||
-        (rf.cities?.length ?? 0) > 0 ||
-        (rf.cantons?.length ?? 0) > 0;
+        (rf.postal_codes?.length ?? 0) > 0 || (rf.cities?.length ?? 0) > 0 || (rf.cantons?.length ?? 0) > 0;
       if (hasAny) {
         inlineConfig.region_filter = {
           postal_codes: rf.postal_codes ?? [],

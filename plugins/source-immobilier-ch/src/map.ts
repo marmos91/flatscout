@@ -1,4 +1,4 @@
-import type { RawListing } from '@wabe/core';
+import type { RawListing } from '@flatscout/core';
 import { flattenImages, type DetailPayload } from './detail.js';
 
 function toNum(v: unknown): number | null {

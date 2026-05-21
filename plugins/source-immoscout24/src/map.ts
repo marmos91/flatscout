@@ -1,4 +1,4 @@
-import { classifyRentalTerm, type RawListing } from '@wabe/core';
+import { classifyRentalTerm, type RawListing } from '@flatscout/core';
 import type { IS24SrpListing } from './parse.js';
 
 type Lang = 'de' | 'en' | 'fr' | 'it';

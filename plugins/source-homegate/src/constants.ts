@@ -3,10 +3,10 @@
  *
  * Single source of truth for the wire-level "what an HG client looks like"
  * shape. Both `auth.ts` (refresh-token rotation, plugin-side) and
- * `@wabe/cli`'s login/logout commands (interactive OAuth, CLI-side) import
+ * `@flatscout/cli`'s login/logout commands (interactive OAuth, CLI-side) import
  * from here so the two paths never drift.
  *
- * Plugins can't depend on `@wabe/server` (server is the loader), so this
+ * Plugins can't depend on `@flatscout/server` (server is the loader), so this
  * module is the shared layer instead.
  */
 export const AUTH_BASE = 'https://auth.homegate.ch';

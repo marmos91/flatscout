@@ -12,12 +12,12 @@ import {
   scheduleSources,
   startBridgeServer,
   startHeartbeat,
-} from '@wabe/server';
-import { migrate, openDb } from '@wabe/db';
+} from '@flatscout/server';
+import { migrate, openDb } from '@flatscout/db';
 import { resolvePaths } from '../paths.js';
 
 /**
- * Registers the `wabe start` subcommand: long-running daemon mode.
+ * Registers the `flatscout start` subcommand: long-running daemon mode.
  *
  * Each source is scheduled independently per its `schedule` cron expression;
  * SIGINT/SIGTERM trigger a graceful shutdown that stops the scheduler, the
@@ -97,6 +97,6 @@ export function registerStart(prog: Command): void {
       };
       process.once('SIGINT', shutdown);
       process.once('SIGTERM', shutdown);
-      logger.info('wabe daemon up');
+      logger.info('flatscout daemon up');
     });
 }

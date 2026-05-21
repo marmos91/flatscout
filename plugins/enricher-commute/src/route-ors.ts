@@ -1,6 +1,6 @@
 import { request } from 'undici';
 import type { Logger } from 'pino';
-import type { CommuteMode } from '@wabe/core';
+import type { CommuteMode } from '@flatscout/core';
 
 export interface OrsDeps {
   orsUrl: string;

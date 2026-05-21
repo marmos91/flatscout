@@ -1,4 +1,4 @@
-# @wabe/source-realadvisor
+# @flatscout/source-realadvisor
 
 Source plugin for [realadvisor.ch](https://realadvisor.ch) — Swiss real-estate aggregator with a public REST endpoint.
 
@@ -14,7 +14,7 @@ See `docs/research/2026-05-18-realadvisor-investigation.md` for the investigatio
 
 ## Aggregator caveat
 
-RealAdvisor surfaces listings from other Swiss portals (Homegate, ImmoScout24, Flatfox, …) with an encrypted clickout URL token resolved server-side. The original portal is NOT exposed in the API. Heavy overlap with `@wabe/source-flatfox` and `@wabe/source-homegate` is expected; Wabe's cross-source dedup (Phase A) handles the overlap and demotes realadvisor to a fallback when a portal duplicate is available (default priority `50` vs portals at `70-80`).
+RealAdvisor surfaces listings from other Swiss portals (Homegate, ImmoScout24, Flatfox, …) with an encrypted clickout URL token resolved server-side. The original portal is NOT exposed in the API. Heavy overlap with `@flatscout/source-flatfox` and `@flatscout/source-homegate` is expected; Flatscout's cross-source dedup (Phase A) handles the overlap and demotes realadvisor to a fallback when a portal duplicate is available (default priority `50` vs portals at `70-80`).
 
 ## Config
 
@@ -35,6 +35,6 @@ All `search.*` fields are optional with sensible Zurich-apartment-rental default
 
 ## Tests
 
-`pnpm --filter @wabe/source-realadvisor test`
+`pnpm --filter @flatscout/source-realadvisor test`
 
 Tests use undici `MockAgent` with a captured fixture under `test/fixtures/responses/`. No live network calls.

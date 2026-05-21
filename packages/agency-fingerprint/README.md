@@ -1,13 +1,13 @@
-# @wabe/agency-fingerprint
+# @flatscout/agency-fingerprint
 
 HTTP-probe-based classifier that tags a Swiss agency URL with the underlying CMS / hosting platform (immomig / casasoft / iframe-portal / schemaorg / custom).
 
-Used by `wabe agencies probe` and `wabe agencies probe-portal` to bootstrap an agency registry without manual classification per entry.
+Used by `flatscout agencies probe` and `flatscout agencies probe-portal` to bootstrap an agency registry without manual classification per entry.
 
 ## API
 
 ```ts
-import { fingerprint } from '@wabe/agency-fingerprint';
+import { fingerprint } from '@flatscout/agency-fingerprint';
 
 const result = await fingerprint('https://walde.ch', new AbortController().signal);
 // → { platform: 'schemaorg', url: '...', status: 200, reason: '...' }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { PluginExport, Source, Context } from '@wabe/plugin-sdk';
+import type { PluginExport, Source, Context } from '@flatscout/plugin-sdk';
 import { fetchSitemap } from './sitemap.js';
 import { fetchDetail } from './detail.js';
 import { mapDetail } from './map.js';
@@ -22,9 +22,7 @@ const ConfigSchema = z.object({
    * postal_code field on the mapped listing is checked after extraction;
    * null-PLZ listings drop when the allowlist is non-empty.
    */
-  zipcodes: z
-    .array(z.string().regex(/^\d{4}$/, 'PLZ must be a 4-digit Swiss postal code'))
-    .default([]),
+  zipcodes: z.array(z.string().regex(/^\d{4}$/, 'PLZ must be a 4-digit Swiss postal code')).default([]),
 });
 type Config = z.infer<typeof ConfigSchema>;
 

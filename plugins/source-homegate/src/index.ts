@@ -1,7 +1,7 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
-import type { Context, PluginExport, Source } from '@wabe/plugin-sdk';
+import type { Context, PluginExport, Source } from '@flatscout/plugin-sdk';
 import { fetchSearch, sleep } from './client.js';
 import { mapHomegateResult, HomegateApiSchema } from './map.js';
 import { buildSearchBody, SearchConfig } from './search.js';
@@ -29,20 +29,20 @@ type Config = z.infer<typeof ConfigSchema>;
 
 /**
  * Resolves the data directory the plugin should persist secrets and bridge
- * status under. Prefers `$WABE_DATA_DIR`, then `$XDG_DATA_HOME`, then the
- * platform default — matching `@wabe/cli`'s `resolvePaths`.
+ * status under. Prefers `$FLATSCOUT_DATA_DIR`, then `$XDG_DATA_HOME`, then the
+ * platform default — matching `@flatscout/cli`'s `resolvePaths`.
  */
 function resolveDataDir(): string {
-  if (process.env.WABE_DATA_DIR) return process.env.WABE_DATA_DIR;
+  if (process.env.FLATSCOUT_DATA_DIR) return process.env.FLATSCOUT_DATA_DIR;
   const xdgData = process.env.XDG_DATA_HOME ?? join(homedir(), '.local', 'share');
-  return join(xdgData, 'wabe');
+  return join(xdgData, 'flatscout');
 }
 
 let activeTransport: Transport | undefined;
 
 /**
  * Homegate source plugin: paginates the iOS-style anonymous search endpoint
- * through the Wabe browser bridge. DataDome's anti-bot challenge requires
+ * through the Flatscout browser bridge. DataDome's anti-bot challenge requires
  * requests originate from a real Homegate page context — bridge is the only
  * viable transport.
  */
@@ -108,7 +108,7 @@ const plugin: Source = {
 };
 
 /**
- * Public named exports for HG clients (e.g. `@wabe/cli`'s login/logout). The
+ * Public named exports for HG clients (e.g. `@flatscout/cli`'s login/logout). The
  * plugin is the canonical source of truth for the OAuth2 wire shape; clients
  * import these instead of duplicating the literals.
  */

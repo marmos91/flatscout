@@ -35,4 +35,4 @@ export {
   readHeartbeat,
   startBridgeServer,
   startHeartbeat,
-} from '@wabe/browser-bridge';
+} from '@flatscout/browser-bridge';

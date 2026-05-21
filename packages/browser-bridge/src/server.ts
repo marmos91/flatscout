@@ -156,7 +156,7 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
     const peer = `${req.socket.remoteAddress}:${req.socket.remotePort}`;
     const role: 'extension' | 'requester' =
       (ws as WebSocket & { _path?: string })._path === '/dispatch' ? 'requester' : 'extension';
-    if (process.env.WABE_BRIDGE_DEBUG)
+    if (process.env.FLATSCOUT_BRIDGE_DEBUG)
       console.log(`[bridge] connect from ${peer} role=${role} ua=${req.headers['user-agent'] ?? 'n/a'}`);
     if (role === 'requester') {
       let helloReceived = false;
@@ -260,7 +260,7 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
     }
     let helloReceived = false;
     ws.on('message', (raw) => {
-      if (process.env.WABE_BRIDGE_DEBUG)
+      if (process.env.FLATSCOUT_BRIDGE_DEBUG)
         console.log(`[bridge] msg from ${peer}: ${String(raw).slice(0, 200)}`);
       let parsed: unknown;
       try {
@@ -377,12 +377,12 @@ export async function startBridgeServer(opts: StartOpts): Promise<BridgeServer> 
       }
     });
     ws.on('close', (code, reason) => {
-      if (process.env.WABE_BRIDGE_DEBUG)
+      if (process.env.FLATSCOUT_BRIDGE_DEBUG)
         console.log(`[bridge] close from ${peer} code=${code} reason=${reason.toString() || '(none)'}`);
       if (activeSocket === ws) activeSocket = null;
     });
     ws.on('error', (err) => {
-      if (process.env.WABE_BRIDGE_DEBUG)
+      if (process.env.FLATSCOUT_BRIDGE_DEBUG)
         console.log(`[bridge] error from ${peer}: ${(err as Error).message}`);
     });
   });

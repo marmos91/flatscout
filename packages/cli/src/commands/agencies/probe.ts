@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import { fingerprint } from '@wabe/agency-fingerprint';
+import { fingerprint } from '@flatscout/agency-fingerprint';
 
 export function registerProbe(parent: Command): void {
   parent

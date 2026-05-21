@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import { openDb } from '@wabe/db';
+import { openDb } from '@flatscout/db';
 import { resolvePaths } from '../../paths.js';
 
 interface Row {
@@ -10,7 +10,7 @@ interface Row {
 
 // NOTE: deviated from plan — plan referenced `resolveDataDir()` from `paths.ts`,
 // but that helper does not exist. Use the existing `resolvePaths()` which already
-// resolves the data dir via the same XDG / env-var precedence rules as `wabe scan`.
+// resolves the data dir via the same XDG / env-var precedence rules as `flatscout scan`.
 export function registerStats(parent: Command): void {
   parent
     .command('stats')
@@ -24,7 +24,7 @@ export function registerStats(parent: Command): void {
         )
         .all();
       if (rows.length === 0) {
-        console.log('no agency listings yet — run `wabe scan` first.');
+        console.log('no agency listings yet — run `flatscout scan` first.');
         return;
       }
       for (const r of rows) {

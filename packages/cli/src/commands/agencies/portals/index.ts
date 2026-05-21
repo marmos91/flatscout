@@ -1,5 +1,5 @@
 /**
- * Per-portal listing fetchers feeding `wabe agencies probe-portal`. Each
+ * Per-portal listing fetchers feeding `flatscout agencies probe-portal`. Each
  * portal implementation reuses its source plugin's wire knowledge to pull
  * the top-N listings, then exposes them as a flat `PortalListing[]` so the
  * probe-portal command can mine descriptions + agency.website fields

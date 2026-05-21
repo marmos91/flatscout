@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { RawListing } from '@wabe/core';
+import type { RawListing } from '@flatscout/core';
 
 // We're unit-testing the filter logic directly via a small re-implementation
 // of `matchesRegion` (private to src/index.ts). The shape is intentionally
@@ -35,22 +35,18 @@ describe('region_filter (source-schemaorg adapter contract)', () => {
     expect(matchesRegion(loc('8008', 'Zürich', null), new Set(['8008']), new Set(), new Set())).toBe(true);
   });
   it('keeps listings whose city matches case-insensitively', () => {
-    expect(
-      matchesRegion(loc(null, 'zürich', null), new Set(), new Set(['zürich']), new Set()),
-    ).toBe(true);
+    expect(matchesRegion(loc(null, 'zürich', null), new Set(), new Set(['zürich']), new Set())).toBe(true);
   });
   it('keeps listings whose canton matches case-insensitively', () => {
     expect(matchesRegion(loc(null, null, 'zh'), new Set(), new Set(), new Set(['ZH']))).toBe(true);
   });
   it('drops listings whose PLZ is not in the allowlist (no other field matches)', () => {
-    expect(
-      matchesRegion(loc('1200', 'Geneva', 'GE'), new Set(['8008', '8053']), new Set(), new Set()),
-    ).toBe(false);
+    expect(matchesRegion(loc('1200', 'Geneva', 'GE'), new Set(['8008', '8053']), new Set(), new Set())).toBe(
+      false,
+    );
   });
   it('drops listings with all location fields null when any filter is set', () => {
-    expect(
-      matchesRegion(loc(null, null, null), new Set(['8008']), new Set(), new Set()),
-    ).toBe(false);
+    expect(matchesRegion(loc(null, null, null), new Set(['8008']), new Set(), new Set())).toBe(false);
   });
   it('OR across PLZ/city/canton — any match keeps the listing', () => {
     expect(

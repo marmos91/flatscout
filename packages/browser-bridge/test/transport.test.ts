@@ -37,7 +37,7 @@ async function pairExtension(port: number): Promise<WebSocket> {
 }
 
 beforeEach(async () => {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-bridge-transport-'));
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-bridge-transport-'));
   secret = loadOrGenerateSecret(dir);
   bridge = await startBridgeServer({ dataDir: dir, port: 0 });
   extWs = await pairExtension(bridge.port);

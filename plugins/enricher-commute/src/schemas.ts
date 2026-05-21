@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CommuteMode } from '@wabe/core';
+import { CommuteMode } from '@flatscout/core';
 
 const HHMM = z.string().regex(/^\d{2}:\d{2}$/, 'HH:MM');
 const Weekday = z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);

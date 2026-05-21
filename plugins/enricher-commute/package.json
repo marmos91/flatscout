@@ -1,5 +1,5 @@
 {
-  "name": "@wabe/enricher-commute",
+  "name": "@flatscout/enricher-commute",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -13,9 +13,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@wabe/core": "workspace:*",
-    "@wabe/db": "workspace:*",
-    "@wabe/plugin-sdk": "workspace:*",
+    "@flatscout/core": "workspace:*",
+    "@flatscout/db": "workspace:*",
+    "@flatscout/plugin-sdk": "workspace:*",
     "p-limit": "^6.1.0",
     "pino": "^9.4.0",
     "undici": "^6.19.8",

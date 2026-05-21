@@ -1,17 +1,17 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/wabe-dark.svg">
-    <img alt="Wabe — finding home in Switzerland" src="assets/wabe-light.svg" width="480">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/flatscout-dark.svg">
+    <img alt="Flatscout — finding home in Switzerland" src="assets/flatscout-light.svg" width="480">
   </picture>
 </p>
 
 > Open-source, customizable apartment scout for the Swiss market.
 
-**Wabe** (German for *honeycomb cell*) is a self-hosted apartment-hunting agent. It continuously polls listing sources, normalizes every listing into a canonical schema, scores each one against a user-defined fit profile, and pings you on Telegram when something matches.
+**Flatscout** is a self-hosted apartment-hunting agent. It continuously polls listing sources, normalizes every listing into a canonical schema, scores each one against a user-defined fit profile, and pings you on Telegram when something matches.
 
 ## The problem
 
-Apartment hunting in Zurich is brutal: best listings get hundreds of applications within hours. Seeing listings *before* competitors, and submitting *complete, current, tailored* dossiers within hours of a listing appearing, are the two things that move the needle. Wabe is engineered around those two principles.
+Apartment hunting in Zurich is brutal: best listings get hundreds of applications within hours. Seeing listings *before* competitors, and submitting *complete, current, tailored* dossiers within hours of a listing appearing, are the two things that move the needle. Flatscout is engineered around those two principles.
 
 ## What it does
 
@@ -39,17 +39,17 @@ config.yaml + commute.yaml + agencies.yaml  →  loader  →  pipeline
                                                               └─ Notifier (telegram)
 
 SQLite (Drizzle, FTS5) ←──── persists listings + scores + sends + commute cache
-Browser bridge (127.0.0.1 WS) ←── extension-wabe proxies DataDome-walled requests
-ORS + Motis + Pelias (docker) ←── @wabe/enricher-commute
+Browser bridge (127.0.0.1 WS) ←── extension-flatscout proxies DataDome-walled requests
+ORS + Motis + Pelias (docker) ←── @flatscout/enricher-commute
 ```
 
-Wabe is a pnpm + Turborepo monorepo built around five plugin kinds defined in `@wabe/plugin-sdk`: `Source`, `Enricher`, `Scorer`, `Notifier`, `Applicator`. Each plugin is an npm package that default-exports `{ kind, plugin }` and owns its own Zod-validated config slice. The orchestrator (`@wabe/server`) loads plugins dynamically by name from your `config.yaml`'s `enabled:` list, runs cron-driven scans (node-cron), and isolates per-plugin failures behind a circuit-breaker. The scheduler also hosts the browser bridge in-process when enabled.
+Flatscout is a pnpm + Turborepo monorepo built around five plugin kinds defined in `@flatscout/plugin-sdk`: `Source`, `Enricher`, `Scorer`, `Notifier`, `Applicator`. Each plugin is an npm package that default-exports `{ kind, plugin }` and owns its own Zod-validated config slice. The orchestrator (`@flatscout/server`) loads plugins dynamically by name from your `config.yaml`'s `enabled:` list, runs cron-driven scans (node-cron), and isolates per-plugin failures behind a circuit-breaker. The scheduler also hosts the browser bridge in-process when enabled.
 
 ## Install
 
 ```bash
 git clone <repo>
-cd wabe
+cd flatscout
 pnpm install
 pnpm build
 ```
@@ -58,7 +58,7 @@ Requires Node 22 (see `.nvmrc`) and pnpm 9+.
 
 ## Configure
 
-The canonical example lives in [`examples/zurich-family/config/`](./examples/zurich-family/config/). Wabe's config is split across small YAML files so each concern stays self-contained:
+The canonical example lives in [`examples/zurich-family/config/`](./examples/zurich-family/config/). Flatscout's config is split across small YAML files so each concern stays self-contained:
 
 | File | Purpose |
 | --- | --- |
@@ -74,7 +74,7 @@ Plugins ship documented defaults so an OOB run works without env vars except whe
 
 ### Telegram setup
 
-The Telegram notifier needs a bot token and a chat id before `wabe scan` will do anything useful.
+The Telegram notifier needs a bot token and a chat id before `flatscout scan` will do anything useful.
 
 1. **Create a bot.** Open Telegram, search for [@BotFather](https://t.me/BotFather), send `/newbot`, pick a display name, then a unique username ending in `bot`. BotFather replies with an **HTTP API token** — copy it.
 
@@ -100,7 +100,7 @@ The Telegram notifier needs a bot token and a chat id before `wabe scan` will do
 
 ### Rental-term filtering
 
-Most Swiss portals freely mix permanent leases with furnished sublets, Zwischenmieten, and Blueground-style serviced flats. Wabe classifies every incoming listing using structured signals (e.g. Flatfox `object_type === 'FURNISHED_FLAT'`) plus multilingual description regex — `befristet`, `möbliert`, `auf Zeit`, `meublé`, `temporaneo`, `furnished`, `short-term`, `sublet`, etc. Patterns like `befristet bis 31.05.2025` also extract a concrete lease end date, which the pre-filter gate uses to drop already-expired listings.
+Most Swiss portals freely mix permanent leases with furnished sublets, Zwischenmieten, and Blueground-style serviced flats. Flatscout classifies every incoming listing using structured signals (e.g. Flatfox `object_type === 'FURNISHED_FLAT'`) plus multilingual description regex — `befristet`, `möbliert`, `auf Zeit`, `meublé`, `temporaneo`, `furnished`, `short-term`, `sublet`, etc. Patterns like `befristet bis 31.05.2025` also extract a concrete lease end date, which the pre-filter gate uses to drop already-expired listings.
 
 ```yaml
 rental_term:
@@ -120,37 +120,37 @@ rental_term:
     max_months: 6
 ```
 
-If `rental_term.yaml` is absent the engine defaults to `mode: long, exclude_unknown: false`. The `wabe init` flow prompts for these interactively.
+If `rental_term.yaml` is absent the engine defaults to `mode: long, exclude_unknown: false`. The `flatscout init` flow prompts for these interactively.
 
 ## Run
 
 ```bash
-pnpm wabe init                  # interactive setup: writes config + .env
-pnpm wabe migrate               # apply pending DB migrations (scan/start do this implicitly)
-pnpm wabe scan                  # one-shot scan; pings Telegram on matches
-pnpm wabe start                 # daemon mode; runs cron-driven scans (hosts the bridge)
-pnpm wabe list                  # browse persisted listings
-pnpm wabe doctor                # diagnose config / DB / plugin / bridge health
-pnpm wabe purge                 # clear listings / scores / notifications / quota
-pnpm wabe bridge pair           # print URL + token to paste into the extension
-pnpm wabe bridge status         # bridge connection state (reads bridge.status.json)
-pnpm wabe agencies discover     # auto-discover agency portals from configured seeds
-pnpm wabe agencies probe <url>  # classify an agency portal (platform fingerprint)
-pnpm wabe agencies probe-portal <portal>  # re-probe a known portal
-pnpm wabe agencies validate <file>        # validate agencies.yaml against the schema
-pnpm wabe agencies stats        # registry stats: enabled / disabled / per-platform
-pnpm wabe login homegate        # OAuth2 + PKCE login for user-bound Homegate features
-pnpm wabe logout homegate       # revoke local Homegate credentials
+pnpm flatscout init                  # interactive setup: writes config + .env
+pnpm flatscout migrate               # apply pending DB migrations (scan/start do this implicitly)
+pnpm flatscout scan                  # one-shot scan; pings Telegram on matches
+pnpm flatscout start                 # daemon mode; runs cron-driven scans (hosts the bridge)
+pnpm flatscout list                  # browse persisted listings
+pnpm flatscout doctor                # diagnose config / DB / plugin / bridge health
+pnpm flatscout purge                 # clear listings / scores / notifications / quota
+pnpm flatscout bridge pair           # print URL + token to paste into the extension
+pnpm flatscout bridge status         # bridge connection state (reads bridge.status.json)
+pnpm flatscout agencies discover     # auto-discover agency portals from configured seeds
+pnpm flatscout agencies probe <url>  # classify an agency portal (platform fingerprint)
+pnpm flatscout agencies probe-portal <portal>  # re-probe a known portal
+pnpm flatscout agencies validate <file>        # validate agencies.yaml against the schema
+pnpm flatscout agencies stats        # registry stats: enabled / disabled / per-platform
+pnpm flatscout login homegate        # OAuth2 + PKCE login for user-bound Homegate features
+pnpm flatscout logout homegate       # revoke local Homegate credentials
 ```
 
 > **Homegate / ImmoScout24 notes.** These portals sit behind DataDome and require the browser bridge (see below). Without a paired extension the sources fail fast at plugin init. Anonymous Flatfox / RealAdvisor / Immobilier.ch / schema.org agency scans do not need the bridge.
 
 ## Browser bridge (optional)
 
-Some Swiss portals (Homegate, ImmoScout24) sit behind DataDome / Cloudflare anti-bot stacks that fingerprint TLS + HTTP/2 in addition to cookies. Wabe ships an opt-in **browser bridge** that turns the user's own Chrome or Firefox into the upstream HTTPS transport, so the request goes out as ordinary human browsing.
+Some Swiss portals (Homegate, ImmoScout24) sit behind DataDome / Cloudflare anti-bot stacks that fingerprint TLS + HTTP/2 in addition to cookies. Flatscout ships an opt-in **browser bridge** that turns the user's own Chrome or Firefox into the upstream HTTPS transport, so the request goes out as ordinary human browsing.
 
-- `@wabe/browser-bridge` runs a `127.0.0.1`-only WebSocket server inside `wabe start`, paired with one extension via a 64-hex shared secret. A heartbeat file at `${dataDir}/bridge.status.json` lets sibling commands read connection state without opening a second WS client. The same server exposes `/dispatch` so sibling processes (`wabe scan --source X`) can fan their requests through the daemon → extension instead of needing their own paired extension.
-- `apps/extension-wabe` is a manifest v3 WebExtension (Chrome + Firefox via separate `dist/chrome/` and `dist/firefox/` builds). On a bridge request the extension opens (or reuses) a hidden tab loaded at the target's homepage and runs `chrome.scripting.executeScript({ world: 'MAIN' })` to perform `fetch()` inside the page's own context. A `declarative_net_request` rule additionally rewrites `Origin` / `Referer` at the network layer. An offscreen document keeps the Chrome WS warm across MV3 service-worker idle.
+- `@flatscout/browser-bridge` runs a `127.0.0.1`-only WebSocket server inside `flatscout start`, paired with one extension via a 64-hex shared secret. A heartbeat file at `${dataDir}/bridge.status.json` lets sibling commands read connection state without opening a second WS client. The same server exposes `/dispatch` so sibling processes (`flatscout scan --source X`) can fan their requests through the daemon → extension instead of needing their own paired extension.
+- `apps/extension-flatscout` is a manifest v3 WebExtension (Chrome + Firefox via separate `dist/chrome/` and `dist/firefox/` builds). On a bridge request the extension opens (or reuses) a hidden tab loaded at the target's homepage and runs `chrome.scripting.executeScript({ world: 'MAIN' })` to perform `fetch()` inside the page's own context. A `declarative_net_request` rule additionally rewrites `Origin` / `Referer` at the network layer. An offscreen document keeps the Chrome WS warm across MV3 service-worker idle.
 
 Setup:
 
@@ -161,27 +161,27 @@ Setup:
 #      port: 8431
 
 # 2. Build the extension (both Chrome + Firefox dists)
-pnpm --filter @wabe/extension-wabe build
-# Output: apps/extension-wabe/dist/chrome/ and dist/firefox/
+pnpm --filter @flatscout/extension build
+# Output: apps/extension-flatscout/dist/chrome/ and dist/firefox/
 
 # 3. Start the daemon (this also starts the bridge)
-pnpm wabe start
+pnpm flatscout start
 
 # 4. Get the pairing URL + token
-pnpm wabe bridge pair
+pnpm flatscout bridge pair
 
 # 5. Load the extension
-#    Chrome:  chrome://extensions → Developer mode → Load unpacked → apps/extension-wabe/dist/chrome/
-#    Firefox: about:debugging → This Firefox → Load Temporary Add-on → apps/extension-wabe/dist/firefox/manifest.json
+#    Chrome:  chrome://extensions → Developer mode → Load unpacked → apps/extension-flatscout/dist/chrome/
+#    Firefox: about:debugging → This Firefox → Load Temporary Add-on → apps/extension-flatscout/dist/firefox/manifest.json
 # 6. Open the extension popup, paste URL + token, click Save & connect.
 
 # 7. Verify
-pnpm wabe bridge status     # expect: connected on port 8431 …
-pnpm wabe doctor            # expect: [OK ] browser bridge — connected …
+pnpm flatscout bridge status     # expect: connected on port 8431 …
+pnpm flatscout doctor            # expect: [OK ] browser bridge — connected …
 ```
 
 <p align="center">
-  <img alt="Wabe extension popup — paired" src="assets/wabe-extension.png" width="360">
+  <img alt="Flatscout extension popup — paired" src="assets/flatscout-extension.png" width="360">
 </p>
 
 Headless deployments without a GUI cannot use Homegate or ImmoScout24 — both require the paired extension. The other shipped sources work over plain undici and need no bridge.
@@ -192,16 +192,16 @@ For technical depth on why the bridge exists and how it defeats DataDome's finge
 
 - **Chrome** uses an offscreen document to keep the WS warm across MV3 service-worker idle. **Firefox** has no offscreen API; the background event page still suspends after ~30 s and reconnects on the next `chrome.alarms` tick. For unattended Firefox runs, keep DevTools open on the background page.
 - **First request to each origin opens a new tab.** The tab is hidden (`active: false`) but visible in the tab strip. The page must reach `complete` and run any DataDome JS challenge before the bridge can dispatch; subsequent requests reuse the same tab.
-- **The bridge is single-tenant.** One extension at a time per Wabe agent; a newer pairing preempts an older one server-side.
+- **The bridge is single-tenant.** One extension at a time per Flatscout agent; a newer pairing preempts an older one server-side.
 - **Distribution is unpacked-load only.** Chrome Web Store / AMO submission is deferred.
 
-## Extending Wabe
+## Extending Flatscout
 
 A plugin is an npm package that default-exports `{ kind, plugin }`:
 
 ```ts
 import { z } from 'zod';
-import type { Source } from '@wabe/plugin-sdk';
+import type { Source } from '@flatscout/plugin-sdk';
 
 const ConfigSchema = z.object({ schedule: z.string().default('*/5 * * * *') });
 
@@ -216,7 +216,7 @@ const plugin: Source = {
 export default { kind: 'source' as const, plugin };
 ```
 
-The five plugin kinds in `@wabe/plugin-sdk`:
+The five plugin kinds in `@flatscout/plugin-sdk`:
 
 - **`Source`** — yields `RawListing` objects from an upstream portal. See `plugins/source-flatfox/` (simple JSON API) and `plugins/source-homegate/` (bridge-driven transport + OAuth login) as references.
 - **`Enricher`** — annotates listings with derived data between dedup and the rental-term gate. See `plugins/enricher-commute/`.

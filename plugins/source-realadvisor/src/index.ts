@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { PluginExport, Source, Context } from '@wabe/plugin-sdk';
+import type { PluginExport, Source, Context } from '@flatscout/plugin-sdk';
 import { SearchConfig } from './search.js';
 import { fetchPage, sleep } from './client.js';
 import { mapHit } from './map.js';
@@ -54,7 +54,10 @@ const plugin: Source = {
       if (page < cfg.fetch.max_pages) await sleep(cfg.fetch.pace_ms, ctx.signal);
     }
     if (zipAllow.size > 0 && dropped > 0) {
-      ctx.logger.info({ dropped, zipcodes: cfg.search.zipcodes }, 'realadvisor: zipcode filter dropped listings');
+      ctx.logger.info(
+        { dropped, zipcodes: cfg.search.zipcodes },
+        'realadvisor: zipcode filter dropped listings',
+      );
     }
   },
 };

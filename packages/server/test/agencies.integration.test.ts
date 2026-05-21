@@ -11,7 +11,7 @@ let agent: MockAgent;
 let prev: ReturnType<typeof getGlobalDispatcher>;
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-agencies-'));
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-agencies-'));
   mkdirSync(join(dir, 'plugins'), { recursive: true });
   prev = getGlobalDispatcher();
   agent = new MockAgent();

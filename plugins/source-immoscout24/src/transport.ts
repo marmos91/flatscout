@@ -5,7 +5,7 @@ import {
   getCurrentBridge,
   type ReadStateAction,
   type Transport as BridgeTransport,
-} from '@wabe/browser-bridge';
+} from '@flatscout/browser-bridge';
 
 export type TransportKind = 'bridge-inproc' | 'bridge-daemon';
 
@@ -99,7 +99,7 @@ export async function selectTransport(opts: SelectTransportOpts): Promise<Transp
     });
   }
   throw new Error(
-    'source-immoscout24 requires the Wabe browser bridge. ' +
-      'Start `wabe start` with the extension paired, or run `wabe bridge pair` to set it up.',
+    'source-immoscout24 requires the Flatscout browser bridge. ' +
+      'Start `flatscout start` with the extension paired, or run `flatscout bridge pair` to set it up.',
   );
 }

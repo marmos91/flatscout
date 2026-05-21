@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
-import { fingerprint } from '@wabe/agency-fingerprint';
-import { type Candidate, extractDescriptionUrls, normaliseToCandidate } from '@wabe/server';
+import { fingerprint } from '@flatscout/agency-fingerprint';
+import { type Candidate, extractDescriptionUrls, normaliseToCandidate } from '@flatscout/server';
 import { stringify as yamlStringify } from 'yaml';
 import { getPortal, listPortals } from './portals/index.js';
 

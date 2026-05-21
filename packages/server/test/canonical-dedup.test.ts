@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Listing } from '@wabe/core';
+import { Listing } from '@flatscout/core';
 import { shouldNotify } from '../src/canonical-dedup.js';
 import type { UpsertResult } from '../src/dedupe.js';
 

@@ -1,5 +1,5 @@
-import { fingerprint } from '@wabe/agency-fingerprint';
-import type { AgencyEntry } from '@wabe/core';
+import { fingerprint } from '@flatscout/agency-fingerprint';
+import type { AgencyEntry } from '@flatscout/core';
 import {
   type Candidate,
   distinctLegalNames,

@@ -1,12 +1,12 @@
 import { join } from 'node:path';
 import type { Logger } from 'pino';
-import type { WabeDb } from '@wabe/db';
+import type { FlatscoutDb } from '@flatscout/db';
 import type { TopConfig } from '../config.js';
 import { discoverAgencies } from './discover.js';
 
 export interface CycleHookOpts {
   cfg: TopConfig;
-  db: WabeDb;
+  db: FlatscoutDb;
   dataDir: string;
   logger: Logger;
   signal: AbortSignal;

@@ -1,8 +1,8 @@
-# @wabe/notifier-telegram
+# @flatscout/notifier-telegram
 
 ## What it is
 
-A Wabe **notifier** plugin that delivers scored listing events to a
+A Flatscout **notifier** plugin that delivers scored listing events to a
 Telegram chat. Built on [grammY](https://grammy.dev), it sends a compact
 Markdown-like card per `ListingEvent` with inline URL buttons linking to
 the listing and (when available) its first photo.
@@ -14,8 +14,8 @@ notification sink, not an interactive surface.
 
 ## Install & enable
 
-The plugin is part of the Wabe monorepo and ships as
-`@wabe/notifier-telegram`. Enable it in your `config.yaml`:
+The plugin is part of the Flatscout monorepo and ships as
+`@flatscout/notifier-telegram`. Enable it in your `config.yaml`:
 
 ```yaml
 notifiers:
@@ -29,7 +29,7 @@ notifiers:
 ```
 
 Set the two env vars in your environment (see "Credentials / auth"
-below) and run `wabe start`. Each scored event above your
+below) and run `flatscout start`. Each scored event above your
 notify-threshold will produce one Telegram message in the target chat.
 
 ## Configuration reference
@@ -142,7 +142,7 @@ notifiers:
 
 - **`telegram bot_token unresolved (set TELEGRAM_BOT_TOKEN env)`** — the
   `${env.TELEGRAM_BOT_TOKEN}` placeholder was never substituted. Export
-  the env var before launching Wabe, or set `bot_token` literally in
+  the env var before launching Flatscout, or set `bot_token` literally in
   config.
 - **`telegram chat_id unresolved (set TELEGRAM_CHAT_ID env)`** — same as
   above for `TELEGRAM_CHAT_ID`.
@@ -171,4 +171,4 @@ notifiers:
 
 ## License
 
-MIT, matching the rest of the Wabe project.
+MIT, matching the rest of the Flatscout project.

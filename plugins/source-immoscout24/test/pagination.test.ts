@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import pino from 'pino';
-import type { Context } from '@wabe/plugin-sdk';
+import type { Context } from '@flatscout/plugin-sdk';
 
 const logger = pino({ level: 'silent' });
 

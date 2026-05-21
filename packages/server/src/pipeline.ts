@@ -6,8 +6,8 @@ import {
   SOURCE_PRIORITY_DEFAULTS,
   DEFAULT_SOURCE_PRIORITY,
   canonicalKey,
-} from '@wabe/core';
-import type { WabeDb } from '@wabe/db';
+} from '@flatscout/core';
+import type { FlatscoutDb } from '@flatscout/db';
 import type { LoadedConfig } from './config.js';
 import type { LoadedPlugin } from './loader.js';
 import type { CircuitBreaker } from './circuit.js';
@@ -18,7 +18,7 @@ import { passes as rentalTermPasses } from './rental-term-gate.js';
 
 export interface RunOptions {
   cfg: LoadedConfig;
-  db: WabeDb;
+  db: FlatscoutDb;
   logger: Logger;
   signal: AbortSignal;
   sources: LoadedPlugin<'source'>[];

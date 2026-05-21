@@ -27,7 +27,7 @@ export async function fetchCoverPhoto(
           signal: opts.signal,
           headers: {
             accept: 'text/html',
-            'user-agent': 'wabe-source-flatfox/0.1 (+https://github.com)',
+            'user-agent': 'flatscout-source-flatfox/0.1 (+https://github.com)',
           },
         })
       : await request(detailUrl, {
@@ -35,7 +35,7 @@ export async function fetchCoverPhoto(
           signal: opts.signal,
           headers: {
             accept: 'text/html',
-            'user-agent': 'wabe-source-flatfox/0.1 (+https://github.com)',
+            'user-agent': 'flatscout-source-flatfox/0.1 (+https://github.com)',
           },
         });
     if (res.statusCode < 200 || res.statusCode >= 400) {

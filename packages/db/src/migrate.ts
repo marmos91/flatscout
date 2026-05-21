@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { WabeDb } from './client.js';
+import type { FlatscoutDb } from './client.js';
 import { collapseListings } from './collapse-listings.js';
 
 const MIGRATIONS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'migrations');
@@ -14,7 +14,7 @@ const MIGRATIONS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'migr
  * filename is recorded with `applied_at` on success. Returns the filenames
  * applied during this call (empty array if already up to date).
  */
-export function migrate(db: WabeDb, dir = MIGRATIONS_DIR): { applied: string[] } {
+export function migrate(db: FlatscoutDb, dir = MIGRATIONS_DIR): { applied: string[] } {
   const raw = db._raw;
   raw.exec(
     'CREATE TABLE IF NOT EXISTS _migrations (filename TEXT PRIMARY KEY, applied_at INTEGER NOT NULL);',

@@ -3,15 +3,15 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MockAgent, setGlobalDispatcher } from 'undici';
-import { migrate, openDb, type WabeDb } from '@wabe/db';
+import { migrate, openDb, type FlatscoutDb } from '@flatscout/db';
 import { CircuitBreaker, Quota, createLogger, loadConfig, loadPlugins, runOnce } from '../src/index.js';
 
 let dir: string;
-let db: WabeDb;
+let db: FlatscoutDb;
 let agent: MockAgent;
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-e2e-'));
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-e2e-'));
   db = openDb(join(dir, 'e2e.db'));
   migrate(db);
   agent = new MockAgent();

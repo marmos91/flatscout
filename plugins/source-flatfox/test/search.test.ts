@@ -72,7 +72,9 @@ describe('applyClientFilters', () => {
   });
 
   it('zipcodes empty disables the filter', () => {
-    const withZips = [{ pk: 99, city: 'Foo', zipcode: 1234, offer_type: 'RENT', object_category: 'APARTMENT' }];
+    const withZips = [
+      { pk: 99, city: 'Foo', zipcode: 1234, offer_type: 'RENT', object_category: 'APARTMENT' },
+    ];
     expect(applyClientFilters(withZips, SearchConfig.parse({})).map((i) => i.pk)).toEqual([99]);
   });
 });

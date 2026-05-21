@@ -24,8 +24,8 @@ export interface HeartbeatRead extends BridgeStatus {
  *
  * Writes once immediately, then every `intervalMs`. Returns a `stop()` function.
  *
- * The file is read by `wabe bridge status` and `wabe doctor` — those run in a
- * separate process from `wabe start`, so the heartbeat file is the IPC primitive.
+ * The file is read by `flatscout bridge status` and `flatscout doctor` — those run in a
+ * separate process from `flatscout start`, so the heartbeat file is the IPC primitive.
  */
 export function startHeartbeat(
   dataDir: string,
@@ -56,7 +56,7 @@ export function startHeartbeat(
  * Reads the heartbeat file. Returns null if missing or corrupted.
  *
  * Callers should check `age_ms` against a threshold (e.g. 15_000) to detect stale heartbeats
- * from a crashed `wabe start` process.
+ * from a crashed `flatscout start` process.
  */
 export function readHeartbeat(dataDir: string): HeartbeatRead | null {
   const path = join(dataDir, HEARTBEAT_FILE);

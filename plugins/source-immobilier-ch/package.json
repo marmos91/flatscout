@@ -1,5 +1,5 @@
 {
-  "name": "@wabe/source-immobilier-ch",
+  "name": "@flatscout/source-immobilier-ch",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -12,8 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@wabe/core": "workspace:*",
-    "@wabe/plugin-sdk": "workspace:*",
+    "@flatscout/core": "workspace:*",
+    "@flatscout/plugin-sdk": "workspace:*",
     "fast-xml-parser": "^4.5.0",
     "pino": "^9.4.0",
     "undici": "^6.19.8",

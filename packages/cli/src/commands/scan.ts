@@ -7,12 +7,12 @@ import {
   loadPlugins,
   runDiscoveryCycle,
   runOnce,
-} from '@wabe/server';
-import { migrate, openDb } from '@wabe/db';
+} from '@flatscout/server';
+import { migrate, openDb } from '@flatscout/db';
 import { resolvePaths } from '../paths.js';
 
 /**
- * Registers the `wabe scan` subcommand: runs the pipeline once and exits.
+ * Registers the `flatscout scan` subcommand: runs the pipeline once and exits.
  *
  * Supports `--source` to restrict to specific source names and `--dry-run` to
  * disable notifier dispatch (everything else still runs and persists).

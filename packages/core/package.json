@@ -1,5 +1,5 @@
 {
-  "name": "@wabe/core",
+  "name": "@flatscout/core",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",

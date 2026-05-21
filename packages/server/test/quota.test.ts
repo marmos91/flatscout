@@ -2,12 +2,12 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { openDb, migrate } from '@wabe/db';
+import { openDb, migrate } from '@flatscout/db';
 import { Quota } from '../src/quota.js';
 
 let dir: string;
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-q-'));
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-q-'));
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 

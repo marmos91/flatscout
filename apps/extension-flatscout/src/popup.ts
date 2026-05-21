@@ -221,7 +221,7 @@ function renderRecent(s: StoredState): void {
 function renderBlockedAndPeer(s: StoredState): void {
   if (s.bridgeBlockedReason) {
     const detail =
-      s.bridgeBlockedReason.detail ?? 'Another browser extension is connected to this Wabe daemon.';
+      s.bridgeBlockedReason.detail ?? 'Another browser extension is connected to this Flatscout daemon.';
     blockedTextEl.textContent = detail;
     blockedPanelEl.hidden = false;
   } else {
@@ -290,11 +290,11 @@ saveBtn.addEventListener('click', async () => {
     return;
   }
   if (!HEX64.test(authToken)) {
-    showError('Token must be 64 hex characters (from `wabe bridge pair`).');
+    showError('Token must be 64 hex characters (from `flatscout bridge pair`).');
     return;
   }
   await chrome.storage.local.set({ bridgeUrl, authToken });
-  await chrome.runtime.sendMessage({ type: 'wabe-bridge:reconnect' });
+  await chrome.runtime.sendMessage({ type: 'flatscout-bridge:reconnect' });
   showInfo('Saved — reconnecting…', RECONNECT_FEEDBACK_MS);
   setTimeout(() => void render(), RECONNECT_FEEDBACK_MS);
 });
@@ -303,7 +303,7 @@ blockedReconnectBtn.addEventListener('click', async () => {
   clearError();
   await chrome.storage.local.remove(['bridgeBlockedReason', 'bridgePeerAttempt']);
   try {
-    await chrome.runtime.sendMessage({ type: 'wabe-bridge:reconnect' });
+    await chrome.runtime.sendMessage({ type: 'flatscout-bridge:reconnect' });
     showInfo('Reconnecting…', RECONNECT_FEEDBACK_MS);
   } catch (err) {
     showError(`Reconnect failed: ${(err as Error).message}`);
@@ -315,7 +315,7 @@ testBtn.addEventListener('click', async () => {
   clearError();
   showInfo('Reconnecting…', RECONNECT_FEEDBACK_MS);
   try {
-    await chrome.runtime.sendMessage({ type: 'wabe-bridge:reconnect' });
+    await chrome.runtime.sendMessage({ type: 'flatscout-bridge:reconnect' });
   } catch (err) {
     showError(`Reconnect failed: ${(err as Error).message}`);
     return;
@@ -332,7 +332,7 @@ forgetBtn.addEventListener('click', async () => {
     'lastAliveAt',
     'bridgeStats',
   ]);
-  await chrome.runtime.sendMessage({ type: 'wabe-bridge:reconnect' });
+  await chrome.runtime.sendMessage({ type: 'flatscout-bridge:reconnect' });
   tokenEl.value = '';
   await render();
 });

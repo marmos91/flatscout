@@ -15,7 +15,7 @@ let secret: string;
 let lastExt: WebSocket | undefined;
 
 beforeEach(async () => {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-bridge-abort-'));
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-bridge-abort-'));
   secret = loadOrGenerateSecret(dir);
   bridge = await startBridgeServer({ dataDir: dir, port: 0 });
   port = bridge.port;

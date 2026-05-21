@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { request } from 'undici';
 import { parse as parseYaml } from 'yaml';
-import { AgencyRegistry } from '@wabe/core';
+import { AgencyRegistry } from '@flatscout/core';
 
 export interface LoadRegistryOpts {
   /** Registry source: local path, `https://...`, or `git+ssh://...#branch`. */
@@ -56,7 +56,7 @@ function fetchGit(url: string, opts: LoadRegistryOpts): Promise<string> {
   const stripped = url.replace(/^git\+/, '');
   const [base, frag = ''] = stripped.split('#', 2) as [string, string | undefined];
   const [branch = '', relPath = 'agencies.yaml'] = frag.split(':', 2);
-  const tmp = mkdtempSync(join(tmpdir(), 'wabe-reg-git-'));
+  const tmp = mkdtempSync(join(tmpdir(), 'flatscout-reg-git-'));
   try {
     const cloneArgs = ['clone', '--depth=1', '--quiet', ...(branch ? ['--branch', branch] : []), base, tmp];
     execFileSync('git', cloneArgs, { stdio: ['ignore', 'ignore', 'pipe'] });

@@ -95,9 +95,7 @@ export function normaliseToCandidate(
 }
 
 interface DiscoveryDb {
-  prepare<T>(
-    sql: string,
-  ): { all(...params: unknown[]): T[] };
+  prepare<T>(sql: string): { all(...params: unknown[]): T[] };
 }
 
 /**
@@ -296,7 +294,7 @@ async function liveCheck(host: string, signal: AbortSignal): Promise<string | nu
       redirect: 'follow',
       headers: {
         'user-agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 wabe-discover/1',
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 flatscout-discover/1',
         accept: 'text/html,*/*;q=0.8',
       },
     });
@@ -319,10 +317,7 @@ async function liveCheck(host: string, signal: AbortSignal): Promise<string | nu
  * and more deterministic than search-engine scraping (which DuckDuckGo and
  * the rest now actively block for non-browser clients).
  */
-export async function resolveLegalNameToWebsite(
-  name: string,
-  signal: AbortSignal,
-): Promise<string | null> {
+export async function resolveLegalNameToWebsite(name: string, signal: AbortSignal): Promise<string | null> {
   const candidates = candidateDomainsFromLegalName(name);
   for (const host of candidates) {
     if (signal.aborted) return null;

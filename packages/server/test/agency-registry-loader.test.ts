@@ -7,7 +7,7 @@ import { loadRegistry } from '../src/agency-registry/loader.js';
 
 let dir: string;
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'wabe-reg-'));
+  dir = mkdtempSync(join(tmpdir(), 'flatscout-reg-'));
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 

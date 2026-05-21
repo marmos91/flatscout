@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { RawListing } from '@wabe/core';
+import type { RawListing } from '@flatscout/core';
 import type { DetailPayload } from '../src/detail.js';
 import { mergePdpIntoListing } from '../src/enrich.js';
 

@@ -1,5 +1,5 @@
 {
-  "name": "@wabe/source-flatfox",
+  "name": "@flatscout/source-flatfox",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -14,8 +14,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@wabe/core": "workspace:*",
-    "@wabe/plugin-sdk": "workspace:*",
+    "@flatscout/core": "workspace:*",
+    "@flatscout/plugin-sdk": "workspace:*",
     "undici": "^6.19.8",
     "zod": "^3.23.8"
   },

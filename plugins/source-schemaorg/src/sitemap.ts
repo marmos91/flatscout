@@ -9,7 +9,11 @@ export interface DetailUrl {
 const xml = new XMLParser({ ignoreAttributes: false });
 
 export async function fetchSitemap(url: string, signal: AbortSignal): Promise<DetailUrl[]> {
-  const res = await request(url, { signal, method: 'GET', headers: { 'user-agent': 'Mozilla/5.0 wabe/0' } });
+  const res = await request(url, {
+    signal,
+    method: 'GET',
+    headers: { 'user-agent': 'Mozilla/5.0 flatscout/0' },
+  });
   if (res.statusCode !== 200) throw new Error(`sitemap ${url} responded ${res.statusCode}`);
   return parseUrlset(await res.body.text());
 }
