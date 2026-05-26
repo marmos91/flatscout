@@ -146,7 +146,7 @@ async function runSource(src: LoadedPlugin<'source'>, opts: RunOptions): Promise
 
       const score = await scoreListing(opts.cfg.scoring.scoring, current);
       opts.db._raw
-        .prepare('INSERT INTO scores (listing_id, scored_at, final, breakdown) VALUES (?,?,?,?)')
+        .prepare('INSERT OR REPLACE INTO scores (listing_id, scored_at, final, breakdown) VALUES (?,?,?,?)')
         .run(current.id, Date.now(), score.final, JSON.stringify(score.breakdown));
       if (score.final < opts.cfg.scoring.notify.threshold) {
         log.debug({ listing_id: current.id, score: score.final }, 'below threshold');

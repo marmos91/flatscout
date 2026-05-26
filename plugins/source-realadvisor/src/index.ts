@@ -43,7 +43,7 @@ const plugin: Source = {
         const mapped = mapHit(hit);
         if (!mapped) continue;
         if (zipAllow.size > 0) {
-          const plz = mapped.location.postal_code;
+          const plz = mapped.location.postal_code != null ? String(mapped.location.postal_code) : null;
           if (!plz || !zipAllow.has(plz)) {
             dropped += 1;
             continue;

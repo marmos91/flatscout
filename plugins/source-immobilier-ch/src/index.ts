@@ -49,7 +49,7 @@ const plugin: Source = {
       const mapped = mapDetail(e.loc, payload);
       if (!mapped) continue;
       if (zipAllow.size > 0) {
-        const plz = mapped.location.postal_code;
+        const plz = mapped.location.postal_code != null ? String(mapped.location.postal_code) : null;
         if (!plz || !zipAllow.has(plz)) {
           dropped += 1;
           await sleep(cfg.pace_ms, ctx.signal);
