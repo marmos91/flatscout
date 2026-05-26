@@ -1,9 +1,4 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/flatscout-dark.svg">
-    <img alt="Flatscout — finding home in Switzerland" src="assets/flatscout-light.svg" width="480">
-  </picture>
-</p>
+# Flatscout
 
 > Open-source, customizable apartment scout for the Swiss market.
 
@@ -179,10 +174,6 @@ pnpm flatscout bridge pair
 pnpm flatscout bridge status     # expect: connected on port 8431 …
 pnpm flatscout doctor            # expect: [OK ] browser bridge — connected …
 ```
-
-<p align="center">
-  <img alt="Flatscout extension popup — paired" src="assets/flatscout-extension.png" width="360">
-</p>
 
 Headless deployments without a GUI cannot use Homegate or ImmoScout24 — both require the paired extension. The other shipped sources work over plain undici and need no bridge.
 
