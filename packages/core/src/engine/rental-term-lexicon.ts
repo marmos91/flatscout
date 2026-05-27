@@ -54,6 +54,8 @@ export const SHORT_TERM_PATTERNS: TermPattern[] = [
   { lang: 'en', pattern: /\bshort[-\s]?term\b/i },
   { lang: 'en', pattern: /\bsublet\b/i },
   { lang: 'en', pattern: /\bserviced\s+apartment\b/i },
+  { lang: 'en', pattern: /\b\d+\s+years?\s+limited\b/i },
+  { lang: 'en', pattern: /\blimited\s+(?:lease|rental|contract|duration)\b/i },
 ];
 
 export const LONG_TERM_PATTERNS: TermPattern[] = [

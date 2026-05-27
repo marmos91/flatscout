@@ -179,13 +179,15 @@ export function mapHomegateResult(envelope: HomegateResultEnvelope): RawListing 
     loc?.it ??
     undefined;
 
+  const title = primaryEntry?.text?.title ?? null;
   const description = primaryEntry?.text?.description ?? null;
   const photos = (primaryEntry?.attachments ?? [])
     .filter((a) => a.type === 'IMAGE' && typeof a.url === 'string' && a.url.length > 0)
     .map((a) => a.url as string);
 
+  const classifierText = [title, description].filter(Boolean).join(' ');
   const classified = classifyRentalTerm({
-    description,
+    description: classifierText || null,
     is_furnished: null,
     lease_until: null,
     min_stay_days: null,
