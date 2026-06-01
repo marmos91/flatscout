@@ -190,6 +190,23 @@ function getTab(tabId: number): Promise<chrome.tabs.Tab> {
 }
 
 /**
+ * Chrome's memory saver can `discard` an inactive tab: the tab-strip entry
+ * survives (status stays 'complete') but the content process is torn down, so
+ * `chrome.scripting.executeScript` against it throws a generic
+ * "An unexpected error occurred". Reloading reactivates the process — and the
+ * page's hooked `fetch` / DataDome session — restoring injection. The tab id is
+ * preserved across discard, so drop any per-tab prewarm state since the reload
+ * starts a fresh page.
+ */
+async function wakeTabIfDiscarded(tabId: number): Promise<void> {
+  const tab = await getTab(tabId).catch(() => null);
+  if (!tab || !tab.discarded) return;
+  await chrome.tabs.reload(tabId);
+  await waitForTabComplete(tabId);
+  prewarmedTabs.delete(tabId);
+}
+
+/**
  * Returns the tab id loaded at `${origin}/`-something, creating + waiting for
  * it on first request. Subsequent requests reuse the same tab so the page's
  * DataDome session persists.
@@ -199,9 +216,9 @@ async function ensureTabForOrigin(origin: string): Promise<number> {
   const existing = await findExistingTabForOrigin(origin);
   if (existing !== null) {
     const tab = await getTab(existing).catch(() => null);
-    if (tab && tab.status === 'complete') return existing;
     if (tab) {
-      await waitForTabComplete(existing);
+      if (tab.discarded) await wakeTabIfDiscarded(existing);
+      else if (tab.status !== 'complete') await waitForTabComplete(existing);
       return existing;
     }
   }
@@ -362,6 +379,7 @@ async function executeReadState(
   // chrome.tabs.query requires a match pattern; the literal host filter works.
   const tabs = await chrome.tabs.query({ url: `*://${targetHost}/*` });
   const tabId =
+    tabs.find((t) => t.id !== undefined && t.status === 'complete' && !t.discarded)?.id ??
     tabs.find((t) => t.id !== undefined && t.status === 'complete')?.id ??
     tabs.find((t) => t.id !== undefined)?.id;
   if (tabId === undefined) {
@@ -371,6 +389,9 @@ async function executeReadState(
       body: `no tab open at ${targetHost} — open a real browsing session there to enable scanning`,
     };
   }
+  // A memory-saver-discarded tab still reports 'complete' but rejects script
+  // injection; reload it before driving the page. (Only reloads if discarded.)
+  await wakeTabIfDiscarded(tabId);
 
   for (const action of actions ?? []) {
     if (action.kind === 'eval') {

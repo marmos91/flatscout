@@ -34,6 +34,16 @@ describe('extractInitialState', () => {
       expect(parsed.success, parsed.success ? '' : JSON.stringify(parsed.error.issues)).toBe(true);
     }
   });
+
+  it('accepts null listerBranding fields (free / no-subscription listers)', () => {
+    const card = extractInitialState(html)!.resultList.search.fullSearch.result.listings[0]!;
+    const withNullBranding = {
+      ...card,
+      listerBranding: { logoUrl: null, subscriptionType: null },
+    };
+    const parsed = IS24SrpListingSchema.safeParse(withNullBranding);
+    expect(parsed.success, parsed.success ? '' : JSON.stringify(parsed.error.issues)).toBe(true);
+  });
 });
 
 describe('parseApiResult', () => {

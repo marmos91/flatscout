@@ -102,8 +102,8 @@ export const IS24SrpListingSchema = z
       .passthrough(),
     listerBranding: z
       .object({
-        logoUrl: z.string().optional(),
-        subscriptionType: z.string().optional(),
+        logoUrl: z.string().nullable().optional(),
+        subscriptionType: z.string().nullable().optional(),
         basePackage: z.string().nullable().optional(),
         isQualityPartner: z.boolean().optional(),
         isPremiumBranding: z.boolean().optional(),
